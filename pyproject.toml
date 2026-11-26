@@ -1,0 +1,22 @@
+[project]
+name = "judgelab"
+version = "0.1.0"
+description = "A hands-on engineering lab for building a modular AI assurance framework."
+authors = [
+    { name = "Sree R One" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "openai>=3.60.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.2",
+    "ipykernel>=7.4.0",
+    "python-dotenv>=1.2.4",
+]
