@@ -1,8 +1,8 @@
 # Contributing
 
-This document defines how we branch, commit, and merge. It is the single source of truth for these conventions. The `vbench-branch` and `vbench-commit` Claude Code skills read this file rather than duplicating it.
+This document defines how we branch, commit, open pull requests, and merge. It is the single source of truth for these conventions. The `vbench-branch`, `vbench-commit`, and `vbench-pr` Claude Code skills read this file rather than duplicating it.
 
-To adopt these conventions in another repository, copy this file plus `.claude/skills/vbench-branch/` and `.claude/skills/vbench-commit/`, then edit only [Project-specific settings](#project-specific-settings).
+To adopt these conventions in another repository, copy this file plus `.claude/skills/vbench-branch/`, `.claude/skills/vbench-commit/`, and `.claude/skills/vbench-pr/`, then edit only [Project-specific settings](#project-specific-settings).
 
 ## Contents
 
@@ -173,17 +173,38 @@ Each commit should be **one logical change that builds and passes tests on its o
 
 Open a PR for every topic branch, even on a solo project. It's a review checkpoint and an evidence trail.
 
+**Size:** one unit of work per PR, matching the branch. Aim for a diff a reviewer can read in one sitting (roughly under 400 changed lines, excluding generated files and data). Split anything bigger into stacked or sequential PRs.
+
+**Draft PRs:** open the PR as a draft early if you want feedback on direction. Mark it ready only when the checklist below passes.
+
 **Title:** use the commit format, `<type>(<scope>): <subject>`. With a squash merge, the PR title becomes the commit message on `main`.
 
 **Body:**
 
 ```markdown
 ## What & why
+<!-- The problem or requirement, and what this PR changes. Link issues: Closes #N -->
+
 ## How it was verified
+<!-- Tests added or run (with results), manual checks, benchmarks -->
+
 ## Design notes / concepts applied
+<!-- Decisions, alternatives considered, DSA/patterns used. "None" is fine -->
+
+## Follow-ups
+<!-- Known gaps or deliberately deferred work. "None" is fine -->
+
 ## AI assistance
 Highest level: L?
 ```
+
+**Self-review before requesting review:** read your own diff top to bottom as a reviewer would. Remove debug code, commented-out code, and stray files. Make sure every commit follows [Commits](#commits).
+
+**Responding to review:**
+
+- Address each comment with a change or a reply. Don't resolve threads silently.
+- Push fixes as new commits during review, so reviewers can see what changed. The squash merge tidies them up.
+- If `main` moved, rebase and force-push with `--force-with-lease`. That's safe only on your own topic branch.
 
 **Ready to merge when:**
 
