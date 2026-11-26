@@ -4,13 +4,13 @@
 |---|---|
 | Status | Draft |
 | Introduced in | v0.1 |
-| Code | `<module.ClassName>` |
+| Modelled in | <domain model(s) implementing it, e.g. `Evaluation:JudgeEvaluation`> |
 | Aliases | |
 | Related | Contains: `<Concept>` · Belongs to: `<Concept>` · Produces: `<Concept>` |
 
 <!--
 Status: Draft (still being discussed) · Active (safe to build on) · Deprecated (don't use; say what replaces it in "Not to be confused with").
-Code: the class/type that implements the concept, once it exists. Leave blank until then.
+Modelled in: the DDD model(s) in docs/domain/ that implement this concept (Context:Model). Code mapping lives there.
 Aliases: other names people or providers use for the same thing (e.g. "golden answer" for expected answer). Pick one canonical term; list the rest here.
 Related: name the relationship type, not just the neighbour (Contains, Belongs to, References, Produces, Evaluated by, Transitions to, …).
 -->

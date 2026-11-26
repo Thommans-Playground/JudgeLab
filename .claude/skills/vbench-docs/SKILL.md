@@ -1,6 +1,6 @@
 ---
 name: vbench-docs
-description: Manage the repository's engineering docs (requirements REQ, use cases UC, architecture decisions ADR, release tasks T, test cases TC, ontology concepts, traceability matrix, release folders) with correct unique IDs and consistent indexes. Use this skill whenever adding, editing, renaming, retiring, or changing the status of a requirement, use case, decision, task, test case, or domain concept; planning a release or its tasks; updating traceability; checking docs consistency; or before committing or opening a PR that touches docs/, even if the user just says "add a requirement for X", "log this decision", "new task", or "is the traceability up to date?".
+description: Manage the repository's engineering docs (requirements REQ, use cases UC, architecture decisions ADR, release tasks T, test cases TC, ontology concepts, the DDD domain model with bounded contexts, aggregates, entities, value objects and domain events, traceability matrix, release folders) with correct unique IDs and consistent indexes. Use this skill whenever adding, editing, renaming, retiring, or changing the status of a requirement, use case, decision, task, test case, domain concept, bounded context, aggregate, or domain event; planning a release or its tasks; updating traceability; checking docs consistency; or before committing or opening a PR that touches docs/, even if the user just says "add a requirement for X", "log this decision", "new task", or "is the traceability up to date?".
 ---
 
 # vbench-docs
@@ -30,6 +30,20 @@ Ontology concepts aren't numbered; they're named by their canonical term. Use `n
 - **Status** (Draft / Active / Deprecated) tells people whether to build on it. Deprecated concepts point to their replacement under "Not to be confused with".
 - **Aliases** and **Code** map other names (provider terms, everyday speech) and the implementing class to the one canonical term.
 - **Diagrams** only where they earn their place: an `erDiagram` limited to immediate neighbours for concepts with several relationships, a `stateDiagram-v2` for concepts with a lifecycle. Value objects get none; the whole-system map lives in the ontology README.
+- **Modelled in** points to the DDD model(s) that implement the concept (`Context:Model`).
+
+## DDD domain model
+
+`docs/domain/` turns the ontology (what exists) into a design (how it is modelled), one folder per bounded context. Read `docs/domain/README.md` first.
+
+- `new context --title Evaluation` → `docs/domain/evaluation/README.md`; then add the context to the bounded contexts table and context map in `docs/domain/README.md`.
+- `new model --context evaluation --title JudgeEvaluation` → aggregate root, entity, value object, or domain service.
+- `new event --context evaluation --title EvaluationCompleted` → domain event (past tense).
+- Add every model and event to its context's ubiquitous language table.
+
+`check` enforces: each context is listed in the domain README; each model/event is in its context's ubiquitous language; `DDD Type` is one of Aggregate Root, Entity, Value Object, Domain Service, Domain Event; `Bounded Context` matches the folder; every Entity names an Aggregate Root in the same context; every `Ontology` value is a defined ontology concept.
+
+Choosing boundaries, aggregates, and invariants is design work, and in this project it's the user's learning. Help by asking questions and pointing out trade-offs (consistency boundary vs. aggregate size, reference by ID vs. containment, when a value object beats an entity), and propose options rather than deciding. Don't create contexts or models the user hasn't asked for.
 
 ## Adding an item
 

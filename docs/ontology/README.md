@@ -1,6 +1,6 @@
 # Domain Ontology
 
-The shared vocabulary of JudgeLab: one canonical name per concept, used the same way in conversation, docs, and code.
+The shared vocabulary of JudgeLab: one canonical name per concept, used the same way in conversation, docs, and code. The ontology describes the problem space; how each concept is modelled (bounded contexts, aggregates, behaviour) lives in the [domain model](../domain/).
 
 - One file per concept, named after the canonical term in kebab-case (`test-case.md` for `TestCase`); copy [_template.md](_template.md).
 - Every concept file must have a row in the glossary below (the docs check enforces this).

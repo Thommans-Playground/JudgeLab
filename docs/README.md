@@ -6,7 +6,8 @@ Living documents describe the system **as it is now** and evolve across releases
 |---|---|
 | [requirements/](requirements/) | Requirements catalogue and one file per requirement |
 | [usecases/](usecases/) | Actors, use-case catalogue, and one file per use case |
-| [ontology/](ontology/) | Domain glossary, relationships, and one file per concept |
+| [ontology/](ontology/) | Problem-space glossary, relationships, and one file per concept |
+| [domain/](domain/) | DDD model built on the ontology: bounded contexts, aggregates, entities, value objects, events |
 | [design.md](design.md) | Current architecture and components |
 | [decisions/](decisions/) | Architecture decision records (ADRs) |
 | [verification.md](verification.md) | Test strategy and test cases |

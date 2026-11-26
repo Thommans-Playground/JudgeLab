@@ -5,6 +5,9 @@ Usage:
   docids.py next KIND                       Print the next free ID (e.g. REQ-002)
   docids.py new KIND --title T [--release R] Create the item file from its template
   docids.py new concept --title TestCase    Create docs/ontology/test-case.md from docs/ontology/_template.md
+  docids.py new context --title Evaluation  Create docs/domain/evaluation/README.md (a DDD bounded context)
+  docids.py new model --context evaluation --title JudgeEvaluation   Aggregate/entity/value object/service
+  docids.py new event --context evaluation --title EvaluationCompleted   Domain event
   docids.py check [--strict]                Report ID, index, link and traceability problems
   docids.py list [KIND]                     List defined IDs and where they live
 
@@ -36,6 +39,8 @@ KINDS = {
     "TC": {"prefix": "TC-", "rows_in": "verification.md"},
 }
 ONTOLOGY = "ontology"  # concept files: <kebab-name>.md, each listed in ontology/README.md
+DOMAIN = "domain"      # DDD: domain/<context>/README.md + one file per model/event
+DDD_TYPES = {"Aggregate Root", "Entity", "Value Object", "Domain Service", "Domain Event"}
 TRACEABILITY = "traceability.md"
 TRACED_KINDS = ("REQ", "T")  # every one of these should appear in traceability.md
 WIDTH = 3
@@ -137,8 +142,7 @@ def concept_files(d: Docs) -> list[Path]:
 
 
 def new_concept(d: Docs, term: str):
-    slug = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", term.strip()).replace(" ", "-").lower()
-    target = d.docs / ONTOLOGY / f"{slug}.md"
+    target = d.docs / ONTOLOGY / f"{slugify(term)}.md"
     if target.exists():
         sys.exit(f"error: {d.rel(target)} already exists")
     template = d.docs / ONTOLOGY / "_template.md"
@@ -147,10 +151,71 @@ def new_concept(d: Docs, term: str):
     print(f"Next: add {term} to the glossary in docs/{ONTOLOGY}/README.md")
 
 
+def slugify(term: str) -> str:
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", term.strip()).replace(" ", "-").lower()
+
+
+def field(text: str, name: str) -> str:
+    """Value of a '| Name | Value |' metadata row, with links/backticks stripped; '' if unset."""
+    m = re.search(rf"^\|\s*{re.escape(name)}\s*\|\s*(.*?)\s*\|\s*$", text, re.M)
+    v = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", m.group(1)).strip("` ") if m else ""
+    return "" if not v or v.startswith("<") or v in {"—", "-"} else v
+
+
+def heading(text: str) -> str:
+    return next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), "")
+
+
+def table_terms(text: str) -> set[str]:
+    """First-column terms of every Markdown table row (links/backticks stripped)."""
+    out = set()
+    for line in text.splitlines():
+        m = re.match(r"^\|\s*([^|]+?)\s*\|", line)
+        if m:
+            out.add(re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", m.group(1)).strip("` "))
+    return out
+
+
+def context_dirs(d: Docs) -> list[Path]:
+    root = d.docs / DOMAIN
+    return sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []
+
+
+def domain_files(ctx: Path) -> list[Path]:
+    return sorted(p for p in ctx.glob("*.md") if p.name != "README.md" and not p.name.startswith("_"))
+
+
+def new_domain(d: Docs, a):
+    release = a.release or d.latest_release() or ""
+    if a.kind == "context":
+        target = d.docs / DOMAIN / slugify(a.title) / "README.md"
+        template, context_title, index = "domain-context.md", a.title, f"docs/{DOMAIN}/README.md (bounded contexts table and context map)"
+    else:
+        if not a.context:
+            sys.exit(f"error: --context is required for {a.kind}; existing: "
+                     + (", ".join(p.name for p in context_dirs(d)) or "none (run `new context` first)"))
+        ctx = d.docs / DOMAIN / a.context
+        if not (ctx / "README.md").exists():
+            sys.exit(f"error: no bounded context at {d.rel(ctx)}; run `new context` first")
+        target = ctx / f"{slugify(a.title)}.md"
+        template = "domain-event.md" if a.kind == "event" else "domain-model.md"
+        context_title, index = heading(d.text[ctx / "README.md"]), f"the ubiquitous language table in {d.rel(ctx / 'README.md')}"
+    if target.exists():
+        sys.exit(f"error: {d.rel(target)} already exists")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    body = ((TEMPLATES / template).read_text(encoding="utf-8")
+            .replace("{{TITLE}}", a.title).replace("{{CONTEXT}}", context_title).replace("{{RELEASE}}", release))
+    target.write_text(body, encoding="utf-8")
+    print(f"Created {d.rel(target)}")
+    print(f"Next: add {a.title} to {index}")
+
+
 def cmd_new(d: Docs, a):
     kind = a.kind
     if kind == "concept":
         return new_concept(d, a.title)
+    if kind in ("context", "model", "event"):
+        return new_domain(d, a)
     new_id = d.next_id(kind)
     if kind == "TC":
         print(new_id)
@@ -240,7 +305,44 @@ def cmd_check(d: Docs, a) -> int:
         elif not re.search(rf"^\|\s*\[?`?{re.escape(first)}`?\]?", glossary, re.M):
             errors.append(f"{d.rel(p)}: term '{first}' is not in the glossary (docs/{ONTOLOGY}/README.md)")
 
-    # 7. Traceability coverage (warnings)
+    # 7. DDD domain model
+    ontology_terms = table_terms(glossary) | {heading(d.text[p]) for p in concept_files(d)}
+    domain_index = d.text.get(d.docs / DOMAIN / "README.md", "")
+    for ctx in context_dirs(d):
+        readme = ctx / "README.md"
+        if readme not in d.text:
+            errors.append(f"{d.rel(ctx)}/: bounded context has no README.md")
+            continue
+        ctx_title = heading(d.text[readme])
+        if ctx_title not in table_terms(domain_index):
+            errors.append(f"{d.rel(readme)}: context '{ctx_title}' is not in the bounded contexts table "
+                          f"(docs/{DOMAIN}/README.md)")
+        language = table_terms(d.text[readme])
+        models = {heading(d.text[p]): d.text[p] for p in domain_files(ctx)}
+        for p in domain_files(ctx):
+            text, term = d.text[p], heading(d.text[p])
+            where = d.rel(p)
+            if not term or term.startswith("<"):
+                errors.append(f"{where}: missing a '# <Name>' heading"); continue
+            if term not in language:
+                errors.append(f"{where}: '{term}' is not in the ubiquitous language table of {d.rel(readme)}")
+            ddd = field(text, "DDD Type")
+            if ddd and ddd not in DDD_TYPES:
+                errors.append(f"{where}: DDD Type '{ddd}' is not one of {', '.join(sorted(DDD_TYPES))}")
+            bc = field(text, "Bounded Context")
+            if bc and bc != ctx_title:
+                errors.append(f"{where}: Bounded Context '{bc}' doesn't match its folder's context '{ctx_title}'")
+            if ddd == "Entity":
+                owner = field(text, "Aggregate")
+                if not owner:
+                    errors.append(f"{where}: Entity must name its owning Aggregate Root")
+                elif field(models.get(owner, ""), "DDD Type") != "Aggregate Root":
+                    errors.append(f"{where}: Aggregate '{owner}' is not an Aggregate Root in context '{ctx_title}'")
+            onto = field(text, "Ontology")
+            if onto and onto not in ontology_terms:
+                errors.append(f"{where}: Ontology concept '{onto}' is not defined in docs/{ONTOLOGY}/")
+
+    # 8. Traceability coverage (warnings)
     trace = d.docs / TRACEABILITY
     traced = {i for i, p, _ in d.mentions() if p == trace}
     for i in d.defs:
@@ -260,8 +362,9 @@ def main() -> int:
     ap.add_argument("--root", help="repository root (default: git top-level or cwd)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("next"); p.add_argument("kind", choices=KINDS)
-    p = sub.add_parser("new"); p.add_argument("kind", choices=[*KINDS, "concept"])
+    p = sub.add_parser("new"); p.add_argument("kind", choices=[*KINDS, "concept", "context", "model", "event"])
     p.add_argument("--title", required=True); p.add_argument("--release")
+    p.add_argument("--context", help="bounded context folder (for model/event)")
     p = sub.add_parser("list"); p.add_argument("kind", nargs="?", choices=KINDS)
     p = sub.add_parser("check"); p.add_argument("--strict", action="store_true",
                                                 help="treat warnings as errors")
