@@ -1,4 +1,4 @@
-# T003: First live model connector
+# T002: Credential resolution
 
 | Field | Value |
 |---|---|
@@ -11,9 +11,11 @@
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Fake HTTP + live smoke test.
+Missing key and secret-redaction tests.
 
 <!-- Tests to write / run -->
 

@@ -1,19 +1,21 @@
-# T013: Live end-to-end benchmark
+# T007: Target inference
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-006 |
-| Requirements | REQ-011, REQ-012 |
+| Use case | UC-003 |
+| Requirements | REQ-005 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Five-case report and manual review.
+Captured response test.
 
 <!-- Tests to write / run -->
 

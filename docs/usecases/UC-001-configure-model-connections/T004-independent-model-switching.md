@@ -1,19 +1,21 @@
-# T010: Aggregate calculations
+# T004: Independent model switching
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-005 |
-| Requirements | REQ-009, REQ-010 |
+| Use case | UC-001 |
+| Requirements | REQ-003, REQ-004, REQ-013 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Pass/fail/error/zero denominator tests.
+Switch-profile integration test.
 
 <!-- Tests to write / run -->
 

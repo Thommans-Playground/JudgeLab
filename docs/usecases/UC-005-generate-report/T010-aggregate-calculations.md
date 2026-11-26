@@ -1,19 +1,21 @@
-# T005: JSON dataset loader
+# T010: Aggregate calculations
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-002 |
-| Requirements | REQ-001, REQ-002 |
+| Use case | UC-005 |
+| Requirements | REQ-009, REQ-010 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Valid/malformed file tests.
+Pass/fail/error/zero denominator tests.
 
 <!-- Tests to write / run -->
 

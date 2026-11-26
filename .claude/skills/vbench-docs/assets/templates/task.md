@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Release | {{RELEASE}} |
-| Use case | |
+| Use case | {{USECASE}} |
 | Requirements | |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
@@ -11,9 +11,11 @@
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 

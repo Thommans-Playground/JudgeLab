@@ -1,19 +1,21 @@
-# T001: Connection profile model
+# T006: Test-case validation
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-001 |
-| Requirements | REQ-003, REQ-004, REQ-013 |
+| Use case | UC-002 |
+| Requirements | REQ-001, REQ-002 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Config validation tests.
+Missing field/duplicate ID tests.
 
 <!-- Tests to write / run -->
 

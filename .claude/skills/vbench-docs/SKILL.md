@@ -1,6 +1,6 @@
 ---
 name: vbench-docs
-description: Manage the repository's engineering docs (requirements REQ, use cases UC, architecture decisions ADR, release tasks T, test cases TC, ontology concepts, the DDD domain model with bounded contexts, aggregates, entities, value objects and domain events, traceability matrix, release folders) with correct unique IDs and consistent indexes. Use this skill whenever adding, editing, renaming, retiring, or changing the status of a requirement, use case, decision, task, test case, domain concept, bounded context, aggregate, or domain event; planning a release or its tasks; updating traceability; checking docs consistency; or before committing or opening a PR that touches docs/, even if the user just says "add a requirement for X", "log this decision", "new task", or "is the traceability up to date?".
+description: Manage the repository's engineering docs (requirements REQ, use cases UC, architecture decisions ADR, tasks T as slices of use cases, acceptance criteria AC, test cases TC, ontology concepts, the DDD domain model with bounded contexts, aggregates, entities, value objects and domain events, traceability matrix, release folders) with correct unique IDs and consistent indexes. Use this skill whenever adding, editing, renaming, retiring, or changing the status of a requirement, use case, decision, task, test case, domain concept, bounded context, aggregate, or domain event; planning a release or its tasks; updating traceability; checking docs consistency; or before committing or opening a PR that touches docs/, even if the user just says "add a requirement for X", "log this decision", "new task", or "is the traceability up to date?".
 ---
 
 # vbench-docs
@@ -22,7 +22,14 @@ Read `docs/README.md` (layout, ID scheme), plus the index README of whichever ar
 | `… list [KIND]` | Show defined IDs and their files |
 | `… check [--strict]` | Report duplicates, heading/filename mismatches, items missing from their index, references to undefined IDs, broken relative links; warn on REQ/T absent from traceability |
 
-Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `T001` (tasks, under `releases/<version>/tasks/`, numbered across all releases), `TC-001` (rows in `verification.md`, not files). Item files may carry a slug: `T001-connection-profile.md`. `next` considers every ID ever mentioned, so retired numbers are never reused. `--release` defaults to the latest release folder.
+Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `T001`, `TC-001` (rows in `verification.md`, not files), and acceptance criteria `AC-004-01` (criterion 01 of UC-004). `next` considers every ID ever mentioned, so retired numbers are never reused. `--release` defaults to the latest release folder.
+
+**Use cases and their slices.** A use case is a folder, `docs/usecases/UC-###-<slug>/`. Its `README.md` holds the flows, the **acceptance criteria** (`- [ ] **AC-UUU-NN**: …`, observable behaviour, defined only here) and a **Slices** table. Tasks are the use case's slices: thin, end-to-end pieces of work that each make some of its criteria pass. They live in the same folder (`T###-<slug>.md`), say which criteria they deliver in their `Delivers` section, and carry a `Release` field. Commands:
+- `new UC --title "Prepare dataset"` creates the folder and README.
+- `new T --usecase UC-002 --title "JSON loader"` creates a task inside it; then add it to the use case's Slices table, the release plan, and `traceability.md`.
+- `next AC --usecase UC-004` prints the next free criterion ID.
+
+`check` verifies that each criterion is defined once, in its own use case, and that every `AC-…` mention resolves. Tests are marked with criterion IDs (`@pytest.mark.acceptance("AC-004-03")`), so pytest's progress table shows which use cases work.
 
 Ontology concepts aren't numbered; they're named by their canonical term. Use `new concept --title TestCase` (creates `docs/ontology/test-case.md` from `docs/ontology/_template.md`), then add the term to the glossary in `docs/ontology/README.md`; `check` fails until you do. When filling a concept:
 
@@ -52,7 +59,7 @@ Choosing boundaries, aggregates, and invariants is design work, and in this proj
 3. Add a row to the index the script names (link it as `[ID](file)` where the index is a catalogue).
 4. For REQ and T: add or update the row in `docs/traceability.md`.
 5. Cross-link related items both ways where the templates have fields for it (e.g. a task's Requirements field and the requirement's row in traceability; a use case's Requirements and the requirement's Use cases).
-6. For anything in a release's scope (requirements, use cases, tasks), update that release's `README.md` scope or plan table.
+6. For anything in a release's scope (requirements, use cases, tasks), update that release's `README.md` scope or plan table. A new task also gets a row in its use case's Slices table.
 7. Run `check` and fix what it reports before calling the work done.
 
 ## Changing or retiring items
@@ -60,7 +67,7 @@ Choosing boundaries, aggregates, and invariants is design work, and in this proj
 - **Never renumber, and never delete an item that has been committed.** Other files, commits and branch names point at it. Set its Status to `Deprecated` (requirements), `Rejected`/`Superseded by ADR-###` (decisions), or `Dropped` (tasks), and say why in its change log.
 - **Accepted ADRs are immutable**: to change a decision, create a new ADR that supersedes it and update the old one's status line only.
 - When a status changes, update it everywhere it is shown (the item's table, its index row, traceability). Only mark traceability `Verified` when a TC exists and there is test evidence for it; otherwise say what is missing.
-- Moving a task to another release: move the file to that release's `tasks/` folder (keeping its ID) and update both release READMEs.
+- Moving a task to another release: change its `Release` field (the file stays in its use case's folder) and update both release plans. A task never moves between use cases; if its scope changes that much, retire it and create a new one.
 
 ## Checking hygiene
 

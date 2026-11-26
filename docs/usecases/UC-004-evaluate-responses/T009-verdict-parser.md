@@ -1,19 +1,21 @@
-# T006: Test-case validation
+# T009: Verdict parser
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-002 |
-| Requirements | REQ-001, REQ-002 |
+| Use case | UC-004 |
+| Requirements | REQ-006, REQ-007, REQ-008 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Missing field/duplicate ID tests.
+PASS/FAIL/invalid response tests.
 
 <!-- Tests to write / run -->
 

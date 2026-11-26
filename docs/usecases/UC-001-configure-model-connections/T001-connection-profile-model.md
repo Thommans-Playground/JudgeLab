@@ -1,19 +1,21 @@
-# T008: Judge request builder
+# T001: Connection profile model
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-004 |
-| Requirements | REQ-006, REQ-007 |
+| Use case | UC-001 |
+| Requirements | REQ-003, REQ-004, REQ-013 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Rubric/reference propagation tests.
+Config validation tests.
 
 <!-- Tests to write / run -->
 

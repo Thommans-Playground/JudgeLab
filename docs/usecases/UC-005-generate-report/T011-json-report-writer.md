@@ -1,19 +1,21 @@
-# T009: Verdict parser
+# T011: JSON report writer
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-004 |
-| Requirements | REQ-006, REQ-007, REQ-008 |
+| Use case | UC-005 |
+| Requirements | REQ-009, REQ-010 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-PASS/FAIL/invalid response tests.
+Schema and metadata tests.
 
 <!-- Tests to write / run -->
 

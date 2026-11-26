@@ -1,19 +1,21 @@
-# T002: Credential resolution
+# T008: Judge request builder
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-001 |
-| Requirements | REQ-003, REQ-004, REQ-013 |
+| Use case | UC-004 |
+| Requirements | REQ-006, REQ-007 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Missing key and secret-redaction tests.
+Rubric/reference propagation tests.
 
 <!-- Tests to write / run -->
 

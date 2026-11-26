@@ -4,6 +4,9 @@
 Usage:
   docids.py next KIND                       Print the next free ID (e.g. REQ-002)
   docids.py new KIND --title T [--release R] Create the item file from its template
+  docids.py new UC --title "Prepare dataset" Create docs/usecases/UC-00N-prepare-dataset/README.md
+  docids.py new T --usecase UC-002 --title "JSON loader"   Create a task (slice) in that use case
+  docids.py next AC --usecase UC-004        Print the next acceptance-criterion ID (AC-004-06)
   docids.py new concept --title TestCase    Create docs/ontology/test-case.md (from _template.md)
   docids.py new context --title Evaluation  Create docs/domain/evaluation/README.md (a context)
   docids.py new model --context evaluation --title JudgeEvaluation   Aggregate/entity/VO/service
@@ -13,6 +16,8 @@ Usage:
 
 KIND is one of: REQ, UC, ADR, T, TC.  IDs look like REQ-001, UC-001, ADR-001, TC-001, T001.
 Item files are named <ID>.md or <ID>-<slug>.md (e.g. T001-connection-profile.md).
+Use cases are folders (usecases/UC-001-<slug>/README.md) that also hold their tasks, the
+use case's slices. Acceptance criteria (AC-001-01) are defined in the use case README.
 Standard library only. Exit code 1 means errors were found (or warnings, with --strict).
 """
 
@@ -29,7 +34,8 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Configuration: adjust here if a repo lays out docs/ differently.
 # "dir" is relative to docs/; "index" is the README that must link every item.
-# Tasks live under releases/<version>/tasks/ and are indexed by that release's README.
+# Use cases are folders: usecases/UC-###-<slug>/README.md. Tasks (T###) are slices of a use
+# case and live inside its folder, indexed by the use case README.
 # Test cases (TC) are rows in verification.md rather than files.
 # ---------------------------------------------------------------------------
 KINDS = {
@@ -39,14 +45,20 @@ KINDS = {
         "index": "requirements/README.md",
         "template": "req.md",
     },
-    "UC": {"prefix": "UC-", "dir": "usecases", "index": "usecases/README.md", "template": "uc.md"},
+    "UC": {
+        "prefix": "UC-",
+        "dir": "usecases",
+        "folder": True,
+        "index": "usecases/README.md",
+        "template": "uc.md",
+    },
     "ADR": {
         "prefix": "ADR-",
         "dir": "decisions",
         "index": "decisions/README.md",
         "template": "adr.md",
     },
-    "T": {"prefix": "T", "dir": "releases/*/tasks", "index": None, "template": "task.md"},
+    "T": {"prefix": "T", "dir": "usecases/*", "index": None, "template": "task.md"},
     "TC": {"prefix": "TC-", "rows_in": "verification.md"},
 }
 ONTOLOGY = "ontology"  # concept files: <kebab-name>.md, each listed in ontology/README.md
@@ -60,6 +72,8 @@ WIDTH = 3
 _PREFIXES = sorted((c["prefix"] for c in KINDS.values()), key=len, reverse=True)
 ID_RE = re.compile(r"\b(" + "|".join(map(re.escape, _PREFIXES)) + rf")(\d{{{WIDTH},}})\b")
 KIND_OF_PREFIX = {c["prefix"]: k for k, c in KINDS.items()}
+AC_RE = re.compile(rf"\bAC-(\d{{{WIDTH}}})-(\d{{2,}})\b")  # AC-004-01: criterion 01 of UC-004
+AC_DEFINITION = re.compile(rf"\*\*(AC-\d{{{WIDTH}}}-\d{{2,}})\*\*")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 TEMPLATES = Path(__file__).resolve().parent.parent / "assets" / "templates"
 
@@ -119,10 +133,31 @@ class Docs:
                             self.defs[m.group(1)].append(path)
                 continue
             pat = re.compile(rf"({re.escape(cfg['prefix'])}\d{{{WIDTH},}})(-[a-z0-9-]+)?")
+            if cfg.get("folder"):
+                for path in self.docs.glob(f"{cfg['dir']}/*/README.md"):
+                    m = pat.fullmatch(path.parent.name)
+                    if m:
+                        self.defs[m.group(1)].append(path)
+                continue
             for path in self.docs.glob(f"{cfg['dir']}/*.md"):
                 m = pat.fullmatch(path.stem)
                 if m:
                     self.defs[m.group(1)].append(path)
+
+    def usecase_dir(self, uc_id: str) -> Path:
+        paths = self.defs.get(uc_id)
+        if not paths:
+            sys.exit(f"error: no use case {uc_id}; create it with `new UC --title ...`")
+        return paths[0].parent
+
+    def criteria(self) -> dict[str, list[Path]]:
+        """Acceptance criteria defined (as **AC-###-##**) in use case READMEs."""
+        found: dict[str, list[Path]] = defaultdict(list)
+        for paths in (self.defs[i] for i in self.defs if kind_of(i) == "UC"):
+            for path in paths:
+                for m in AC_DEFINITION.finditer(self.text[path]):
+                    found[m.group(1)].append(path)
+        return found
 
     def mentions(self):
         """Yield (id, path, line_no) for every ID mentioned in docs/."""
@@ -144,6 +179,18 @@ class Docs:
 
 
 def cmd_next(d: Docs, a):
+    if a.kind == "AC":
+        if not a.usecase:
+            sys.exit("error: next AC needs --usecase UC-###")
+        number = a.usecase.removeprefix("UC-")
+        used = [
+            int(m.group(2))
+            for p in d.files
+            for m in AC_RE.finditer(d.text[p])
+            if m.group(1) == number
+        ]
+        print(f"AC-{number}-{max(used, default=0) + 1:02d}")
+        return
     print(d.next_id(a.kind))
 
 
@@ -171,7 +218,9 @@ def new_concept(d: Docs, term: str):
 
 
 def slugify(term: str) -> str:
-    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", term.strip()).replace(" ", "-").lower()
+    """'TestCase' -> 'test-case', 'Anthropic (Claude) connector' -> 'anthropic-claude-connector'."""
+    spaced = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", term.strip())
+    return re.sub(r"[^a-z0-9]+", "-", spaced.lower()).strip("-")
 
 
 def field(text: str, name: str) -> str:
@@ -260,25 +309,32 @@ def cmd_new(d: Docs, a):
         )
         return
     release = a.release or d.latest_release()
+    usecase = None
     if kind == "T":
-        if not release:
-            sys.exit(
-                "error: tasks need a release; create docs/releases/<version>/ or pass --release"
-            )
-        target_dir = d.docs / "releases" / release / "tasks"
+        if not a.usecase:
+            sys.exit("error: a task is a slice of a use case: pass --usecase UC-###")
+        usecase = a.usecase
+        target = d.usecase_dir(usecase) / f"{new_id}-{slugify(a.title)}.md"
+    elif kind == "UC":
+        target = d.docs / KINDS[kind]["dir"] / f"{new_id}-{slugify(a.title)}" / "README.md"
     else:
-        target_dir = d.docs / KINDS[kind]["dir"]
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target = target_dir / f"{new_id}.md"
+        target = d.docs / KINDS[kind]["dir"] / f"{new_id}.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
     template = (TEMPLATES / KINDS[kind]["template"]).read_text(encoding="utf-8")
     body = (
         template.replace("{{ID}}", new_id)
         .replace("{{TITLE}}", a.title)
         .replace("{{RELEASE}}", release or "")
         .replace("{{DATE}}", dt.date.today().isoformat())
+        .replace("{{USECASE}}", usecase or "")
+        .replace("{{NUM}}", new_id.removeprefix("UC-"))
     )
     target.write_text(body, encoding="utf-8")
-    index = f"docs/releases/{release}/README.md" if kind == "T" else f"docs/{KINDS[kind]['index']}"
+    index = (
+        f"the Slices table of {d.rel(target.parent / 'README.md')} and the release plan"
+        if kind == "T"
+        else f"docs/{KINDS[kind]['index']}"
+    )
     print(new_id)
     print(f"Created {d.rel(target)}")
     print(
@@ -306,7 +362,8 @@ def cmd_check(d: Docs, a) -> int:
     # 2. File heading starts with the item's ID
     for i, paths in d.defs.items():
         for p in paths:
-            if p.suffix != ".md" or not p.stem.startswith(i):
+            name = p.parent.name if p.name == "README.md" else p.stem
+            if p.suffix != ".md" or not name.startswith(i):
                 continue
             first = next((line for line in d.text[p].splitlines() if line.startswith("# ")), "")
             if not first.startswith(f"# {i}"):
@@ -318,7 +375,7 @@ def cmd_check(d: Docs, a) -> int:
         if "rows_in" in KINDS[kind]:
             continue
         for p in paths:
-            index = p.parent.parent / "README.md" if kind == "T" else d.docs / KINDS[kind]["index"]
+            index = p.parent / "README.md" if kind == "T" else d.docs / KINDS[kind]["index"]
             if not index.exists():
                 errors.append(f"{i}: index {d.rel(index)} is missing")
             elif not re.search(rf"\b{re.escape(i)}\b", d.text[index]):
@@ -328,6 +385,21 @@ def cmd_check(d: Docs, a) -> int:
     for i, p, n in d.mentions():
         if i not in d.defs:
             errors.append(f"{d.rel(p)}:{n}: {i} is referenced but not defined")
+
+    # 4b. Acceptance criteria: defined once, in their own use case, and every mention resolves
+    criteria = d.criteria()
+    for ac, paths in criteria.items():
+        if len(paths) > 1:
+            errors.append(f"duplicate criterion {ac}: " + ", ".join(d.rel(p) for p in paths))
+        owner = f"UC-{ac.split('-')[1]}"
+        for path in paths:
+            if not path.parent.name.startswith(owner):
+                errors.append(f"{d.rel(path)}: {ac} belongs in {owner}, not this use case")
+    for path, text in d.text.items():
+        for n, line in enumerate(text.splitlines(), 1):
+            for m in AC_RE.finditer(line):
+                if m.group(0) not in criteria:
+                    errors.append(f"{d.rel(path)}:{n}: {m.group(0)} is referenced but not defined")
 
     # 5. Relative links resolve
     for p, text in d.text.items():
@@ -426,11 +498,13 @@ def main() -> int:
     ap.add_argument("--root", help="repository root (default: git top-level or cwd)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("next")
-    p.add_argument("kind", choices=KINDS)
+    p.add_argument("kind", choices=[*KINDS, "AC"])
+    p.add_argument("--usecase", help="use case for an AC, e.g. UC-004")
     p = sub.add_parser("new")
     p.add_argument("kind", choices=[*KINDS, "concept", "context", "model", "event"])
     p.add_argument("--title", required=True)
     p.add_argument("--release")
+    p.add_argument("--usecase", help="the use case a task belongs to (for new T)")
     p.add_argument("--context", help="bounded context folder (for model/event)")
     p = sub.add_parser("list")
     p.add_argument("kind", nargs="?", choices=KINDS)

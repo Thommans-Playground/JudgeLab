@@ -1,4 +1,4 @@
-# T004: Independent model switching
+# T003: First live model connector
 
 | Field | Value |
 |---|---|
@@ -11,9 +11,11 @@
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-Switch-profile integration test.
+Fake HTTP + live smoke test.
 
 <!-- Tests to write / run -->
 

@@ -1,19 +1,21 @@
-# T012: CLI and orchestration
+# T005: JSON dataset loader
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-006 |
-| Requirements | REQ-008, REQ-011, REQ-012 |
+| Use case | UC-002 |
+| Requirements | REQ-001, REQ-002 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
 
 ## Objective
 
-## Acceptance criteria
+## Delivers
 
-- [ ]
+<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
+
+-
 
 ## Approach
 
@@ -21,7 +23,7 @@
 
 ## Verification
 
-End-to-end fake connector test.
+Valid/malformed file tests.
 
 <!-- Tests to write / run -->
 
