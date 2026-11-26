@@ -2,7 +2,7 @@
 
 **A hands-on engineering laboratory for building a modular AI assurance framework from first principles.**
 
-JudgeLab is a learning-driven side project inspired by [IMDA Project Moonshot](https://github.com/aiverify-foundation/moonshot), [Moonshot CI/CD](https://github.com/aiverify-foundation/moonshot-cicd), and GovTech's Litmus and Sentinel.
+JudgeLab is a learning-driven side project inspired by [IMDA Project Moonshot](https://github.com/aiverify-foundation/moonshot), [Moonshot CI/CD](https://github.com/aiverify-foundation/aiverify-evals-toolkit), and GovTech's [Litmus](https://govtech-responsibleai.github.io/playbook/tools/litmus/) and [Sentinel](https://govtech-responsibleai.github.io/playbook/tools/sentinel/). See [Sources and References](#sources-and-references).
 
 The goal is to develop strong **software engineering, hands-on coding, data structures and algorithms (DSA), design patterns, and systems engineering skills** by progressively implementing a working AI assurance platform.
 
@@ -112,3 +112,30 @@ JudgeLab measures progress across two independent dimensions:
 > Build before abstracting. Understand before generating. Verify before trusting. Repeat until independent.
 
 **The primary deliverable is not the framework itself, but the engineering capability developed while building it.**
+
+## Sources and References
+
+JudgeLab studies these systems as reference points: to compare designs, check edge cases, and inform decisions. It does not copy them. Where one shapes a design choice, the relevant ADR links to it.
+
+### Primary sources
+
+| Source | Owner | What it covers | Links |
+|---|---|---|---|
+| Project Moonshot | AI Verify Foundation / IMDA | LLM benchmarking and red teaming toolkit: connectors, datasets, metrics, recipes, cookbooks, attack modules (Apache-2.0) | [Repository](https://github.com/aiverify-foundation/moonshot) · [Documentation](https://aiverify-foundation.github.io/moonshot/) · [PyPI](https://pypi.org/project/aiverify-moonshot/) |
+| moonshot-data | AI Verify Foundation / IMDA | Test assets for Moonshot: connectors, datasets, metrics (Apache-2.0) | [Repository](https://github.com/aiverify-foundation/moonshot-data) |
+| Moonshot CI/CD (AI Verify Evals Toolkit) | AI Verify Foundation / IMDA | Benchmark and red-team suites as a CI/CD step, human review of verdicts, governance evidence. Formerly `moonshot-cicd` (Apache-2.0) | [Repository](https://github.com/aiverify-foundation/aiverify-evals-toolkit) · [Wiki](https://github.com/aiverify-foundation/aiverify-evals-toolkit/wiki) |
+| Litmus | GovTech Singapore (AI Guardian) | Safety and security testing as a service, on demand or from CI/CD. Not open source | [Playbook](https://govtech-responsibleai.github.io/playbook/tools/litmus/) · [Product page](https://www.developer.tech.gov.sg/products/categories/cybersecurity/litmus) |
+| Sentinel | GovTech Singapore (AI Guardian) | Runtime input/output guardrails as a service. Not open source, closed beta | [Playbook](https://govtech-responsibleai.github.io/playbook/tools/sentinel/) · [Product page](https://www.developer.tech.gov.sg/products/categories/cybersecurity/sentinel) |
+
+### Supporting references
+
+| Source | What it covers | Link |
+|---|---|---|
+| IMDA Starter Kit for Testing LLM-Based Applications for Safety and Reliability | Testing methodology for benchmarking and red teaming | [PDF](https://www.imda.gov.sg/-/media/imda/files/about/emerging-tech-and-research/artificial-intelligence/starter-kit-for-testing-llm-based-applications-for-safety-and-reliability.pdf) |
+| GovTech Responsible AI Playbook | Evaluating AI systems, guardrail architecture and production integration | [Site](https://govtech-responsibleai.github.io/playbook/) |
+| meta-evaluator (GovTech) | Measuring LLM-judge agreement with human labels (MIT) | [Repository](https://github.com/govtech-responsibleai/meta-evaluator) |
+| Kaleidoscope (GovTech) | Automated, application-specific evals; Litmus's contextual evaluation module (MIT) | [Repository](https://github.com/govtech-responsibleai/kaleidoscope) |
+| RabakBench (GovTech) | Guardrail benchmark for Singapore-relevant safety risks | [Repository](https://github.com/govtech-responsibleai/RabakBench) |
+
+The `vbench-sources` Claude Code skill maps each source to the roadmap phase it informs and sets out how to use it without undermining independent implementation.
+
