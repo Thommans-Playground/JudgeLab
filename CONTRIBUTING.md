@@ -2,7 +2,7 @@
 
 This document defines how we branch, commit, open pull requests, and merge. It is the single source of truth for these conventions. The `vbench-branch`, `vbench-commit`, and `vbench-pr` Claude Code skills read this file rather than duplicating it.
 
-To adopt these conventions in another repository, copy this file plus `.claude/skills/vbench-branch/`, `.claude/skills/vbench-commit/`, and `.claude/skills/vbench-pr/`, then edit only [Project-specific settings](#project-specific-settings).
+To adopt these conventions in another repository, copy this file plus `.claude/skills/vbench-branch/`, `.claude/skills/vbench-commit/`, and `.claude/skills/vbench-pr/`, then edit only [Project-specific settings](#project-specific-settings). For the engineering-docs layout, also copy `.claude/skills/vbench-docs/`, `.github/workflows/docs-check.yml`, and `docs/README.md`.
 
 ## Contents
 
@@ -210,7 +210,7 @@ Highest level: L?
 
 - Acceptance criteria are met and tests pass.
 - Important design decisions are documented.
-- Related docs or notes are updated.
+- Related docs or notes are updated, and `docs` hygiene passes (`python3 .claude/skills/vbench-docs/scripts/docids.py check`, also run in CI).
 - You can explain the change without looking at it.
 
 **Merge strategy:**

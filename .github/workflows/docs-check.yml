@@ -1,0 +1,21 @@
+name: docs-check
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".claude/skills/vbench-docs/**"
+      - ".github/workflows/docs-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".claude/skills/vbench-docs/**"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check doc IDs, indexes, links, and traceability
+        run: python3 .claude/skills/vbench-docs/scripts/docids.py check
