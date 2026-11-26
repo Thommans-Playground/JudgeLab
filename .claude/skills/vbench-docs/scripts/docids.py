@@ -4,6 +4,7 @@
 Usage:
   docids.py next KIND                       Print the next free ID (e.g. REQ-002)
   docids.py new KIND --title T [--release R] Create the item file from its template
+  docids.py new concept --title TestCase    Create docs/ontology/test-case.md from docs/ontology/_template.md
   docids.py check [--strict]                Report ID, index, link and traceability problems
   docids.py list [KIND]                     List defined IDs and where they live
 
@@ -34,6 +35,7 @@ KINDS = {
     "T": {"prefix": "T", "dir": "releases/*/tasks", "index": None, "template": "task.md"},
     "TC": {"prefix": "TC-", "rows_in": "verification.md"},
 }
+ONTOLOGY = "ontology"  # concept files: <kebab-name>.md, each listed in ontology/README.md
 TRACEABILITY = "traceability.md"
 TRACED_KINDS = ("REQ", "T")  # every one of these should appear in traceability.md
 WIDTH = 3
@@ -128,8 +130,27 @@ def cmd_next(d: Docs, a):
     print(d.next_id(a.kind))
 
 
+def concept_files(d: Docs) -> list[Path]:
+    folder = d.docs / ONTOLOGY
+    return sorted(p for p in folder.glob("*.md")
+                  if p.name != "README.md" and not p.name.startswith("_")) if folder.is_dir() else []
+
+
+def new_concept(d: Docs, term: str):
+    slug = re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "-", term.strip()).replace(" ", "-").lower()
+    target = d.docs / ONTOLOGY / f"{slug}.md"
+    if target.exists():
+        sys.exit(f"error: {d.rel(target)} already exists")
+    template = d.docs / ONTOLOGY / "_template.md"
+    target.write_text(template.read_text(encoding="utf-8").replace("<Concept>", term, 1), encoding="utf-8")
+    print(f"Created {d.rel(target)}")
+    print(f"Next: add {term} to the glossary in docs/{ONTOLOGY}/README.md")
+
+
 def cmd_new(d: Docs, a):
     kind = a.kind
+    if kind == "concept":
+        return new_concept(d, a.title)
     new_id = d.next_id(kind)
     if kind == "TC":
         print(new_id)
@@ -210,7 +231,16 @@ def cmd_check(d: Docs, a) -> int:
                 if not dest.exists():
                     errors.append(f"{d.rel(p)}:{n}: broken link {target}")
 
-    # 6. Traceability coverage (warnings)
+    # 6. Every ontology concept file is in the glossary
+    glossary = d.text.get(d.docs / ONTOLOGY / "README.md", "")
+    for p in concept_files(d):
+        first = next((l[2:].strip() for l in d.text[p].splitlines() if l.startswith("# ")), "")
+        if not first or first.startswith("<"):
+            errors.append(f"{d.rel(p)}: missing a '# <Term>' heading")
+        elif not re.search(rf"^\|\s*\[?`?{re.escape(first)}`?\]?", glossary, re.M):
+            errors.append(f"{d.rel(p)}: term '{first}' is not in the glossary (docs/{ONTOLOGY}/README.md)")
+
+    # 7. Traceability coverage (warnings)
     trace = d.docs / TRACEABILITY
     traced = {i for i, p, _ in d.mentions() if p == trace}
     for i in d.defs:
@@ -230,7 +260,7 @@ def main() -> int:
     ap.add_argument("--root", help="repository root (default: git top-level or cwd)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("next"); p.add_argument("kind", choices=KINDS)
-    p = sub.add_parser("new"); p.add_argument("kind", choices=KINDS)
+    p = sub.add_parser("new"); p.add_argument("kind", choices=[*KINDS, "concept"])
     p.add_argument("--title", required=True); p.add_argument("--release")
     p = sub.add_parser("list"); p.add_argument("kind", nargs="?", choices=KINDS)
     p = sub.add_parser("check"); p.add_argument("--strict", action="store_true",

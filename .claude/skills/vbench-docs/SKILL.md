@@ -24,7 +24,12 @@ Read `docs/README.md` (layout, ID scheme), plus the index README of whichever ar
 
 Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `T001` (tasks, under `releases/<version>/tasks/`, numbered across all releases), `TC-001` (rows in `verification.md`, not files). Item files may carry a slug: `T001-connection-profile.md`. `next` considers every ID ever mentioned, so retired numbers are never reused. `--release` defaults to the latest release folder.
 
-Ontology concepts aren't numbered: create `docs/ontology/<concept-name>.md` from `docs/ontology/_template.md` and add the term to the glossary in `docs/ontology/README.md`.
+Ontology concepts aren't numbered; they're named by their canonical term. Use `new concept --title TestCase` (creates `docs/ontology/test-case.md` from `docs/ontology/_template.md`), then add the term to the glossary in `docs/ontology/README.md`; `check` fails until you do. When filling a concept:
+
+- **Related** names the relationship type (`Contains`, `Belongs to`, `Produces`, …), not just the neighbour, and should agree with the domain map in the ontology README.
+- **Status** (Draft / Active / Deprecated) tells people whether to build on it. Deprecated concepts point to their replacement under "Not to be confused with".
+- **Aliases** and **Code** map other names (provider terms, everyday speech) and the implementing class to the one canonical term.
+- **Diagrams** only where they earn their place: an `erDiagram` limited to immediate neighbours for concepts with several relationships, a `stateDiagram-v2` for concepts with a lifecycle. Value objects get none; the whole-system map lives in the ontology README.
 
 ## Adding an item
 
