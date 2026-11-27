@@ -1,23 +1,82 @@
+# ---------------------------------------------------------------
 # Python / uv
+# ---------------------------------------------------------------
 .venv/
+venv/
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+
+# Packaging / build output
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+
+# ---------------------------------------------------------------
+# Tool caches
+# ---------------------------------------------------------------
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-dist/
-build/
+.pyright/
+.hypothesis/
+.tox/
+.nox/
 
+# Test coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# ---------------------------------------------------------------
+# Jupyter (sandbox/ notebooks)
+# ---------------------------------------------------------------
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------
 # Secrets: never commit API keys
+# ---------------------------------------------------------------
 .env
 .env.*
+!.env.example
+*.pem
+*.key
 
+# ---------------------------------------------------------------
+# JudgeLab generated output
+# ---------------------------------------------------------------
 # Scratch API replies from experiments
 *-reply.json
 
-# OS / editors
+# Evaluation reports (copy the ones you keep as evidence into docs/)
+reports/
+
+# ---------------------------------------------------------------
+# Logs / temp
+# ---------------------------------------------------------------
+*.log
+*.tmp
+*.swp
+*~
+
+# ---------------------------------------------------------------
+# OS
+# ---------------------------------------------------------------
 .DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------
+# Editors / AI tooling
+# ---------------------------------------------------------------
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
 .idea/
+
+# Claude Code: share project skills/settings, keep personal overrides local
+.claude/settings.local.json
