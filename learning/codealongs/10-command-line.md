@@ -82,6 +82,24 @@ Run `uv run pytest` and a new `UC-006: Run complete evaluation` group appears at
 
 In chapter 9 you built the results for a report by hand, with a little helper that asked the target and then the judge. Now let's do that properly. The new `evaluate()` function works in two stages. The first stage is the `run_target()` function you wrote in chapter 7, unchanged. The second stage takes each of the target's results and decides its outcome, calling the judge when it makes sense to.
 
+For each answer from the target, `_judge()` makes a short series of decisions:
+
+```mermaid
+flowchart TD
+    A["TargetResult"] --> TE{"target error?"}
+    TE -->|"yes"| E1["ERROR at the target stage"]
+    TE -->|"no"| TR{"answer truncated?"}
+    TR -->|"yes"| E2["ERROR at the target stage"]
+    TR -->|"no"| JS{"judging stopped?"}
+    JS -->|"yes"| E3["ERROR at the judge stage: not judged"]
+    JS -->|"no"| ANS["the answer, or '[refused] ...' for a refusal"]
+    ANS --> J{"judge.evaluate"}
+    J -->|"JudgeEvaluation"| V["PASS or FAIL, from the verdict"]
+    J -->|"JudgeError"| E4["ERROR at the judge stage"]
+    E4 --> CAUSE{"caused by an auth or quota error?"}
+    CAUSE -->|"yes"| STOPJ["stop judging the remaining cases"]
+```
+
 Open `src/judgelab/runner.py`. First, update the module docstring at the top to describe what the module now does:
 
 _src/judgelab/runner.py_: New docstring
@@ -509,6 +527,32 @@ Finally, a word about paths, since the docstring makes a promise about them. `Pa
 
 Now for the command itself. Python's standard library includes `argparse`, which handles the parsing, the `--help` output and the usage errors for you.
 
+Here is what happens, step by step, when you type the command:
+
+```mermaid
+sequenceDiagram
+    actor You
+    participant CLI as judgelab run
+    participant CFG as load_config
+    participant B as load_benchmark
+    participant F as connector_factory
+    participant E as evaluate
+    participant R as report
+    You->>CLI: judgelab run with a config file
+    CLI->>CFG: read and validate the YAML
+    CFG-->>CLI: EvaluationConfig with two profiles
+    CLI->>B: load the dataset
+    B-->>CLI: Benchmark
+    CLI->>F: build the target and judge connectors
+    F-->>CLI: two ModelConnectors
+    Note over CLI: any startup error: print it and exit 1
+    CLI->>E: evaluate(benchmark, target, judge)
+    E-->>CLI: CaseResults, with progress printed per case
+    CLI->>R: summarise, build_report, write_report
+    R-->>CLI: the report path
+    CLI-->>You: summary and report path, exit 0
+```
+
 _src/judgelab/cli.py_: The `judgelab` command line
 
 ```python
@@ -717,6 +761,15 @@ The pasted key is refused without being repeated back. The unclosed bracket is r
 ## 10.11 A Full Run Without the Network
 
 You haven't seen a successful run yet, and I don't want you to spend money on one until the next chapter. But you already have everything you need to see one for free: `main()` accepts a connector factory, so let's write a small script that passes it one that builds fakes.
+
+The trick that makes this possible is the factory argument. The real program and the tests differ in one place only:
+
+```mermaid
+flowchart LR
+    PROD["create_connector<br/>real APIs"] -.->|"the default"| MAIN["main(argv, connector_factory)"]
+    TEST["fake_factory<br/>FakeConnectors"] -.->|"what the tests pass"| MAIN
+    MAIN --> RC["run_command<br/>identical in both cases"]
+```
 
 _sandbox/fake_run.py_: The real CLI with fake connectors
 

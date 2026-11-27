@@ -22,6 +22,19 @@ Run the tests once before you change anything, and make sure you get the eight P
 
 In chapter 1, I said we would build a concrete connector first and discover the abstraction from working code instead of guessing it. Now is the time to do that.
 
+This is the ports-and-adapters shape you will have by the end of the chapter:
+
+```mermaid
+flowchart LR
+    subgraph core["JudgeLab core"]
+        USE["Runner and Judge<br/>later chapters"] --> PORT{{"ModelConnector port"}}
+    end
+    PORT -.->|"implemented by"| OA["OpenAIConnector"]
+    PORT -.->|"implemented by"| FK["FakeConnector"]
+    OA --> API["an OpenAI-compatible API"]
+    FK --> SCRIPT["scripted replies<br/>no network, no key"]
+```
+
 There is a reason for this order. If you design an abstract connector before you have built any real one, you have to guess what every connector will need, and guesses tend to go in one of two directions. Either the abstraction is too small and the first real connector has to work around it, or it is too big and every connector has to carry things it doesn't need. With a working connector in front of you, you can go through it line by line and ask, for each piece: "would *any* connector need this?"
 
 Let's do exactly that with `OpenAIConnector`:
@@ -83,6 +96,33 @@ _docs/usecases/UC-001-configure-model-connections/README.md_: T003's row in the 
 AC-001-09 uses the word *port*. This comes from the "ports and adapters" style of architecture: the core of an application defines the *port*, the shape of the thing it needs ("something I can give a prompt to and get a `ModelResponse` back"), and each connector is an *adapter* that plugs a particular provider into that port. The core of JudgeLab will only ever talk to the port, never to OpenAI or Anthropic directly. This is the dependency inversion idea mentioned for T003 and T004 in the learning ledger of the [v0.1 release plan](../../docs/releases/v0.1/README.md).
 
 ## 3.4 The Port
+
+In class-diagram form, the port and the two connectors you will build in this chapter look like this:
+
+```mermaid
+classDiagram
+    class ModelConnector {
+        <<abstract>>
+        +provider: str
+        +default_base_url: str
+        +model: str
+        +base_url: str
+        +generate(prompt) ModelResponse
+    }
+    class OpenAIConnector {
+        +provider: openai_compatible
+        +generate(prompt) ModelResponse
+    }
+    class FakeConnector {
+        +provider: fake
+        +replies
+        +prompts
+        +generate(prompt) ModelResponse
+    }
+    ModelConnector <|-- OpenAIConnector
+    ModelConnector <|-- FakeConnector
+    ModelConnector ..> ModelResponse : returns
+```
 
 Here is the abstract connector. Create a new module for it:
 
@@ -479,6 +519,20 @@ After the HTTP plumbing of chapter 2, these tests are refreshingly simple, and t
 ## 3.10 The Contract Tests
 
 The tests in chapter 2 check that the OpenAI connector behaves correctly, and the tests you just wrote check the fake. But neither checks the thing that matters most to the rest of JudgeLab: that every connector keeps the *same* promises, so that code written against `ModelConnector` works with any of them. That is what AC-001-09 asks for, and it is the job of contract tests.
+
+The trick is one fixture that hands every contract test each connector in turn:
+
+```mermaid
+flowchart LR
+    F["FACTORIES"] --> FAKE["fake_connectors"]
+    F --> OPENAI["openai_connectors"]
+    FAKE --> FIX["connectors fixture<br/>one run per factory"]
+    OPENAI --> FIX
+    FIX --> T1["test_is_a_model_connector"]
+    FIX --> T2["test_answers_with_a_model_response"]
+    FIX --> T3["test_failures_are_connector_errors"]
+    FIX --> T4["test_repr_names_the_model_and_hides_secrets"]
+```
 
 The idea is to write each test once, in terms of the port only, and run it against every connector. Create the file:
 

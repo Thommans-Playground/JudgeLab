@@ -280,6 +280,28 @@ So instead of a single message, `BenchmarkError` carries a `problems` list with 
 
 The third part is `load_benchmark()`, and it works in two stages.
 
+Here is the loader's logic as a flowchart. Notice that problems are collected, not raised one at a time:
+
+```mermaid
+flowchart TD
+    F["benchmark file"] --> EX{"file exists?"}
+    EX -->|"no"| E1["BenchmarkError: file not found"]
+    EX -->|"yes"| JS{"valid JSON?"}
+    JS -->|"no"| E2["BenchmarkError: line and column"]
+    JS -->|"yes"| TOP["check the benchmark fields<br/>and record any problems"]
+    TOP --> NEXT{"another case?"}
+    NEXT -->|"yes"| VALID{"case fields valid?"}
+    VALID -->|"no"| PROB["record the problems"]
+    VALID -->|"yes"| DUP{"id seen before?"}
+    DUP -->|"yes"| PROB
+    DUP -->|"no"| SEEN["remember the id and its position"]
+    PROB --> NEXT
+    SEEN --> NEXT
+    NEXT -->|"no"| ANY{"any problems recorded?"}
+    ANY -->|"yes"| E3["BenchmarkError listing every problem"]
+    ANY -->|"no"| B["Benchmark"]
+```
+
 The first stage reads and parses the file. There are two ways this can go wrong, and both are fatal, since without valid JSON there is nothing else to check. A missing file raises `FileNotFoundError`, and invalid JSON raises `json.JSONDecodeError`, which conveniently has `lineno` and `colno` attributes that say exactly where the parser gave up. Both are converted into a `BenchmarkError` immediately. The `from None` at the end of these `raise` statements hides the original exception from the traceback. In chapter 1 you used `from e` to *keep* the cause, because the SDK's exception had useful details. Here the original exception adds nothing that our message doesn't already say, so showing it would just double the noise.
 
 The same goes for a file whose top level is valid JSON, but not an object, like a list or a number. There is nothing useful to check in that case, so the loader stops right there.

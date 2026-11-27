@@ -99,6 +99,21 @@ If you run `uv run pytest` now, the progress table at the bottom has a new `UC-0
 
 The judge only knows two words: `PASS` and `FAIL`. But a run has a third possibility, and it is the one that matters most for honest reporting: sometimes we simply don't know. The target timed out, or the judge replied with something that isn't JSON. Calling that a `FAIL` would blame the model for a problem with the plumbing, and dropping it silently would make the pass rate look better than the evidence supports. So the run needs its own vocabulary, with a separate word for "no verdict".
 
+Here is how the three outcomes become the numbers in a summary:
+
+```mermaid
+flowchart LR
+    CR["CaseResults"] --> P["PASS<br/>the judge says correct"]
+    CR --> F["FAIL<br/>the judge says wrong"]
+    CR --> E["ERROR<br/>no verdict exists"]
+    P --> S["Summary"]
+    F --> S
+    E --> S
+    S --> PR["pass_rate<br/>passed / (passed + failed)"]
+    S --> CV["coverage<br/>evaluated / total"]
+    S --> ER["errors<br/>reported separately"]
+```
+
 Create a new module for this vocabulary and for the summary of a run.
 
 _src/judgelab/scoring.py_: Outcomes and the summary of a run
@@ -219,6 +234,22 @@ The first pass consumed the generator, so the second pass saw nothing and report
 ## 9.5 The JSON Report
 
 An evaluation that only exists in memory is gone when the process ends. Your plan asks for a report that records every case's evidence plus enough about the run to reproduce and trust it (REQ-010), and that never contains a secret (REQ-013). Let's write it.
+
+The report has a fixed shape. This map of its sections is worth keeping in mind while you read the code:
+
+```mermaid
+flowchart TD
+    R["report"] --> V["report_version"]
+    R --> RUN["run<br/>id, started_at, finished_at, judgelab_version"]
+    R --> B["benchmark<br/>id, name, cases"]
+    R --> RB["rubric"]
+    R --> CON["connections<br/>target and judge: provider, model, base_url"]
+    R --> SUM["summary<br/>totals, pass_rate, coverage"]
+    R --> CASES["cases<br/>one entry per test case"]
+    CASES --> EVD["question, expected and actual answer,<br/>outcome, verdict, justification"]
+    CASES --> CALLS["target_call and judge_call"]
+    CASES --> ERRK["error<br/>stage and message"]
+```
 
 _src/judgelab/report.py_: The JSON report
 

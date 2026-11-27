@@ -74,6 +74,21 @@ Read through the five criteria before you continue. The first one is the obvious
 
 Before looking at the code, let's think about the decision at the center of this chapter.
 
+This is what the runner decides for every case:
+
+```mermaid
+flowchart TD
+    START["next case"] --> STOPPED{"run already stopped?"}
+    STOPPED -->|"yes"| SKIP["record: not sent, run stopped after ..."]
+    STOPPED -->|"no"| CALL["target.generate(question)"]
+    CALL -->|"a ModelResponse"| OK["record the response"]
+    CALL -->|"a ConnectorError"| ERR["record the error"]
+    ERR --> FATAL{"auth or quota error?"}
+    FATAL -->|"yes"| STOP["stop the run"]
+    FATAL -->|"no"| GO["carry on with the next case"]
+    CALL -->|"any other exception"| BUG["propagates: a bug stays visible"]
+```
+
 Imagine you are a waiter taking orders for a table of twelve, and the kitchen tells you they've run out of the fish. You note it down for that one guest and carry on with the next order. That is a failure that belongs to one case. Now imagine the kitchen tells you the gas has been cut off. You don't go around the table taking eleven more orders that can't possibly be cooked. You stop, and you tell everyone why.
 
 The connector errors you built in the earlier chapters fall into these same two groups, and you already know them from the error-triage lesson:

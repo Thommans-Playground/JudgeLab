@@ -148,6 +148,38 @@ If you forget the Slices row, the check reports `ERROR   T014: not listed in doc
 
 Before writing any code, let's compare the two APIs. Both providers do the same basic job, take a list of messages and send back an answer, but the details differ in ways that matter. I find it helpful to think of the connector as a power adapter for travelling: the appliance (the rest of JudgeLab) is always the same, and each country's socket has a different shape. The adapter's job is to know about the socket so that the appliance never has to.
 
+Two different replies, one `ModelResponse`. The diagram below shows where each field comes from:
+
+```mermaid
+flowchart LR
+    subgraph openai["OpenAI Chat Completions reply"]
+        O1["choices[0].message.content"]
+        O2["choices[0].message.refusal"]
+        O3["finish_reason is length"]
+        O4["usage.prompt_tokens and completion_tokens"]
+    end
+    subgraph claude["Claude Messages reply"]
+        C1["text blocks in content<br/>thinking blocks skipped"]
+        C2["stop_reason is refusal<br/>plus stop_details.explanation"]
+        C3["stop_reason is max_tokens"]
+        C4["usage.input_tokens and output_tokens"]
+    end
+    subgraph mr["ModelResponse"]
+        T["text"]
+        R["refusal"]
+        TR["truncated"]
+        TK["prompt_tokens and completion_tokens"]
+    end
+    O1 --> T
+    C1 --> T
+    O2 --> R
+    C2 --> R
+    O3 --> TR
+    C3 --> TR
+    O4 --> TK
+    C4 --> TK
+```
+
 Here are the differences you'll handle in this chapter, and where each one lands in the code:
 
 | Topic | OpenAI Chat Completions | Claude Messages API | Where it lands |
@@ -735,6 +767,18 @@ The `error_body()` function puts the first nine characters of the secret into th
 ## 4.11 Joining the Contract
 
 The OpenAI connector and the fake connector both pass the shared contract tests in `test_contract.py`. The Claude connector has to pass them too, which is what AC-001-09 is about. Adding a connector to the contract means writing a factory function that returns two connectors, one that answers with "Paris" and one that fails, and adding it to `FACTORIES`.
+
+With Claude on board, the port has three adapters, and the same contract tests hold all of them to the same promises:
+
+```mermaid
+flowchart LR
+    PORT{{"ModelConnector port"}} -.-> OA["OpenAIConnector<br/>openai SDK"]
+    PORT -.-> AN["AnthropicConnector<br/>anthropic SDK"]
+    PORT -.-> FK["FakeConnector<br/>scripted"]
+    CT["contract tests<br/>FACTORIES"] --> OA
+    CT --> AN
+    CT --> FK
+```
 
 Open [tests/connectors/test_contract.py](../../tests/connectors/test_contract.py) and add `AnthropicConnector` to the imports:
 

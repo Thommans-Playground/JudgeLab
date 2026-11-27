@@ -146,6 +146,24 @@ You should see your own model id in the first output. The second command raises 
 
 ## 1.5 Sending a Prompt
 
+Here is the journey a prompt takes through the code you are about to write:
+
+```mermaid
+sequenceDiagram
+    participant NB as Your notebook
+    participant C as OpenAIConnector
+    participant SDK as openai SDK
+    participant API as OpenAI API
+    NB->>C: generate(prompt)
+    Note over C: translate: prompt into messages
+    C->>SDK: chat.completions.create(model, messages)
+    SDK->>API: POST /v1/chat/completions
+    API-->>SDK: 200 OK with a JSON body
+    SDK-->>C: ChatCompletion object
+    Note over C: translate back: ChatCompletion into ModelResponse
+    C-->>NB: ModelResponse
+```
+
 Believe it or not, you are only one method away from getting an answer from a model. Add the `generate()` method to the class, below `__repr__()`:
 
 _sandbox/2_openai_sdk.ipynb_: The `generate()` method (inside the class)
@@ -218,6 +236,19 @@ The first check confirms that the SDK really gave you a chat completion and not 
 ## 1.7 Translating Errors
 
 There is one big piece left. When something goes wrong, the OpenAI SDK raises its own exceptions: `openai.AuthenticationError`, `openai.RateLimitError` and so on. If you let those escape from the connector, every caller would need to know about them, and the day you add a Claude connector, the callers would also need to know about Anthropic's exceptions. The connector's job is to absorb these differences, so let's write a function that translates the SDK's exceptions into JudgeLab's.
+
+Before reading the code, it helps to see the decisions it makes:
+
+```mermaid
+flowchart TD
+    E["openai.APIError"] --> CONN{"APIConnectionError?"}
+    CONN -->|"yes: timeout or no connection"| U["ConnectorUnavailableError"]
+    CONN -->|"no: the server answered"| STATUS{"HTTP status"}
+    STATUS -->|"401 or 403"| A["ConnectorAuthError"]
+    STATUS -->|"429"| R["ConnectorRateLimitError"]
+    STATUS -->|"5xx, 408 or 409"| U
+    STATUS -->|"any other 4xx"| Q["ConnectorRequestError"]
+```
 
 Add this function in a new cell, below the class:
 

@@ -105,6 +105,19 @@ src/judgelab/connectors/
     openai_connector.py    OpenAIConnector and its error translation
 ```
 
+This is how the modules of the package depend on each other:
+
+```mermaid
+flowchart LR
+    INIT["__init__.py<br/>the front door"] --> OC["openai_connector.py<br/>OpenAIConnector"]
+    OC --> CRED["credentials.py<br/>read_secret"]
+    OC --> ERR["errors.py<br/>the ConnectorError family"]
+    OC --> RESP["response.py<br/>ModelResponse"]
+    CRED --> ERR
+    INIT --> ERR
+    INIT --> RESP
+```
+
 Why bother? Think of who is going to import these. The evaluation runner, which you will write in a later chapter, needs `ModelResponse` and the errors, but has no business knowing that OpenAI exists. The Claude connector of chapter 4 needs the same response, errors and credentials, but none of the OpenAI code. When each concept lives in its own module, every consumer imports exactly what it needs, and a change to the OpenAI module can't accidentally break something that never imported it.
 
 The `__init__.py` file is the front door. It re-exports the public names, so that the rest of JudgeLab writes `from judgelab.connectors import ModelResponse` and doesn't need to know which module a name lives in. If I ever move a class to a different file, only `__init__.py` changes.
@@ -409,6 +422,21 @@ If you swapped steps 2 and 3, a `429 (insufficient_quota)` would be caught by th
 
 One rule from chapter 1 is still in force, and the `ConnectorError` docstring now writes it down: the message keeps the status and the short error code, such as `HTTP 429 (insufficient_quota)`, but never the provider's free-text message. When you send a bad key, OpenAI's 401 message echoes the start of the key back to you, and an error message is exactly the kind of text that ends up in log files and reports. The short code is enough to tell what went wrong.
 
+The order of the checks is what makes this work. Each question is only asked if the one before it said no:
+
+```mermaid
+flowchart TD
+    S["APIStatusError<br/>status code and error code"] --> AUTH{"status 401 or 403?"}
+    AUTH -->|"yes"| A["ConnectorAuthError<br/>fix the key"]
+    AUTH -->|"no"| QUOTA{"status 402, or a code in QUOTA_ERROR_CODES?"}
+    QUOTA -->|"yes"| Q["ConnectorQuotaError<br/>a human must act"]
+    QUOTA -->|"no"| RATE{"status 429?"}
+    RATE -->|"yes"| R["ConnectorRateLimitError<br/>wait and retry later"]
+    RATE -->|"no"| SRV{"5xx, 408 or 409?"}
+    SRV -->|"yes"| U["ConnectorUnavailableError"]
+    SRV -->|"no"| REQ["ConnectorRequestError"]
+```
+
 ## 2.9 The Package's Front Door
 
 To finish the package, let's write the `__init__.py` file that re-exports the public names.
@@ -460,6 +488,15 @@ You now have eight acceptance criteria and some code, but nothing that connects 
 UC-001: Configure model connections  (3/8 passing)
   PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
   not tested  AC-001-02  A connector is configured only from its arguments: provider 
+```
+
+Here is how a criterion written in a use case ends up as a line in pytest's output:
+
+```mermaid
+flowchart LR
+    UC["UC-001 README<br/>criteria AC-001-01 to 08"] -->|"read by"| CF["tests/conftest.py"]
+    T["a test marked with<br/>acceptance AC-001-03"] -->|"outcome recorded by"| CF
+    CF -->|"prints, grouped by use case"| TABLE["UC-001: Configure model connections<br/>8/8 passing"]
 ```
 
 Pytest can be extended with plugins, and the simplest way to write one is a file named `conftest.py`. Pytest loads it automatically before collecting tests, and any functions in it that have special names, called *hooks*, are called by pytest at specific moments of a run. Create `tests/conftest.py`:

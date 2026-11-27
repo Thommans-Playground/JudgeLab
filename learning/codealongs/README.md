@@ -6,6 +6,20 @@ The course follows the **use cases** of the [v0.1 plan](../../docs/releases/v0.1
 
 Type the code yourself: these are guided codealongs, so record the work as **AI-Assist L4**.
 
+Here is how the use cases fit together. UC-006 is the whole evaluation; it relies on the other five:
+
+```mermaid
+flowchart TD
+    DEV(["Developer"]) --> UC6["UC-006 Run complete evaluation<br/>chapters 10 and 11"]
+    UC6 --> UC1["UC-001 Configure model connections<br/>chapters 1 to 5"]
+    UC6 --> UC2["UC-002 Prepare benchmark dataset<br/>chapter 6"]
+    UC6 --> UC3["UC-003 Execute target model<br/>chapter 7"]
+    UC6 --> UC4["UC-004 Evaluate responses<br/>chapter 8"]
+    UC6 --> UC5["UC-005 Generate report<br/>chapter 9"]
+    UC3 --> UC1
+    UC4 --> UC1
+```
+
 ## Part 1: UC-001 Configure model connections
 
 | # | Chapter | Tasks | Criteria |

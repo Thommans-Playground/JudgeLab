@@ -14,6 +14,19 @@ You need everything from chapter 10, with its pull request merged, and a green t
 $ git switch main && git pull --ff-only && git switch -c test/p1-live-validation-T013
 ```
 
+This is the road from here to a tagged release:
+
+```mermaid
+flowchart LR
+    S["live smoke tests<br/>pytest -m live"] --> RUN["the live evaluation<br/>judgelab run"]
+    RUN --> REV["human review<br/>of every case"]
+    REV --> SW["swap providers<br/>configuration only"]
+    SW --> EVI["keep the evidence<br/>docs/releases/v0.1/evidence"]
+    EVI --> DOCS["tick criteria, close slices,<br/>traceability, release report"]
+    DOCS --> GATES["the release gates"]
+    GATES --> TAG["git tag v0.1.0"]
+```
+
 This chapter finishes [UC-006 Run complete evaluation](../../docs/usecases/UC-006-run-complete-evaluation/README.md), the use case you started in chapter 10. Its second and last slice is [T013](../../docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md) (live end-to-end benchmark), which delivers four more criteria, AC-006-08 to AC-006-11. Once they are met, every use case in v0.1 works, and the release can be tagged.
 
 For the live parts of this chapter, your `.env` file in the root of the project needs **both** keys, because the bundled configuration uses an OpenAI model as the target and a Claude model as the judge:

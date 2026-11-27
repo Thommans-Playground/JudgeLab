@@ -120,6 +120,16 @@ So the connector port needs a way to send instructions. Let's add one.
 
 Changing a port is not like changing a regular function, because there are several implementations of it, plus tests that hold all of them to the same contract. If you add an argument to the base class and forget one connector, the code still runs, right up until someone passes instructions to the connector you forgot. So this change has to happen everywhere, in one go: the base class, the three connectors, and the tests.
 
+Every connector receives the same instructions through the port, and each one delivers them in its provider's own way:
+
+```mermaid
+flowchart LR
+    J["Judge"] -->|"generate(prompt, instructions=rubric)"| PORT{{"ModelConnector port"}}
+    PORT --> OA["OpenAIConnector<br/>a system message, then the user message"]
+    PORT --> AN["AnthropicConnector<br/>the system field, then the user message"]
+    PORT --> FK["FakeConnector<br/>records the instructions"]
+```
+
 The key design decision is to make the new argument optional, with a default of `None`. Every existing call, like the runner's `target.generate(case.question)`, keeps working without a single change, and keeps meaning exactly what it meant before: no instructions, default behavior.
 
 Let's start with the port. In `base.py`, replace the abstract `generate()` method with this version:
@@ -473,6 +483,36 @@ So a malformed reply raises `JudgeError`, and the case will be recorded as an `E
 ## 8.8 The Judge
 
 The last part of the module brings everything together. The `Judge` class is created with a connector and a rubric. Notice that the connector is a `ModelConnector`, just like the runner's target. The judge doesn't know or care which provider it is using, and in the next chapters you will be able to use a Claude model to judge an OpenAI model, or the other way around, just by changing a profile.
+
+Here is everything that can happen when the judge evaluates one answer:
+
+```mermaid
+sequenceDiagram
+    participant R as Caller
+    participant J as Judge
+    participant C as Judge connector
+    participant P as parse_verdict
+    R->>J: evaluate(case, actual_answer)
+    J->>J: build_judge_prompt(case, actual_answer)
+    J->>C: generate(prompt, instructions)
+    alt the call fails
+        C-->>J: ConnectorError
+        J-->>R: JudgeError, so the case is ERROR
+    else a refusal or a truncated reply
+        C-->>J: ModelResponse
+        J-->>R: JudgeError, so the case is ERROR
+    else a reply
+        C-->>J: ModelResponse with text
+        J->>P: parse_verdict(text)
+        alt a valid verdict
+            P-->>J: Verdict and justification
+            J-->>R: JudgeEvaluation
+        else malformed
+            P-->>J: JudgeError
+            J-->>R: JudgeError, so the case is ERROR
+        end
+    end
+```
 
 The `evaluate()` method builds the prompt, sends it along with the instructions, and parses the reply. But before the reply gets to the parser, there are three more ways for things to go wrong, and all three become a `JudgeError`, for the same reason as before: none of them tells us anything about the target.
 

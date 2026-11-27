@@ -20,6 +20,18 @@ No API keys are needed. Nothing in this chapter sends a request to a model. And,
 
 Think about how you'd ask a friend to phone someone for you. You hand them a contact card with a name, a number, and maybe "ask for extension 42". The card is just data. It doesn't know how to make a call, and you can photocopy it, check it for mistakes or store it in a drawer. Your friend is the one who knows how to dial, wait, talk and hang up. If the card is wrong, you want to find out when you write it, not halfway through the call.
 
+Here is the whole path from configuration to a working connector, which this chapter builds:
+
+```mermaid
+flowchart LR
+    CFG["configuration<br/>a dict now, YAML later"] -->|"ConnectionProfile.from_dict"| P["ConnectionProfile<br/>data only, no secret"]
+    P -->|"create_connector"| REG{"CONNECTORS registry<br/>provider to class"}
+    REG -->|"openai_compatible"| OA["OpenAIConnector"]
+    REG -->|"anthropic"| AN["AnthropicConnector"]
+    ENV[("environment variable<br/>named by api_key_env")] -->|"read_secret"| OA
+    ENV -->|"read_secret"| AN
+```
+
 That's the split you're about to make:
 
 - A **connection profile** is the contact card: which provider, which model, which base URL, which environment variable holds the key, plus a few limits. It's plain data, it's checked when it's created, and it **never holds a secret**, only the *name* of the variable where the secret lives.
