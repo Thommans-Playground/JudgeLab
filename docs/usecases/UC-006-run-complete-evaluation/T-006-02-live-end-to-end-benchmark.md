@@ -1,10 +1,10 @@
-# T006: Test-case validation
+# T-006-02: Live end-to-end benchmark
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-002 |
-| Requirements | REQ-001, REQ-002 |
+| Use case | UC-006 |
+| Requirements | REQ-011, REQ-012 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Missing field/duplicate ID tests.
+Five-case report and manual review.
 
 <!-- Tests to write / run -->
 

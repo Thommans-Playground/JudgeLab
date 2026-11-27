@@ -14,9 +14,11 @@
 
 ## Rationale
 
-## Acceptance criteria
+## Verified by
 
-- [ ]
+<!-- IDs of the use-case acceptance criteria (AC-UUU-NN) that prove this requirement; their text lives in the use case. -->
+
+-
 
 ## Change log
 

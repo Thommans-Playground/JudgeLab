@@ -1,10 +1,10 @@
-# T009: Verdict parser
+# T-001-01: Connection profile model
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-004 |
-| Requirements | REQ-006, REQ-007, REQ-008 |
+| Use case | UC-001 |
+| Requirements | REQ-003, REQ-004, REQ-013 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-PASS/FAIL/invalid response tests.
+Config validation tests.
 
 <!-- Tests to write / run -->
 

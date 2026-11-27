@@ -22,14 +22,16 @@ Read `docs/README.md` (layout, ID scheme), plus the index README of whichever ar
 | `… list [KIND]` | Show defined IDs and their files |
 | `… check [--strict]` | Report duplicates, heading/filename mismatches, items missing from their index, references to undefined IDs, broken relative links; warn on REQ/T absent from traceability |
 
-Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `T001`, `TC-001` (rows in `verification.md`, not files), and acceptance criteria `AC-004-01` (criterion 01 of UC-004). `next` considers every ID ever mentioned, so retired numbers are never reused. `--release` defaults to the latest release folder.
+Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `TC-001` (rows in `verification.md`, not files), tasks `T-004-02` (task 02 of UC-004) and acceptance criteria `AC-004-01` (criterion 01 of UC-004). Tasks and criteria are numbered within their use case, with two digits after the use case number. `next` considers every ID ever mentioned, so retired numbers are never reused. `--release` defaults to the latest release folder.
 
-**Use cases and their slices.** A use case is a folder, `docs/usecases/UC-###-<slug>/`. Its `README.md` holds the flows, the **acceptance criteria** (`- [ ] **AC-UUU-NN**: …`, observable behaviour, defined only here) and a **Slices** table. Tasks are the use case's slices: thin, end-to-end pieces of work that each make some of its criteria pass. They live in the same folder (`T###-<slug>.md`), say which criteria they deliver in their `Delivers` section, and carry a `Release` field. Commands:
+**Use cases and their slices.** A use case is a folder, `docs/usecases/UC-###-<slug>/`. Its `README.md` holds the flows, the **acceptance criteria** (`- [ ] **AC-UUU-NN**: …`, observable behaviour, defined only here) and a **Slices** table. Tasks are the use case's slices: thin, end-to-end pieces of work that each make some of its criteria pass. They live in the same folder (`T-UUU-NN-<slug>.md`), say which criteria they deliver in their `Delivers` section, and carry a `Release` field. Commands:
 - `new UC --title "Prepare dataset"` creates the folder and README.
-- `new T --usecase UC-002 --title "JSON loader"` creates a task inside it; then add it to the use case's Slices table, the release plan, and `traceability.md`.
+- `new T --usecase UC-002 --title "JSON loader"` creates a task inside it (e.g. `T-002-03`); `next T --usecase UC-002` just prints the next ID; then add it to the use case's Slices table, the release plan, and `traceability.md`.
 - `next AC --usecase UC-004` prints the next free criterion ID.
 
-`check` verifies that each criterion is defined once, in its own use case, and that every `AC-…` mention resolves. Tests are marked with criterion IDs (`@pytest.mark.acceptance("AC-004-03")`), so pytest's progress table shows which use cases work.
+`check` verifies that each criterion is defined once, in its own use case, that every `AC-…` mention resolves, and that each task lives in the use case its ID names.
+
+**Requirements point at criteria.** A requirement's `## Verified by` section lists the IDs (never the text) of the use-case criteria that prove it; one requirement can be verified by criteria in several use cases (e.g. a security requirement). When you add a criterion, add its ID to the requirement(s) it verifies. Tests are marked with criterion IDs (`@pytest.mark.acceptance("AC-004-03")`), so pytest's progress table shows which use cases work.
 
 Ontology concepts aren't numbered; they're named by their canonical term. Use `new concept --title TestCase` (creates `docs/ontology/test-case.md` from `docs/ontology/_template.md`), then add the term to the glossary in `docs/ontology/README.md`; `check` fails until you do. When filling a concept:
 

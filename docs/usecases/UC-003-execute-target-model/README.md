@@ -39,4 +39,4 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T007](T007-target-inference.md) | Target inference | | Todo |
+| [T-003-01](T-003-01-target-inference.md) | Target inference | | Todo |

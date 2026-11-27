@@ -1,10 +1,10 @@
-# T008: Judge request builder
+# T-005-02: JSON report writer
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-004 |
-| Requirements | REQ-006, REQ-007 |
+| Use case | UC-005 |
+| Requirements | REQ-009, REQ-010 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Rubric/reference propagation tests.
+Schema and metadata tests.
 
 <!-- Tests to write / run -->
 

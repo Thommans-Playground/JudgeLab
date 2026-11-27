@@ -1,10 +1,10 @@
-# T004: Independent model switching
+# T-006-01: CLI and orchestration
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-001 |
-| Requirements | REQ-003, REQ-004, REQ-013 |
+| Use case | UC-006 |
+| Requirements | REQ-008, REQ-011, REQ-012 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Switch-profile integration test.
+End-to-end fake connector test.
 
 <!-- Tests to write / run -->
 

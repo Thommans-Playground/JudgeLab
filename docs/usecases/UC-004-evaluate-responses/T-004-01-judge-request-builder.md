@@ -1,10 +1,10 @@
-# T010: Aggregate calculations
+# T-004-01: Judge request builder
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-005 |
-| Requirements | REQ-009, REQ-010 |
+| Use case | UC-004 |
+| Requirements | REQ-006, REQ-007 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Pass/fail/error/zero denominator tests.
+Rubric/reference propagation tests.
 
 <!-- Tests to write / run -->
 

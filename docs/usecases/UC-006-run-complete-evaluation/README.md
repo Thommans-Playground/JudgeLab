@@ -39,5 +39,5 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T012](T012-cli-and-orchestration.md) | CLI and orchestration | | Todo |
-| [T013](T013-live-end-to-end-benchmark.md) | Live end-to-end benchmark | | Todo |
+| [T-006-01](T-006-01-cli-and-orchestration.md) | CLI and orchestration | | Todo |
+| [T-006-02](T-006-02-live-end-to-end-benchmark.md) | Live end-to-end benchmark | | Todo |

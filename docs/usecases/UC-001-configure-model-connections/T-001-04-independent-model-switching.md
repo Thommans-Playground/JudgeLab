@@ -1,10 +1,10 @@
-# T011: JSON report writer
+# T-001-04: Independent model switching
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-005 |
-| Requirements | REQ-009, REQ-010 |
+| Use case | UC-001 |
+| Requirements | REQ-003, REQ-004, REQ-013 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Schema and metadata tests.
+Switch-profile integration test.
 
 <!-- Tests to write / run -->
 

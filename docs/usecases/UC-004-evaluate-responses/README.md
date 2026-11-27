@@ -54,5 +54,5 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T008](T008-judge-request-builder.md) | Judge request builder | | Todo |
-| [T009](T009-verdict-parser.md) | Verdict parser | | Todo |
+| [T-004-01](T-004-01-judge-request-builder.md) | Judge request builder | | Todo |
+| [T-004-02](T-004-02-verdict-parser.md) | Verdict parser | | Todo |

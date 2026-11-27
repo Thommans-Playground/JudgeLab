@@ -1,10 +1,10 @@
-# T007: Target inference
+# T-005-01: Aggregate calculations
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-003 |
-| Requirements | REQ-005 |
+| Use case | UC-005 |
+| Requirements | REQ-009, REQ-010 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Captured response test.
+Pass/fail/error/zero denominator tests.
 
 <!-- Tests to write / run -->
 

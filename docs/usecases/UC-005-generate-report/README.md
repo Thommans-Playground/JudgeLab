@@ -39,5 +39,5 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T010](T010-aggregate-calculations.md) | Aggregate calculations | | Todo |
-| [T011](T011-json-report-writer.md) | JSON report writer | | Todo |
+| [T-005-01](T-005-01-aggregate-calculations.md) | Aggregate calculations | | Todo |
+| [T-005-02](T-005-02-json-report-writer.md) | JSON report writer | | Todo |

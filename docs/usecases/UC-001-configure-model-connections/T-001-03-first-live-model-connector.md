@@ -1,4 +1,4 @@
-# T002: Credential resolution
+# T-001-03: First live model connector
 
 | Field | Value |
 |---|---|
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Missing key and secret-redaction tests.
+Fake HTTP + live smoke test.
 
 <!-- Tests to write / run -->
 

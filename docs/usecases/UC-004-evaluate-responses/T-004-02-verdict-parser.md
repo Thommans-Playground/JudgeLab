@@ -1,10 +1,10 @@
-# T012: CLI and orchestration
+# T-004-02: Verdict parser
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-006 |
-| Requirements | REQ-008, REQ-011, REQ-012 |
+| Use case | UC-004 |
+| Requirements | REQ-006, REQ-007, REQ-008 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-End-to-end fake connector test.
+PASS/FAIL/invalid response tests.
 
 <!-- Tests to write / run -->
 

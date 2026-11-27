@@ -14,7 +14,7 @@ Living documents describe the system **as it is now** and evolve across releases
 | [traceability.md](traceability.md) | Requirement ↔ use case ↔ task ↔ test, across releases |
 | [releases/](releases/) | Per-release plan and release report |
 
-**IDs:** `REQ-###` requirements · `UC-###` use cases · `ADR-###` decisions · `TC-###` test cases · `T###` tasks (numbered across all releases; each is a slice of one use case and lives in its folder, with a Release field) · `AC-UUU-NN` acceptance criteria (defined in use case UC-UUU, e.g. `AC-004-01`). Item files are `<ID>.md` or `<ID>-<slug>.md`; use cases are folders `UC-###-<slug>/`.
+**IDs:** `REQ-###` requirements · `UC-###` use cases · `ADR-###` decisions · `TC-###` test cases · `T-UUU-NN` tasks (task NN of use case UC-UUU, e.g. `T-001-03`; each is a slice of that use case, lives in its folder and has a Release field) · `AC-UUU-NN` acceptance criteria (defined in use case UC-UUU, e.g. `AC-004-01`; requirements list the criteria that verify them under `Verified by`). Item files are `<ID>.md` or `<ID>-<slug>.md`; use cases are folders `UC-###-<slug>/`.
 
 ## Keeping IDs and links consistent
 

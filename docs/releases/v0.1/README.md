@@ -250,27 +250,27 @@ For v0.1, only run trusted local configuration; do not expose arbitrary URL subm
 
 | Task | UC | Deliverable | Verification |
 |---|---|---|---|
-| T001 | UC-001 | Connection profile model | Config validation tests |
-| T002 | UC-001 | Credential resolution | Missing key and secret-redaction tests |
-| T003 | UC-001 | First live model connector | Fake HTTP + live smoke test |
-| T004 | UC-001 | Independent model switching | Switch-profile integration test |
-| T005 | UC-002 | JSON dataset loader | Valid/malformed file tests |
-| T006 | UC-002 | Test-case validation | Missing field/duplicate ID tests |
-| T007 | UC-003 | Target inference | Captured response test |
-| T008 | UC-004 | Judge request builder | Rubric/reference propagation tests |
-| T009 | UC-004 | Verdict parser | PASS/FAIL/invalid response tests |
-| T010 | UC-005 | Aggregate calculations | Pass/fail/error/zero denominator tests |
-| T011 | UC-005 | JSON report writer | Schema and metadata tests |
-| T012 | UC-006 | CLI and orchestration | End-to-end fake connector test |
-| T013 | UC-006 | Live end-to-end benchmark | Five-case report and manual review |
+| T-001-01 | UC-001 | Connection profile model | Config validation tests |
+| T-001-02 | UC-001 | Credential resolution | Missing key and secret-redaction tests |
+| T-001-03 | UC-001 | First live model connector | Fake HTTP + live smoke test |
+| T-001-04 | UC-001 | Independent model switching | Switch-profile integration test |
+| T-002-01 | UC-002 | JSON dataset loader | Valid/malformed file tests |
+| T-002-02 | UC-002 | Test-case validation | Missing field/duplicate ID tests |
+| T-003-01 | UC-003 | Target inference | Captured response test |
+| T-004-01 | UC-004 | Judge request builder | Rubric/reference propagation tests |
+| T-004-02 | UC-004 | Verdict parser | PASS/FAIL/invalid response tests |
+| T-005-01 | UC-005 | Aggregate calculations | Pass/fail/error/zero denominator tests |
+| T-005-02 | UC-005 | JSON report writer | Schema and metadata tests |
+| T-006-01 | UC-006 | CLI and orchestration | End-to-end fake connector test |
+| T-006-02 | UC-006 | Live end-to-end benchmark | Five-case report and manual review |
 
 ### Incremental delivery
 
 ```mermaid
 flowchart LR
-    I1[Increment 1: Connect\nT001-T003] --> I2[Increment 2: Evaluate\nT005-T009]
-    I2 --> I3[Increment 3: Report\nT010-T012]
-    I3 --> I4[Increment 4: Switch and Validate\nT004, T013]
+    I1[Increment 1: Connect\nT-001-01 to T-001-03] --> I2[Increment 2: Evaluate\nT-002-01 to T-004-02]
+    I2 --> I3[Increment 3: Report\nT-005-01 to T-006-01]
+    I3 --> I4[Increment 4: Switch and Validate\nT-001-04, T-006-02]
 ```
 
 **Estimate:** 9–15 focused implementation sessions, plus DSA repetition and documentation. This is a planning estimate, not a deadline.
@@ -289,19 +289,19 @@ flowchart LR
 
 | Requirement(s) | Use case(s) | Task(s) | Verification |
 |---|---|---|---|
-| REQ-001, REQ-002 | UC-002 | T005, T006 | Dataset tests |
-| REQ-003, REQ-004, REQ-013 | UC-001 | T001-T004 | Config, connector, secret tests |
-| REQ-005 | UC-003 | T007 | Target response test |
-| REQ-006, REQ-007 | UC-004 | T008, T009 | Judge contract tests |
-| REQ-008 | UC-004, UC-006 | T009, T012 | Error-path tests |
-| REQ-009, REQ-010 | UC-005 | T010, T011 | Report tests |
-| REQ-011, REQ-012 | UC-006 | T012, T013 | CLI and system tests |
+| REQ-001, REQ-002 | UC-002 | T-002-01, T-002-02 | Dataset tests |
+| REQ-003, REQ-004, REQ-013 | UC-001 | T-001-01 to T-001-04 | Config, connector, secret tests |
+| REQ-005 | UC-003 | T-003-01 | Target response test |
+| REQ-006, REQ-007 | UC-004 | T-004-01, T-004-02 | Judge contract tests |
+| REQ-008 | UC-004, UC-006 | T-004-02, T-006-01 | Error-path tests |
+| REQ-009, REQ-010 | UC-005 | T-005-01, T-005-02 | Report tests |
+| REQ-011, REQ-012 | UC-006 | T-006-01, T-006-02 | CLI and system tests |
 
 ```mermaid
 flowchart LR
     R[REQ-006 Judge actual answer] --> U[UC-004 Evaluate Responses]
     U --> A[AC-004-01 to AC-004-05]
-    A --> T[T008 Request Builder + T009 Parser]
+    A --> T[T-004-01 Request Builder + T-004-02 Parser]
     T --> V[Unit + Integration Tests]
     V --> E[Recorded Evidence]
 ```
@@ -310,12 +310,12 @@ flowchart LR
 
 | Tasks | Concept | Practice |
 |---|---|---|
-| T001 | Dictionaries, key lookup | Frequency counting and Two Sum |
-| T003-T004 | Adapter, Python Protocol, dependency inversion | Compare two connector implementations |
-| T005-T006 | Lists, sets, iteration | Contains Duplicate and array traversal |
-| T008-T009 | Parsing and state modeling | Edge cases and malformed inputs |
-| T010 | Aggregation and complexity | Single-pass counting |
-| T012 | Test doubles and dependency inversion | Replace real connectors with fakes |
+| T-001-01 | Dictionaries, key lookup | Frequency counting and Two Sum |
+| T-001-03 to T-001-04 | Adapter, Python Protocol, dependency inversion | Compare two connector implementations |
+| T-002-01 to T-002-02 | Lists, sets, iteration | Contains Duplicate and array traversal |
+| T-004-01 to T-004-02 | Parsing and state modeling | Edge cases and malformed inputs |
+| T-005-01 | Aggregation and complexity | Single-pass counting |
+| T-006-01 | Test doubles and dependency inversion | Replace real connectors with fakes |
 
 **Learning loop:** Learn → Implement → Apply → Solve an unfamiliar exercise → Review → Reimplement.
 
@@ -350,8 +350,8 @@ judgelab/
     │   ├── UC-005-reporting.md
     │   └── UC-006-run-evaluation.md
     └── tasks/
-        ├── T001-connection-profile.md
-        ├── T002-credential-resolution.md
+        ├── T-001-01-connection-profile.md
+        ├── T-001-02-credential-resolution.md
         └── ...
 ```
 
@@ -368,7 +368,7 @@ judgelab/
 
 ## 12. First hands-on session
 
-**T001 — Connection Profile**
+**T-001-01 — Connection Profile**
 
 1. Review REQ-003, REQ-004, and REQ-013.
 2. Define valid/invalid provider, model, base URL, and credential-reference inputs.
@@ -376,4 +376,4 @@ judgelab/
 4. Implement the profile independently in Python.
 5. Record test evidence, complexity notes, and assistance level.
 
-**Next:** T002 credential resolution, then T003 the first real foundation-model request.
+**Next:** T-001-02 credential resolution, then T-001-03 the first real foundation-model request.

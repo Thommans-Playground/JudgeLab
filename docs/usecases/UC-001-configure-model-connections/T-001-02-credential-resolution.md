@@ -1,10 +1,10 @@
-# T005: JSON dataset loader
+# T-001-02: Credential resolution
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-002 |
-| Requirements | REQ-001, REQ-002 |
+| Use case | UC-001 |
+| Requirements | REQ-003, REQ-004, REQ-013 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Valid/malformed file tests.
+Missing key and secret-redaction tests.
 
 <!-- Tests to write / run -->
 

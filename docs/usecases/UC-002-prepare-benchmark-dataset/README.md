@@ -39,5 +39,5 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T005](T005-json-dataset-loader.md) | JSON dataset loader | | Todo |
-| [T006](T006-test-case-validation.md) | Test-case validation | | Todo |
+| [T-002-01](T-002-01-json-dataset-loader.md) | JSON dataset loader | | Todo |
+| [T-002-02](T-002-02-test-case-validation.md) | Test-case validation | | Todo |

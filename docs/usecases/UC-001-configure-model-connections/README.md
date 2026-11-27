@@ -39,7 +39,7 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T001](T001-connection-profile-model.md) | Connection profile model | | Todo |
-| [T002](T002-credential-resolution.md) | Credential resolution | | Todo |
-| [T003](T003-first-live-model-connector.md) | First live model connector | | Todo |
-| [T004](T004-independent-model-switching.md) | Independent model switching | | Todo |
+| [T-001-01](T-001-01-connection-profile-model.md) | Connection profile model | | Todo |
+| [T-001-02](T-001-02-credential-resolution.md) | Credential resolution | | Todo |
+| [T-001-03](T-001-03-first-live-model-connector.md) | First live model connector | | Todo |
+| [T-001-04](T-001-04-independent-model-switching.md) | Independent model switching | | Todo |

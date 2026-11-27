@@ -1,10 +1,10 @@
-# T003: First live model connector
+# T-002-01: JSON dataset loader
 
 | Field | Value |
 |---|---|
 | Release | v0.1 |
-| Use case | UC-001 |
-| Requirements | REQ-003, REQ-004, REQ-013 |
+| Use case | UC-002 |
+| Requirements | REQ-001, REQ-002 |
 | Branch | `<type>/<prefix>-<slug>` |
 | Status | Todo |
 | AI-Assist | |
@@ -23,7 +23,7 @@
 
 ## Verification
 
-Fake HTTP + live smoke test.
+Valid/malformed file tests.
 
 <!-- Tests to write / run -->
 

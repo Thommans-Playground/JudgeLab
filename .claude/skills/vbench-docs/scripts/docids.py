@@ -7,6 +7,7 @@ Usage:
   docids.py new UC --title "Prepare dataset" Create docs/usecases/UC-00N-prepare-dataset/README.md
   docids.py new T --usecase UC-002 --title "JSON loader"   Create a task (slice) in that use case
   docids.py next AC --usecase UC-004        Print the next acceptance-criterion ID (AC-004-06)
+  docids.py next T --usecase UC-004         Print the next task ID in that use case (T-004-03)
   docids.py new concept --title TestCase    Create docs/ontology/test-case.md (from _template.md)
   docids.py new context --title Evaluation  Create docs/domain/evaluation/README.md (a context)
   docids.py new model --context evaluation --title JudgeEvaluation   Aggregate/entity/VO/service
@@ -14,8 +15,9 @@ Usage:
   docids.py check [--strict]                Report ID, index, link and traceability problems
   docids.py list [KIND]                     List defined IDs and where they live
 
-KIND is one of: REQ, UC, ADR, T, TC.  IDs look like REQ-001, UC-001, ADR-001, TC-001, T001.
-Item files are named <ID>.md or <ID>-<slug>.md (e.g. T001-connection-profile.md).
+KIND is one of: REQ, UC, ADR, T, TC.  IDs look like REQ-001, UC-001, ADR-001, TC-001, and
+T-001-03 (task 03 of UC-001). Item files are named <ID>.md or <ID>-<slug>.md
+(e.g. T-001-03-openai-connector.md).
 Use cases are folders (usecases/UC-001-<slug>/README.md) that also hold their tasks, the
 use case's slices. Acceptance criteria (AC-001-01) are defined in the use case README.
 Standard library only. Exit code 1 means errors were found (or warnings, with --strict).
@@ -34,8 +36,8 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Configuration: adjust here if a repo lays out docs/ differently.
 # "dir" is relative to docs/; "index" is the README that must link every item.
-# Use cases are folders: usecases/UC-###-<slug>/README.md. Tasks (T###) are slices of a use
-# case and live inside its folder, indexed by the use case README.
+# Use cases are folders: usecases/UC-###-<slug>/README.md. Tasks (T-UUU-NN) are slices of
+# use case UC-UUU and live inside its folder, indexed by the use case README.
 # Test cases (TC) are rows in verification.md rather than files.
 # ---------------------------------------------------------------------------
 KINDS = {
@@ -58,7 +60,13 @@ KINDS = {
         "index": "decisions/README.md",
         "template": "adr.md",
     },
-    "T": {"prefix": "T", "dir": "usecases/*", "index": None, "template": "task.md"},
+    "T": {
+        "prefix": "T-",
+        "scoped": True,
+        "dir": "usecases/*",
+        "index": None,
+        "template": "task.md",
+    },
     "TC": {"prefix": "TC-", "rows_in": "verification.md"},
 }
 ONTOLOGY = "ontology"  # concept files: <kebab-name>.md, each listed in ontology/README.md
@@ -68,9 +76,13 @@ TRACEABILITY = "traceability.md"
 TRACED_KINDS = ("REQ", "T")  # every one of these should appear in traceability.md
 WIDTH = 3
 
-# Longest prefixes first so "TC-001" isn't read as kind "T".
-_PREFIXES = sorted((c["prefix"] for c in KINDS.values()), key=len, reverse=True)
-ID_RE = re.compile(r"\b(" + "|".join(map(re.escape, _PREFIXES)) + rf")(\d{{{WIDTH},}})\b")
+# Plain IDs are PREFIX + number (REQ-001). Scoped IDs (tasks) carry their use case: T-004-02.
+_PLAIN = [c["prefix"] for c in KINDS.values() if not c.get("scoped")]
+_SCOPED = [c["prefix"] for c in KINDS.values() if c.get("scoped")]
+ID_RE = re.compile(
+    r"\b(?:(" + "|".join(map(re.escape, _PLAIN)) + rf")(\d{{{WIDTH},}})"
+    r"|(" + "|".join(map(re.escape, _SCOPED)) + rf")(\d{{{WIDTH}}})-(\d{{2,}}))\b"
+)
 KIND_OF_PREFIX = {c["prefix"]: k for k, c in KINDS.items()}
 AC_RE = re.compile(rf"\bAC-(\d{{{WIDTH}}})-(\d{{2,}})\b")  # AC-004-01: criterion 01 of UC-004
 AC_DEFINITION = re.compile(rf"\*\*(AC-\d{{{WIDTH}}}-\d{{2,}})\*\*")
@@ -80,14 +92,26 @@ TEMPLATES = Path(__file__).resolve().parent.parent / "assets" / "templates"
 
 def kind_of(i: str) -> str:
     m = ID_RE.fullmatch(i)
-    return KIND_OF_PREFIX[m.group(1)]
+    return KIND_OF_PREFIX[m.group(1) or m.group(3)]
 
 
 def num_of(i: str) -> int:
-    return int(ID_RE.fullmatch(i).group(2))
+    m = ID_RE.fullmatch(i)
+    return int(m.group(2) or m.group(5))
 
 
-def make_id(kind: str, n: int) -> str:
+def scope_of(i: str) -> str | None:
+    """The use case number a scoped ID belongs to: T-004-02 -> '004'."""
+    return ID_RE.fullmatch(i).group(4)
+
+
+def sort_key(i: str) -> tuple:
+    return (kind_of(i), scope_of(i) or "", num_of(i))
+
+
+def make_id(kind: str, n: int, scope: str | None = None) -> str:
+    if KINDS[kind].get("scoped"):
+        return f"{KINDS[kind]['prefix']}{scope}-{n:02d}"
     return f"{KINDS[kind]['prefix']}{n:0{WIDTH}d}"
 
 
@@ -132,7 +156,8 @@ class Docs:
                         if m:
                             self.defs[m.group(1)].append(path)
                 continue
-            pat = re.compile(rf"({re.escape(cfg['prefix'])}\d{{{WIDTH},}})(-[a-z0-9-]+)?")
+            number = rf"\d{{{WIDTH}}}-\d{{2,}}" if cfg.get("scoped") else rf"\d{{{WIDTH},}}"
+            pat = re.compile(rf"({re.escape(cfg['prefix'])}{number})(-[a-z0-9-]+)?")
             if cfg.get("folder"):
                 for path in self.docs.glob(f"{cfg['dir']}/*/README.md"):
                     m = pat.fullmatch(path.parent.name)
@@ -166,11 +191,16 @@ class Docs:
                 for m in ID_RE.finditer(line):
                     yield m.group(0), path, n
 
-    def next_id(self, kind: str) -> str:
+    def next_id(self, kind: str, usecase: str | None = None) -> str:
         # Consider both defined items and any mention, so retired/deleted IDs are never reused.
-        nums = [num_of(i) for i in self.defs if kind_of(i) == kind]
-        nums += [num_of(i) for i, _, _ in self.mentions() if kind_of(i) == kind]
-        return make_id(kind, max(nums, default=0) + 1)
+        scope = None
+        if KINDS[kind].get("scoped"):
+            if not usecase:
+                sys.exit(f"error: {kind} IDs belong to a use case: pass --usecase UC-###")
+            scope = usecase.removeprefix("UC-")
+        ids = list(self.defs) + [i for i, _, _ in self.mentions()]
+        nums = [num_of(i) for i in ids if kind_of(i) == kind and scope_of(i) == scope]
+        return make_id(kind, max(nums, default=0) + 1, scope)
 
     def latest_release(self) -> str | None:
         rel = self.docs / "releases"
@@ -191,7 +221,7 @@ def cmd_next(d: Docs, a):
         ]
         print(f"AC-{number}-{max(used, default=0) + 1:02d}")
         return
-    print(d.next_id(a.kind))
+    print(d.next_id(a.kind, a.usecase))
 
 
 def concept_files(d: Docs) -> list[Path]:
@@ -300,7 +330,7 @@ def cmd_new(d: Docs, a):
         return new_concept(d, a.title)
     if kind in ("context", "model", "event"):
         return new_domain(d, a)
-    new_id = d.next_id(kind)
+    new_id = d.next_id(kind, getattr(a, "usecase", None))
     if kind == "TC":
         print(new_id)
         print(
@@ -344,7 +374,7 @@ def cmd_new(d: Docs, a):
 
 
 def cmd_list(d: Docs, a):
-    for i in sorted(d.defs, key=lambda x: (kind_of(x), num_of(x))):
+    for i in sorted(d.defs, key=sort_key):
         if a.kind and kind_of(i) != a.kind:
             continue
         print(f"{i:10} {', '.join(d.rel(p) for p in d.defs[i])}")
@@ -385,6 +415,13 @@ def cmd_check(d: Docs, a) -> int:
     for i, p, n in d.mentions():
         if i not in d.defs:
             errors.append(f"{d.rel(p)}:{n}: {i} is referenced but not defined")
+
+    # 4a. A task lives in the folder of the use case its ID names (T-004-02 in UC-004-...)
+    for i, paths in d.defs.items():
+        if kind_of(i) == "T":
+            for p in paths:
+                if not p.parent.name.startswith(f"UC-{scope_of(i)}"):
+                    errors.append(f"{d.rel(p)}: {i} belongs in UC-{scope_of(i)}, not this use case")
 
     # 4b. Acceptance criteria: defined once, in their own use case, and every mention resolves
     criteria = d.criteria()
