@@ -17,48 +17,94 @@ $ git switch main && git pull --ff-only
 $ git switch -c feat/p1-llm-judge-T008
 ```
 
-This chapter covers two tasks: [T008](../../docs/releases/v0.1/tasks/T008.md) (building the judge's request) and [T009](../../docs/releases/v0.1/tasks/T009.md) (parsing its reply). They are the implementation of the "Evaluate responses" use case, UC-004, in the [v0.1 plan](../../docs/releases/v0.1/README.md). If you open the plan and look at that use case, you will find this acceptance criterion, which you wrote yourself:
+This chapter is about a use case that you already know well, because you wrote it: [UC-004 Evaluate responses](../../docs/usecases/UC-004-evaluate-responses/README.md). When the docs were reorganized into use-case folders, the flow you drafted in your v0.1 plan moved into its README. Open it and have a look. It is triggered when "a target response is available", it needs a test case, a target response, a rubric and a judge connector, and its main success scenario is five steps: assemble the judge request, invoke the evaluator, parse its structured output, validate the verdict, and record the result. The alternate flows are invalid judge output, an authentication failure, a timeout and a provider error. That is a very good description of what you are about to build.
+
+Below the flow are the five acceptance criteria from your plan:
+
+```markdown
+- [ ] **AC-004-01**: Include question, expected answer, actual answer, and rubric in the judge request.
+- [ ] **AC-004-02**: Accept only supported verdict values and a nonempty justification.
+- [ ] **AC-004-03**: Invalid output becomes `ERROR`, never `FAIL`.
+- [ ] **AC-004-04**: Record evaluator provider/model identity.
+- [ ] **AC-004-05**: Switching the judge profile does not change benchmark data or the use-case logic.
+```
+
+You wrote these before there was any code to test them, and that is exactly how it should be. Your plan calls its method a lightweight V-cycle: on the left side of the V, requirements and use cases are written first, and on the right side, each one is verified by a test. This chapter is where the V closes its loop for UC-004: by the end of it, the requirements you wrote before JudgeLab had a single line of code will be passing tests in the acceptance table.
+
+One of them is already done. AC-004-05 is about swapping the judge's connection without touching anything else, and you proved that in chapter 5, when the connector registry made the target and judge profiles independent. The other four are the job of this chapter's two slices: [T008](../../docs/usecases/UC-004-evaluate-responses/T008-judge-request-builder.md) builds the judge's request (AC-004-01) and records who the judge was (AC-004-04), and [T009](../../docs/usecases/UC-004-evaluate-responses/T009-verdict-parser.md) parses its reply (AC-004-02 and AC-004-03).
+
+Keep AC-004-03 in mind in particular:
 
 > AC-004-03: Invalid output becomes `ERROR`, never `FAIL`.
 
-Keep it in mind. Much of the design of this chapter comes from that single line.
+Much of the design of this chapter comes from that single line.
 
 As always, I strongly recommend that you type the code yourself.
 
 ## 8.2 Writing the Acceptance Criteria First
 
-Open the T008 task file and fill in its Objective and Acceptance criteria:
+This time most of the criteria are already written, but building the judge brings up two things that your plan didn't spell out. The judge's rubric has to reach the model as instructions, and every provider has its own way of receiving them. And rubrics will be chosen by id in a configuration file, so an unknown id needs a clear error. Ask the docs script for the next free ID in UC-004:
 
-_docs/releases/v0.1/tasks/T008.md_: Objective and acceptance criteria
+```bash
+$ python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-004
+AC-004-06
+```
+
+Then add the two new criteria to the README, right after AC-004-05:
+
+_docs/usecases/UC-004-evaluate-responses/README.md_: The two new acceptance criteria
+
+```markdown
+- [ ] **AC-004-06**: The judge's instructions reach every provider: a `system` message for OpenAI-compatible servers, the `system` field for Claude, and nothing extra when there are none.
+- [ ] **AC-004-07**: Rubrics are looked up by id; an unknown id is rejected with the list of known rubrics.
+```
+
+Notice that you add criteria to your use case, but you don't rewrite the ones that are there. The wording of AC-004-01 to AC-004-05 is yours, and the tests in this chapter will be measured against it.
+
+Now open the T008 task file and fill in its Objective and Delivers sections. T008 builds the request, so it delivers AC-004-01 and AC-004-04, plus the two new criteria:
+
+_docs/usecases/UC-004-evaluate-responses/T008-judge-request-builder.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Ask a judge model to evaluate an answer against the question, the expected answer and a rubric.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T008-AC1**: The judge prompt contains the question, expected answer and actual answer in separate tags, and the rubric plus the output format are sent as instructions.
-- [ ] **T008-AC2**: Every connector accepts optional instructions: a `system` message for OpenAI-compatible servers, the `system` field for Claude, and nothing extra when none are given.
-- [ ] **T008-AC3**: Rubrics are looked up by id; an unknown id is rejected with the list of known rubrics.
-- [ ] **T008-AC4**: An evaluation records the verdict, justification, rubric id and the judge model's identity.
+- AC-004-01
+- AC-004-04
+- AC-004-06
+- AC-004-07
 ```
 
-Then the same for T009:
+Then the same for T009, which is all about the reply:
 
-_docs/releases/v0.1/tasks/T009.md_: Objective and acceptance criteria
+_docs/usecases/UC-004-evaluate-responses/T009-verdict-parser.md_: Objective and Delivers
 
-````markdown
+```markdown
 ## Objective
 
 Turn the judge's reply into a validated verdict, or an error.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T009-AC1**: A JSON reply with verdict PASS or FAIL (any case, optional ```json fence) and a non-empty justification is accepted.
-- [ ] **T009-AC2**: Anything else (not JSON, not an object, an unsupported verdict, no justification) raises a `JudgeError`, so the case becomes ERROR, never FAIL.
-- [ ] **T009-AC3**: A failed judge call, a judge refusal or a truncated judge reply also raises a `JudgeError`.
-````
+- AC-004-02
+- AC-004-03
+```
+
+And finally, fill in the Delivers column of the Slices table in the README:
+
+_docs/usecases/UC-004-evaluate-responses/README.md_: The Slices table
+
+```markdown
+| Task | Slice | Delivers | Status |
+|---|---|---|---|
+| [T008](T008-judge-request-builder.md) | Judge request builder | AC-004-01, AC-004-04, AC-004-06, AC-004-07 | Todo |
+| [T009](T009-verdict-parser.md) | Verdict parser | AC-004-02, AC-004-03 | Todo |
+```
+
+Run `uv run pytest` now and look at the UC-004 group of the acceptance table. AC-004-05 passes, and the other six are `not tested`.
 
 ## 8.3 Instructions Versus the Prompt
 
@@ -111,7 +157,7 @@ The rest of the method stays as it is.
 
 If you read OpenAI's current documentation, you will see that it now recommends a role called `developer` for instructions, instead of `system`. OpenAI's own servers accept both. But remember that this connector is not only for OpenAI. It is for anything that speaks the Chat Completions format: local model servers, gateways, other providers. Those all understand `system`, which has been part of the format since the beginning, but many of them don't know about `developer`. Since `system` works everywhere, it is the safe choice, and the comment in the code is there so that nobody "fixes" it later.
 
-The `if instructions:` test means that when no instructions are given, the request is exactly what it was before this change. That is the "nothing extra when none are given" part of T008-AC2.
+The `if instructions:` test means that when no instructions are given, the request is exactly what it was before this change. That is the "nothing extra when there are none" part of AC-004-06.
 
 ### The Claude connector
 
@@ -159,7 +205,7 @@ Now the tests, starting with the contract tests that every connector must pass. 
 _tests/connectors/test_contract.py_: The instructions contract test
 
 ```python
-@pytest.mark.acceptance("T003-AC9", "T014-AC7", "T008-AC2")
+@pytest.mark.acceptance("AC-001-09", "AC-004-06")
 def test_accepts_instructions(connectors):
     answering, _ = connectors
     assert answering.generate(PROMPT, instructions="Answer in one word.").text == "Paris"
@@ -172,7 +218,7 @@ Where the instructions end up is different for each provider, so that is checked
 _tests/connectors/test_openai_connector.py_: Instructions become a system message
 
 ```python
-@pytest.mark.acceptance("T008-AC2")
+@pytest.mark.acceptance("AC-004-06")
 def test_instructions_become_a_system_message(connect):
     seen = []
     connect(server(body=completion(), seen=seen)).generate("hello", instructions="Be brief.")
@@ -187,7 +233,7 @@ And in `test_anthropic_connector.py`, add this one after `test_sends_model_max_t
 _tests/connectors/test_anthropic_connector.py_: Instructions become the system field
 
 ```python
-@pytest.mark.acceptance("T008-AC2")
+@pytest.mark.acceptance("AC-004-06")
 def test_instructions_become_the_system_field(connect):
     seen = []
     connect(server(body=message(text("ok")), seen=seen)).generate("hello", instructions="Be brief.")
@@ -392,7 +438,7 @@ This is called *prompt injection*: text that is supposed to be data, but is writ
 
 ## 8.7 Parsing the Verdict
 
-The judge model replies with text, and `parse_verdict()` has to turn that text into a verdict. This function is where AC-004-03 is enforced, so let's go through it carefully.
+The judge model replies with text, and `parse_verdict()` has to turn that text into a verdict. This function is where AC-004-02 and AC-004-03 are enforced, so let's go through it carefully.
 
 The verdict itself is a `Verdict`, which is a `StrEnum`. An enum means that the only possible verdicts are `Verdict.PASS` and `Verdict.FAIL`, and a typo like `Verdict.PSAS` is an error that your editor will catch. Being a *string* enum means that each member is also a real string, so `Verdict.PASS == "PASS"` is `True`, and later it will go into the JSON report as a plain `"PASS"`, with no conversion needed.
 
@@ -434,7 +480,7 @@ The `evaluate()` method builds the prompt, sends it along with the instructions,
 - **The judge refuses.** If the judge model declines to evaluate, the response has a `refusal` and no `text`. A refusal from the *target* is an answer to grade, but a refusal from the *judge* is a judge that didn't do its job.
 - **The reply is truncated.** If the reply was cut off by the length limit, the JSON is probably incomplete. And even if what arrived happens to parse, a cut-off reply is not one I want to trust, so the judge refuses to use it.
 
-When all goes well, `evaluate()` returns a `JudgeEvaluation` with the verdict, the justification, the id of the rubric that was used, and the judge's complete `ModelResponse`. That response records which judge model actually answered, and how. A verdict is only as trustworthy as the judge that gave it, so the report needs to say which judge that was (this is T008-AC4).
+When all goes well, `evaluate()` returns a `JudgeEvaluation` with the verdict, the justification, the id of the rubric that was used, and the judge's complete `ModelResponse`. That response records which judge model actually answered, and how. A verdict is only as trustworthy as the judge that gave it, so the report needs to say which judge that was (this is AC-004-04).
 
 Let's see the judge work, with a `FakeConnector` playing the judge:
 
@@ -492,7 +538,7 @@ def judge(reply):
     return Judge(FakeConnector(model="judge-model", default=reply), SEMANTIC_CORRECTNESS)
 
 
-@pytest.mark.acceptance("T008-AC1")
+@pytest.mark.acceptance("AC-004-01")
 def test_prompt_contains_question_expected_and_actual_answer():
     assert build_judge_prompt(CASE, "It's Paris.") == (
         "<question>\nWhat is the capital of France?\n</question>\n\n"
@@ -501,7 +547,7 @@ def test_prompt_contains_question_expected_and_actual_answer():
     )
 
 
-@pytest.mark.acceptance("T008-AC1")
+@pytest.mark.acceptance("AC-004-01")
 def test_rubric_and_output_format_are_sent_as_instructions():
     j = judge(PASS_REPLY)
     j.evaluate(CASE, "It's Paris.")
@@ -509,14 +555,14 @@ def test_rubric_and_output_format_are_sent_as_instructions():
     assert j.connector.instructions == [f"{SEMANTIC_CORRECTNESS.instructions}\n\n{OUTPUT_FORMAT}"]
 
 
-@pytest.mark.acceptance("T008-AC3")
+@pytest.mark.acceptance("AC-004-07")
 def test_rubrics_are_looked_up_by_id():
     assert get_rubric("semantic_correctness") is SEMANTIC_CORRECTNESS
     with pytest.raises(JudgeError, match="unknown rubric 'strict'; known: semantic_correctness"):
         get_rubric("strict")
 
 
-@pytest.mark.acceptance("T008-AC4")
+@pytest.mark.acceptance("AC-004-04")
 def test_evaluation_records_verdict_rubric_and_judge_identity():
     evaluation = judge(PASS_REPLY).evaluate(CASE, "Paris")
     assert (evaluation.verdict, evaluation.justification) == (Verdict.PASS, "Paris is correct.")
@@ -524,7 +570,7 @@ def test_evaluation_records_verdict_rubric_and_judge_identity():
     assert evaluation.response.served_model == "judge-model"
 
 
-@pytest.mark.acceptance("T009-AC1")
+@pytest.mark.acceptance("AC-004-02")
 @pytest.mark.parametrize(
     "reply, verdict",
     [
@@ -539,7 +585,7 @@ def test_valid_replies_are_parsed(reply, verdict):
     assert parse_verdict(reply)[0] is verdict
 
 
-@pytest.mark.acceptance("T009-AC2")
+@pytest.mark.acceptance("AC-004-03")
 @pytest.mark.parametrize(
     "reply, message",
     [
@@ -557,7 +603,7 @@ def test_malformed_replies_are_errors_not_failures(reply, message):
         parse_verdict(reply)
 
 
-@pytest.mark.acceptance("T009-AC3")
+@pytest.mark.acceptance("AC-004-03")
 @pytest.mark.parametrize(
     "reply, message",
     [
@@ -570,7 +616,7 @@ def test_judge_call_problems_are_judge_errors(reply, message):
         judge(reply).evaluate(CASE, "Paris")
 
 
-@pytest.mark.acceptance("T009-AC3")
+@pytest.mark.acceptance("AC-004-03")
 def test_truncated_judge_reply_is_an_error():
     class Truncating(FakeConnector):
         def generate(self, prompt, *, instructions=None):
@@ -587,7 +633,7 @@ The first test compares the prompt with the complete expected string. That may s
 
 The two parser tests are table-driven. Each row of the `parametrize` list is one reply and what it should produce, so adding a new edge case is a matter of adding one line. In the valid-replies test, the `ids` argument gives each row a readable name, so a failure shows up as `test_valid_replies_are_parsed[code-fence]` instead of a long JSON string. The malformed-replies test uses the `match` argument of `pytest.raises()`, which checks the exception's message with a regular expression search, so each row also confirms that the error explains what was wrong. Notice the name of the test, too: `test_malformed_replies_are_errors_not_failures`. When the test name states the rule, a failure explains itself.
 
-The `T009-AC3` tests go through `evaluate()` instead of calling the parser directly. Since the fake connector can be scripted with a `ConnectorQuotaError` or a `Refusal`, both of those are a one-line test. For truncation, the test needs a response with `truncated=True`, which the fake connector can't script, so the test makes a small subclass, `Truncating`, that calls the normal `generate()` and then uses `dataclasses.replace()` to return a copy of the response with that one field changed. You can't modify a frozen dataclass, but `replace()` gives you a new one with your changes, and that is the standard way to "edit" one.
+The last two tests are also marked `AC-004-03`, because a judge call that fails, is refused or is cut off is just another kind of invalid output, but they go through `evaluate()` instead of calling the parser directly. Since the fake connector can be scripted with a `ConnectorQuotaError` or a `Refusal`, both of those are a one-line test. For truncation, the test needs a response with `truncated=True`, which the fake connector can't script, so the test makes a small subclass, `Truncating`, that calls the normal `generate()` and then uses `dataclasses.replace()` to return a copy of the response with that one field changed. You can't modify a frozen dataclass, but `replace()` gives you a new one with your changes, and that is the standard way to "edit" one.
 
 Let's run the whole suite:
 
@@ -595,20 +641,22 @@ Let's run the whole suite:
 $ uv run pytest
 ```
 
-Here are the new rows of the acceptance table, and the last two lines:
+Here is the UC-004 group of the acceptance table, and the last two lines:
 
 ```text
-PASS        T008-AC1   The judge prompt contains the question, expected answer and actual ans
-PASS        T008-AC2   Every connector accepts optional instructions: a `system` message for 
-PASS        T008-AC3   Rubrics are looked up by id; an unknown id is rejected with the list o
-PASS        T008-AC4   An evaluation records the verdict, justification, rubric id and the ju
-PASS        T009-AC1   A JSON reply with verdict PASS or FAIL (any case, optional ```json fen
-PASS        T009-AC2   Anything else (not JSON, not an object, an unsupported verdict, no jus
-PASS        T009-AC3   A failed judge call, a judge refusal or a truncated judge reply also r
-...
-49 PASS
-134 passed in 2.26s
+UC-004: Evaluate responses  (7/7 passing)
+  PASS        AC-004-01  Include question, expected answer, actual answer, and rubric
+  PASS        AC-004-02  Accept only supported verdict values and a nonempty justific
+  PASS        AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  PASS        AC-004-04  Record evaluator provider/model identity.
+  PASS        AC-004-05  Switching the judge profile does not change benchmark data o
+  PASS        AC-004-06  The judge's instructions reach every provider: a `system` me
+  PASS        AC-004-07  Rubrics are looked up by id; an unknown id is rejected with 
+42 PASS
+134 passed in 2.42s
 ```
+
+Take a moment to enjoy that group. The first five lines are the acceptance criteria you wrote in your plan, word for word, and every one of them now has a test behind it. And notice the last line before the timing: there is no `not tested` count any more. Every criterion that JudgeLab has so far is passing.
 
 ## 8.10 Troubleshooting
 
@@ -627,7 +675,7 @@ PASS        T009-AC3   A failed judge call, a judge refusal or a truncated judge
 
 ## 8.12 Committing Your Work
 
-When everything passes, tick the acceptance criteria in [T008](../../docs/releases/v0.1/tasks/T008.md) and [T009](../../docs/releases/v0.1/tasks/T009.md), set their Branch field to `feat/p1-llm-judge-T008`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
+When everything passes, open the [UC-004 README](../../docs/usecases/UC-004-evaluate-responses/README.md) and tick the six criteria this chapter delivers: AC-004-01 to AC-004-04, AC-004-06 and AC-004-07. AC-004-05 should already be ticked from chapter 5; if it isn't, tick it too, since its test passes. Set the Status of both rows in the Slices table to `Done`. Then, in [T008](../../docs/usecases/UC-004-evaluate-responses/T008-judge-request-builder.md) and [T009](../../docs/usecases/UC-004-evaluate-responses/T009-verdict-parser.md), set the Branch field to `feat/p1-llm-judge-T008`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -654,10 +702,10 @@ instructions alongside prompts.
 AI-Assist: L4
 ```
 
-Then the judge and the task files:
+Then the judge and the use case docs:
 
 ```bash
-$ git add src/judgelab/judge.py tests/test_judge.py docs/releases/v0.1/tasks
+$ git add src/judgelab/judge.py tests/test_judge.py docs/usecases/UC-004-evaluate-responses
 $ git commit
 ```
 

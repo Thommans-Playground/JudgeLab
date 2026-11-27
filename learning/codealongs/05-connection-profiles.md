@@ -32,62 +32,108 @@ Later, in chapter 10, these profiles will be read from a YAML file. For now you'
 
 ## 5.3 The Acceptance Criteria
 
-This chapter finishes three tasks that already exist in the release plan: T001 (the connection profile), T002 (credential resolution, which you wrote back in chapter 2 but never gave its own criteria), and T004 (independent model switching). Let's write their acceptance criteria first.
+This chapter is still use case UC-001, *Configure model connections*. It finishes the three slices of it that are left: T001 (the connection profile), T002 (credential resolution, which you wrote back in chapter 2 but never gave its own slice), and T004 (independent model switching). All three task files already exist in [docs/usecases/UC-001-configure-model-connections/](../../docs/usecases/UC-001-configure-model-connections/), and they're already listed in its Slices table, in the release plan and in the traceability matrix. What they don't have yet is anything to deliver, so let's write the criteria first.
 
-In [docs/releases/v0.1/tasks/T001.md](../../docs/releases/v0.1/tasks/T001.md), fill in the Objective and replace the empty `- [ ]` under "Acceptance criteria", so that the two sections look like this:
+Profiles, credentials and switching are new behaviour that none of AC-001-01 to AC-001-11 describes. Running `python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-001` tells you that the next free id is `AC-001-12`. Open [docs/usecases/UC-001-configure-model-connections/README.md](../../docs/usecases/UC-001-configure-model-connections/README.md), and add these eleven criteria at the end of the "Acceptance criteria" list, right after AC-001-11:
 
-_docs/releases/v0.1/tasks/T001.md_: Objective and acceptance criteria
+_docs/usecases/UC-001-configure-model-connections/README.md_: The new criteria
+
+```markdown
+- [ ] **AC-001-12**: A connection is described by a validated profile built from configuration: provider, model, api_key_env, optional base_url, timeout_s, max_retries and options.
+- [ ] **AC-001-13**: Missing or blank required profile settings are rejected, and the error lists every problem at once.
+- [ ] **AC-001-14**: `api_key_env` must look like an environment variable name; the error never echoes the value, in case it is a pasted key.
+- [ ] **AC-001-15**: `base_url` must be an https URL (plain http only for localhost).
+- [ ] **AC-001-16**: Unknown profile settings (typos, or an `api_key` field) are rejected with the list of allowed settings.
+- [ ] **AC-001-17**: `timeout_s` must be greater than 0 and `max_retries` a whole number of 0 or more.
+- [ ] **AC-001-18**: The key is read from the environment variable the profile names, in one place only.
+- [ ] **AC-001-19**: The connector is chosen by the profile's provider.
+- [ ] **AC-001-20**: An unknown provider is rejected with the list of known providers.
+- [ ] **AC-001-21**: Provider-specific options (like Claude's `max_tokens`) reach the connector; an option the connector does not accept is rejected clearly.
+- [ ] **AC-001-22**: Target and judge connections are independent, and swapping providers or models needs only a configuration change.
+```
+
+Now decide which slice delivers which criteria. AC-001-12 to AC-001-17 are about the profile, so they belong to T001. AC-001-18 is about reading the key, so it belongs to T002. T002 also delivers a criterion you already have: AC-001-01 says that a missing, empty or whitespace-only key variable raises an auth error that names it, and `read_secret()` is the function that does exactly that. As you saw with Claude in the last chapter, there's no need to write that promise down a second time. AC-001-19 to AC-001-22 are about choosing and switching connectors, so they belong to T004.
+
+T004 delivers one more criterion, and this one isn't in UC-001 at all. Open [docs/usecases/UC-004-evaluate-responses/README.md](../../docs/usecases/UC-004-evaluate-responses/README.md) and look at the last criterion, which came from your own v0.1 plan:
+
+_docs/usecases/UC-004-evaluate-responses/README.md_: A criterion from another use case
+
+```markdown
+- [ ] **AC-004-05**: Switching the judge profile does not change benchmark data or the use-case logic.
+```
+
+Switching the judge is exactly what T004 makes possible, and the test you'll write for AC-001-22 swaps the judge's profile without touching anything else. So T004 delivers AC-004-05 as well. A slice belongs to one use case, but the evidence it produces can prove a criterion of another one, and the Delivers list says so.
+
+Fill in the three Slices rows in the UC-001 README, which are empty in the "Delivers" column so far, so that they look like this:
+
+_docs/usecases/UC-001-configure-model-connections/README.md_: The Slices rows for T001, T002 and T004
+
+```markdown
+| [T001](T001-connection-profile-model.md) | Connection profile model | AC-001-12, AC-001-13, AC-001-14, AC-001-15, AC-001-16, AC-001-17 | Todo |
+| [T002](T002-credential-resolution.md) | Credential resolution | AC-001-01, AC-001-18 | Todo |
+```
+
+```markdown
+| [T004](T004-independent-model-switching.md) | Independent model switching | AC-001-19, AC-001-20, AC-001-21, AC-001-22, AC-004-05 | Todo |
+```
+
+The T003 row sits between T002 and T004, which is why T004 is in its own block.
+
+Then fill in each task file's Objective and `## Delivers` section, replacing the template's comment and empty `-`. In [docs/usecases/UC-001-configure-model-connections/T001-connection-profile-model.md](../../docs/usecases/UC-001-configure-model-connections/T001-connection-profile-model.md), the two sections should look like this:
+
+_docs/usecases/UC-001-configure-model-connections/T001-connection-profile-model.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Describe one model connection as validated data that never holds a secret.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T001-AC1**: A valid profile can be built from parsed configuration (provider, model, api_key_env, optional base_url, timeout_s, max_retries, options).
-- [ ] **T001-AC2**: Missing or blank required settings are rejected, and the error lists every problem at once.
-- [ ] **T001-AC3**: `api_key_env` must look like an environment variable name; the error never echoes the value, in case it is a pasted key.
-- [ ] **T001-AC4**: `base_url` must be an https URL (plain http only for localhost).
-- [ ] **T001-AC5**: Unknown settings (typos, or an `api_key` field) are rejected with the list of allowed settings.
-- [ ] **T001-AC6**: `timeout_s` must be greater than 0 and `max_retries` a whole number of 0 or more.
+- AC-001-12
+- AC-001-13
+- AC-001-14
+- AC-001-15
+- AC-001-16
+- AC-001-17
 ```
 
-Do the same in [docs/releases/v0.1/tasks/T002.md](../../docs/releases/v0.1/tasks/T002.md):
+Do the same in [docs/usecases/UC-001-configure-model-connections/T002-credential-resolution.md](../../docs/usecases/UC-001-configure-model-connections/T002-credential-resolution.md):
 
-_docs/releases/v0.1/tasks/T002.md_: Objective and acceptance criteria
+_docs/usecases/UC-001-configure-model-connections/T002-credential-resolution.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Read a secret from the environment variable a profile names, in one place only.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T002-AC1**: `read_secret` returns the value of the named environment variable.
-- [ ] **T002-AC2**: A missing, empty or whitespace-only variable raises an auth error that names the variable and contains no value.
+- AC-001-01
+- AC-001-18
 ```
 
-And in [docs/releases/v0.1/tasks/T004.md](../../docs/releases/v0.1/tasks/T004.md):
+And in [docs/usecases/UC-001-configure-model-connections/T004-independent-model-switching.md](../../docs/usecases/UC-001-configure-model-connections/T004-independent-model-switching.md):
 
-_docs/releases/v0.1/tasks/T004.md_: Objective and acceptance criteria
+_docs/usecases/UC-001-configure-model-connections/T004-independent-model-switching.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Choose and configure the connector for target and judge from configuration alone.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T004-AC1**: `create_connector` builds the connector class registered for the profile's provider.
-- [ ] **T004-AC2**: An unknown provider is rejected with the list of known providers.
-- [ ] **T004-AC3**: Provider-specific options (like Claude's `max_tokens`) reach the connector; an option the connector does not accept is rejected clearly.
-- [ ] **T004-AC4**: Target and judge profiles create independent connectors, and swapping providers or models needs only a configuration change.
+- AC-001-19
+- AC-001-20
+- AC-001-21
+- AC-001-22
+- AC-004-05
 ```
 
-All three tasks are already listed in the release plan and in the traceability matrix, so there is nothing else to register this time. Run `python3 .claude/skills/vbench-docs/scripts/docids.py check` to be sure, and it should report `0 error(s) · 0 warning(s)`.
+All three tasks are already registered, so there is nothing else to add this time. Run `python3 .claude/skills/vbench-docs/scripts/docids.py check` to be sure, and it should report `0 error(s) · 0 warning(s)`.
 
-Read T001-AC3 again, because it's an unusual requirement. It says that the error must *not* echo the value. You'll see why shortly.
+Read AC-001-14 again, because it's an unusual requirement. It says that the error must *not* echo the value. You'll see why shortly.
 
 ## 5.4 The Connection Profile
 
@@ -234,7 +280,7 @@ Let's see the profile at work. Start a Python shell with `uv run python`, and im
 >>> from judgelab.connectors.profile import ConnectionProfile
 ```
 
-First, let's make the mistake that T001-AC3 is about, and paste a key where the variable name should go:
+First, let's make the mistake that AC-001-14 is about, and paste a key where the variable name should go:
 
 ```python
 >>> ConnectionProfile.from_dict("target", {"provider": "openai_compatible", "model": "gpt-x", "api_key_env": "sk-proj-abc123"})
@@ -388,7 +434,7 @@ Two profiles, two different connectors, and not a single `import` of a connector
 
 ## 5.8 Testing the Credentials Function
 
-You wrote `read_secret()` in chapter 2, and it has been tested indirectly through the connectors ever since. Now that T002 has its own acceptance criteria, it gets its own small test file:
+You wrote `read_secret()` in chapter 2, and it has been tested indirectly through the connectors ever since. Now that T002 is a slice with its own criteria to deliver, it gets its own small test file:
 
 _tests/connectors/test_credentials.py_: Tests for `read_secret()`
 
@@ -399,13 +445,13 @@ from judgelab.connectors import ConnectorAuthError
 from judgelab.connectors.credentials import read_secret
 
 
-@pytest.mark.acceptance("T002-AC1")
+@pytest.mark.acceptance("AC-001-18")
 def test_reads_the_named_variable(monkeypatch):
     monkeypatch.setenv("JUDGELAB_TEST_SECRET", "  s3cret  ")
     assert read_secret("JUDGELAB_TEST_SECRET") == "s3cret"
 
 
-@pytest.mark.acceptance("T002-AC2")
+@pytest.mark.acceptance("AC-001-01")
 @pytest.mark.parametrize("value", [None, "", "   "])
 def test_missing_or_blank_names_the_variable(monkeypatch, value):
     if value is None:
@@ -420,7 +466,7 @@ def test_missing_or_blank_names_the_variable(monkeypatch, value):
 
 The first test sets the secret with spaces around it, which is a common result of copying a key from a web page, and checks that they're stripped. The second test runs three times, for a missing variable (`None` means "delete it"), an empty one and a whitespace-only one.
 
-Look at the `match` pattern in the second test. The `^` and `$` anchors make it match the *entire* message, not just part of it. A plain `match="JUDGELAB_TEST_SECRET is not set"` would also pass for a message like `environment variable JUDGELAB_TEST_SECRET is not set (value was '   ')`. The anchors prove that the message contains nothing more than the variable name, which is how T002-AC2's "contains no value" is checked.
+Look at the `match` pattern in the second test. The `^` and `$` anchors make it match the *entire* message, not just part of it. A plain `match="JUDGELAB_TEST_SECRET is not set"` would also pass for a message like `environment variable JUDGELAB_TEST_SECRET is not set (value was '   ')`. The anchors prove that the message contains nothing more than the variable name, which is how AC-001-01's "contains no secret" is checked.
 
 ## 5.9 Testing the Profile
 
@@ -436,7 +482,7 @@ from judgelab.connectors import ConnectionProfile, ProfileError
 VALID = {"provider": "openai_compatible", "model": "gpt-x", "api_key_env": "OPENAI_API_KEY"}
 
 
-@pytest.mark.acceptance("T001-AC1")
+@pytest.mark.acceptance("AC-001-12")
 def test_valid_profile_with_defaults():
     profile = ConnectionProfile.from_dict("target", VALID)
     assert profile == ConnectionProfile(
@@ -451,7 +497,7 @@ def test_valid_profile_with_defaults():
     )
 
 
-@pytest.mark.acceptance("T001-AC1")
+@pytest.mark.acceptance("AC-001-12")
 def test_valid_profile_with_every_setting():
     data = {
         **VALID,
@@ -469,13 +515,13 @@ def test_valid_profile_with_every_setting():
     assert profile.options == {"max_tokens": 512}
 
 
-@pytest.mark.acceptance("T001-AC2")
+@pytest.mark.acceptance("AC-001-13")
 def test_missing_settings_are_named():
     with pytest.raises(ProfileError, match="connection 'target': missing model, api_key_env"):
         ConnectionProfile.from_dict("target", {"provider": "openai_compatible"})
 
 
-@pytest.mark.acceptance("T001-AC2")
+@pytest.mark.acceptance("AC-001-13")
 def test_every_problem_is_reported_at_once():
     data = {"provider": " ", "model": "", "api_key_env": "OPENAI_API_KEY", "timeout_s": 0}
     with pytest.raises(ProfileError) as caught:
@@ -486,7 +532,7 @@ def test_every_problem_is_reported_at_once():
     assert "timeout_s must be greater than 0" in message
 
 
-@pytest.mark.acceptance("T001-AC3")
+@pytest.mark.acceptance("AC-001-14")
 def test_a_pasted_key_is_rejected_without_being_echoed():
     pasted = "sk-proj-THIS-IS-A-REAL-LOOKING-KEY"
     with pytest.raises(ProfileError, match="must name an environment variable") as caught:
@@ -494,7 +540,7 @@ def test_a_pasted_key_is_rejected_without_being_echoed():
     assert pasted not in str(caught.value)
 
 
-@pytest.mark.acceptance("T001-AC4")
+@pytest.mark.acceptance("AC-001-15")
 @pytest.mark.parametrize(
     "url",
     ["https://api.openai.com/v1", "http://localhost:8000/v1", "http://127.0.0.1:11434/v1"],
@@ -503,7 +549,7 @@ def test_allowed_base_urls(url):
     assert ConnectionProfile.from_dict("target", {**VALID, "base_url": url}).base_url == url
 
 
-@pytest.mark.acceptance("T001-AC4")
+@pytest.mark.acceptance("AC-001-15")
 @pytest.mark.parametrize(
     "url, message",
     [
@@ -517,14 +563,14 @@ def test_rejected_base_urls(url, message):
         ConnectionProfile.from_dict("target", {**VALID, "base_url": url})
 
 
-@pytest.mark.acceptance("T001-AC5")
+@pytest.mark.acceptance("AC-001-16")
 @pytest.mark.parametrize("key", ["api_key", "modle"])
 def test_unknown_settings_are_rejected(key):
     with pytest.raises(ProfileError, match=f"unknown setting\\(s\\) {key}; allowed:"):
         ConnectionProfile.from_dict("target", {**VALID, key: "x"})
 
 
-@pytest.mark.acceptance("T001-AC6")
+@pytest.mark.acceptance("AC-001-17")
 @pytest.mark.parametrize(
     "settings, message",
     [
@@ -546,7 +592,7 @@ The `VALID` dictionary at the top holds the smallest valid profile, and most tes
 
 `test_every_problem_is_reported_at_once()` is the test for the "collect every problem" design. It feeds three mistakes in and checks that all three messages are in the error. If someone later changes `__post_init__()` to raise at the first problem, this test fails.
 
-`test_a_pasted_key_is_rejected_without_being_echoed()` checks both halves of T001-AC3: the right error is raised, and the pasted value is not in it. Making the test's fake key look as realistic as possible is a small but deliberate touch.
+`test_a_pasted_key_is_rejected_without_being_echoed()` checks both halves of AC-001-14: the right error is raised, and the pasted value is not in it. Making the test's fake key look as realistic as possible is a small but deliberate touch.
 
 The last test has a row with `True` for `max_retries`. That's the `bool` subtlety from section 5.4, now pinned down by a test.
 
@@ -584,7 +630,7 @@ def profile(name, data):
     return ConnectionProfile.from_dict(name, data)
 
 
-@pytest.mark.acceptance("T004-AC1")
+@pytest.mark.acceptance("AC-001-19")
 @pytest.mark.parametrize(
     "data, expected", [(OPENAI, OpenAIConnector), (CLAUDE, AnthropicConnector)]
 )
@@ -594,14 +640,14 @@ def test_creates_the_registered_connector(data, expected):
     assert connector.model == data["model"]
 
 
-@pytest.mark.acceptance("T004-AC1")
+@pytest.mark.acceptance("AC-001-19")
 def test_profile_settings_reach_the_connector():
     data = {**OPENAI, "base_url": "http://localhost:8000/v1"}
     connector = create_connector(profile("target", data))
     assert connector.base_url == "http://localhost:8000/v1"
 
 
-@pytest.mark.acceptance("T004-AC2")
+@pytest.mark.acceptance("AC-001-20")
 def test_unknown_provider_lists_known_ones():
     with pytest.raises(
         ProfileError, match="unknown provider 'gemini'; known: anthropic, openai_compatible"
@@ -609,19 +655,19 @@ def test_unknown_provider_lists_known_ones():
         create_connector(profile("target", {**OPENAI, "provider": "gemini"}))
 
 
-@pytest.mark.acceptance("T004-AC3")
+@pytest.mark.acceptance("AC-001-21")
 def test_provider_options_reach_the_connector():
     connector = create_connector(profile("judge", {**CLAUDE, "options": {"max_tokens": 512}}))
     assert connector.max_tokens == 512
 
 
-@pytest.mark.acceptance("T004-AC3")
+@pytest.mark.acceptance("AC-001-21")
 def test_unsupported_option_is_rejected():
     with pytest.raises(ProfileError, match="unsupported option for openai_compatible"):
         create_connector(profile("target", {**OPENAI, "options": {"max_tokens": 512}}))
 
 
-@pytest.mark.acceptance("T004-AC4")
+@pytest.mark.acceptance("AC-001-22", "AC-004-05")
 def test_target_and_judge_switch_independently():
     target = create_connector(profile("target", OPENAI))
     judge = create_connector(profile("judge", CLAUDE))
@@ -637,7 +683,7 @@ The `keys` fixture is marked `autouse=True`, which means pytest applies it to ev
 
 The tests check the class with `type(connector) is expected` rather than `isinstance()`. `isinstance()` would also accept a subclass, and the registry promises the *exact* class that's registered.
 
-`test_target_and_judge_switch_independently()` is the one I'd point to if someone asked what this chapter was for. It builds a target and a judge from two profiles, then swaps the provider data between them. The only thing that changes between the two halves of the test is the data passed to `profile()`. There's no `if provider == ...` anywhere, and no connector class is chosen by hand. That's T004-AC4: swapping providers or models is a configuration change and nothing else.
+`test_target_and_judge_switch_independently()` is the one I'd point to if someone asked what this chapter was for. It builds a target and a judge from two profiles, then swaps the provider data between them. The only thing that changes between the two halves of the test is the data passed to `profile()`. There's no `if provider == ...` anywhere, and no connector class is chosen by hand. That's AC-001-22: swapping providers or models is a configuration change and nothing else. Look at its marker, too. It carries two ids, `AC-001-22` and `AC-004-05`, from two different use cases. The judge's profile is swapped and nothing else changes, which is exactly what your UC-004 criterion promised, so one test is the evidence for both. A test proves behaviour, and a behaviour can matter to more than one use case.
 
 ## 5.11 Running the Tests
 
@@ -651,40 +697,40 @@ Here's the acceptance criteria table at the end of the output:
 
 ```text
 ============================= acceptance criteria ==============================
-PASS        T001-AC1   A valid profile can be built from parsed configuration (provider, mode
-PASS        T001-AC2   Missing or blank required settings are rejected, and the error lists e
-PASS        T001-AC3   `api_key_env` must look like an environment variable name; the error n
-PASS        T001-AC4   `base_url` must be an https URL (plain http only for localhost).
-PASS        T001-AC5   Unknown settings (typos, or an `api_key` field) are rejected with the 
-PASS        T001-AC6   `timeout_s` must be greater than 0 and `max_retries` a whole number of
-PASS        T002-AC1   `read_secret` returns the value of the named environment variable.
-PASS        T002-AC2   A missing, empty or whitespace-only variable raises an auth error that
-PASS        T003-AC1   A missing or empty API-key variable raises an auth error that names th
-PASS        T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
-PASS        T003-AC3   A successful reply returns the answer, requested and served model, fin
-PASS        T003-AC4   A refusal is returned as a response, not raised as an error.
-PASS        T003-AC5   A reply that cannot be trusted (not a chat completion, no choices, no 
-PASS        T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
-PASS        T003-AC7   No request is retried unless retries are configured.
-PASS        T003-AC8   The API key never appears in the connector's repr or in any error mess
-PASS        T003-AC9   Every connector implements the `ModelConnector` port and passes the sh
-PASS        T003-AC10  A `FakeConnector` answers from a script (answers, refusals, errors) an
-PASS        T004-AC1   `create_connector` builds the connector class registered for the profi
-PASS        T004-AC2   An unknown provider is rejected with the list of known providers.
-PASS        T004-AC3   Provider-specific options (like Claude's `max_tokens`) reach the conne
-PASS        T004-AC4   Target and judge profiles create independent connectors, and swapping 
-PASS        T014-AC1   The client is configured only from its arguments; a missing key variab
-PASS        T014-AC2   A successful reply returns the text blocks joined (thinking blocks ski
-PASS        T014-AC3   A `refusal` stop reason is returned as a refusal response, not an erro
-PASS        T014-AC4   Truncation is reported the same way for every provider: `truncated` is
-PASS        T014-AC5   A reply with no text and no refusal raises a response error.
-PASS        T014-AC6   Failures map like the OpenAI connector's, including 402 billing and th
-PASS        T014-AC7   The Claude connector passes the shared connector contract tests.
-29 PASS
-93 passed in 2.29s
+UC-001: Configure model connections  (22/22 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  PASS        AC-001-02  A connector is configured only from its arguments: provider 
+  PASS        AC-001-03  A successful reply returns the answer text, the requested an
+  PASS        AC-001-04  A refusal is returned as a response, not raised as an error.
+  PASS        AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  PASS        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  PASS        AC-001-07  No request is retried unless retries are configured.
+  PASS        AC-001-08  The API key never appears in a connector's repr or in any er
+  PASS        AC-001-09  Every connector implements the `ModelConnector` port and pas
+  PASS        AC-001-10  A `FakeConnector` answers from a script (answers, refusals, 
+  PASS        AC-001-11  Truncation is reported the same way for every provider: `tru
+  PASS        AC-001-12  A connection is described by a validated profile built from 
+  PASS        AC-001-13  Missing or blank required profile settings are rejected, and
+  PASS        AC-001-14  `api_key_env` must look like an environment variable name; t
+  PASS        AC-001-15  `base_url` must be an https URL (plain http only for localho
+  PASS        AC-001-16  Unknown profile settings (typos, or an `api_key` field) are 
+  PASS        AC-001-17  `timeout_s` must be greater than 0 and `max_retries` a whole
+  PASS        AC-001-18  The key is read from the environment variable the profile na
+  PASS        AC-001-19  The connector is chosen by the profile's provider.
+  PASS        AC-001-20  An unknown provider is rejected with the list of known provi
+  PASS        AC-001-21  Provider-specific options (like Claude's `max_tokens`) reach
+  PASS        AC-001-22  Target and judge connections are independent, and swapping p
+UC-004: Evaluate responses  (1/5 passing)
+  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
+  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
+  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  not tested  AC-004-04  Record evaluator provider/model identity.
+  PASS        AC-004-05  Switching the judge profile does not change benchmark data o
+23 PASS · 4 not tested
+93 passed in 2.38s
 ```
 
-That's 29 acceptance criteria across five tasks, all passing, and the whole connector layer of v0.1 is now covered.
+All 22 UC-001 criteria pass, delivered by five slices, and the whole connector layer of v0.1 is now covered. And for the first time, a UC-004 row passes too: AC-004-05, proved by the switching test, long before you write the judge itself.
 
 ## 5.12 Troubleshooting
 
@@ -704,12 +750,14 @@ That's 29 acceptance criteria across five tasks, all passing, and the whole conn
 
 ## 5.14 Committing Your Work
 
-When the tests pass, update the three task files. In `T001.md`, `T002.md` and `T004.md`, tick every acceptance criterion (change `- [ ]` to `- [x]`), set **Status** to `Done`, **Branch** to `` `feat/p1-connection-profiles-T001` ``, and **AI-Assist** to `L4`, and add any lessons learned. Then run `python3 .claude/skills/vbench-docs/scripts/docids.py check` one last time.
+When the tests pass, update the docs. Start with the criteria, which live in the use case READMEs. In `docs/usecases/UC-001-configure-model-connections/README.md`, tick AC-001-12 to AC-001-22 (change `- [ ]` to `- [x]`). AC-001-01 was already ticked, and it stays that way. In `docs/usecases/UC-004-evaluate-responses/README.md`, tick AC-004-05, the first UC-004 criterion to pass. Back in the UC-001 README, set the **Status** of the T001, T002 and T004 rows in the Slices table to `Done`.
+
+Then, in the three task files in the UC-001 folder, `T001-connection-profile-model.md`, `T002-credential-resolution.md` and `T004-independent-model-switching.md`, set **Status** to `Done`, **Branch** to `` `feat/p1-connection-profiles-T001` ``, and **AI-Assist** to `L4`, and add any lessons learned. Then run `python3 .claude/skills/vbench-docs/scripts/docids.py check` one last time.
 
 Review your changes with `git status` and `git diff`, then commit:
 
 ```bash
-$ git add docs src tests
+$ git add docs/usecases/UC-001-configure-model-connections docs/usecases/UC-004-evaluate-responses/README.md src tests
 $ git commit
 ```
 

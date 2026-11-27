@@ -14,7 +14,9 @@ This chapter starts where chapter 2 ended, with the connector package merged int
 $ git switch main && git pull --ff-only && git switch -c refactor/p1-connector-port-T003
 ```
 
-Run the tests once before you change anything, and make sure you get the eight PASS lines and `29 passed` from the end of chapter 2. A refactor starts from green tests and must end with green tests, so you need to know they are green now.
+This chapter is the second half of the same slice as chapter 2. It belongs to use case **UC-001 Configure model connections** and is delivered by task T003, which is why the branch name ends in `T003` again. A slice, remember, is a thin, end-to-end piece of a use case that makes some of its criteria pass. In chapter 2, T003's slice made AC-001-01 to AC-001-08 pass for one connector. In this chapter it grows by two more criteria, about what *every* connector must do, and with those T003 is complete.
+
+Run the tests once before you change anything, and make sure you get the eight PASS lines and `(8/8 passing)` for UC-001, and `29 passed`, from the end of chapter 2. A refactor starts from green tests and must end with green tests, so you need to know they are green now.
 
 ## 3.2 Build Before Abstracting
 
@@ -40,18 +42,45 @@ The middle rows are the interesting ones. The key, the timeout and the retries l
 
 ## 3.3 The New Acceptance Criteria
 
-As always, the requirements come first. Open [docs/releases/v0.1/tasks/T003.md](../../docs/releases/v0.1/tasks/T003.md) and add two criteria at the end of the acceptance criteria list, right after AC8:
+As always, the requirements come first, and as in chapter 2 they go into the use case, not the task. Ask the docs script for the next free criterion ID in UC-001:
 
-_docs/releases/v0.1/tasks/T003.md_: Two new acceptance criteria
-
-```markdown
-- [ ] **T003-AC9**: Every connector implements the `ModelConnector` port and passes the shared contract tests.
-- [ ] **T003-AC10**: A `FakeConnector` answers from a script (answers, refusals, errors) and records the prompts it receives, with no network or key.
+```bash
+$ python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-001
+AC-001-09
 ```
 
-(If you ticked AC1 to AC8 at the end of chapter 2, leave them ticked. The new ones start unticked.)
+Open [docs/usecases/UC-001-configure-model-connections/README.md](../../docs/usecases/UC-001-configure-model-connections/README.md) and add two criteria at the end of the acceptance criteria list, right after AC-001-08:
 
-AC9 uses the word *port*. This comes from the "ports and adapters" style of architecture: the core of an application defines the *port*, the shape of the thing it needs ("something I can give a prompt to and get a `ModelResponse` back"), and each connector is an *adapter* that plugs a particular provider into that port. The core of JudgeLab will only ever talk to the port, never to OpenAI or Anthropic directly. This is the dependency inversion idea mentioned for T003 and T004 in the learning ledger of the [v0.1 release plan](../../docs/releases/v0.1/README.md).
+_docs/usecases/UC-001-configure-model-connections/README.md_: Two new acceptance criteria
+
+```markdown
+- [ ] **AC-001-09**: Every connector implements the `ModelConnector` port and passes the shared contract tests.
+- [ ] **AC-001-10**: A `FakeConnector` answers from a script (answers, refusals, errors) and records what it was sent, with no network or key.
+```
+
+(If you ticked AC-001-01 to AC-001-08 at the end of chapter 2, leave them ticked. The new ones start unticked.)
+
+Both criteria are part of T003's slice, so the task needs to say so in two places. In [T003-first-live-model-connector.md](../../docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md), add them to the end of the `## Delivers` list:
+
+_docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md_: Two more delivered criteria
+
+```markdown
+- AC-001-08
+- AC-001-09
+- AC-001-10
+```
+
+And in the use case README, add them to the "Delivers" cell of T003's row in the Slices table:
+
+_docs/usecases/UC-001-configure-model-connections/README.md_: T003's row in the Slices table
+
+```markdown
+| [T003](T003-first-live-model-connector.md) | First live model connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-07, AC-001-08, AC-001-09, AC-001-10 | Todo |
+```
+
+(If you set the row's Status to `In progress` at the end of chapter 2, leave it that way.)
+
+AC-001-09 uses the word *port*. This comes from the "ports and adapters" style of architecture: the core of an application defines the *port*, the shape of the thing it needs ("something I can give a prompt to and get a `ModelResponse` back"), and each connector is an *adapter* that plugs a particular provider into that port. The core of JudgeLab will only ever talk to the port, never to OpenAI or Anthropic directly. This is the dependency inversion idea mentioned for T003 and T004 in the learning ledger of the [v0.1 release plan](../../docs/releases/v0.1/README.md).
 
 ## 3.4 The Port
 
@@ -201,23 +230,30 @@ That's the whole refactor. Run the tests:
 $ uv run pytest -q
 .............................                                            [100%]
 ============================= acceptance criteria ==============================
-PASS        T003-AC1   A missing or empty API-key variable raises an auth error that names th
-PASS        T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
-PASS        T003-AC3   A successful reply returns the answer, requested and served model, fin
-PASS        T003-AC4   A refusal is returned as a response, not raised as an error.
-PASS        T003-AC5   A reply that cannot be trusted (not a chat completion, no choices, no 
-PASS        T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
-PASS        T003-AC7   No request is retried unless retries are configured.
-PASS        T003-AC8   The API key never appears in the connector's repr or in any error mess
-not tested  T003-AC9   Every connector implements the `ModelConnector` port and passes the sh
-not tested  T003-AC10  A `FakeConnector` answers from a script (answers, refusals, errors) an
-8 PASS · 2 not tested
-29 passed in 0.20s
+UC-001: Configure model connections  (8/10 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  PASS        AC-001-02  A connector is configured only from its arguments: provider 
+  PASS        AC-001-03  A successful reply returns the answer text, the requested an
+  PASS        AC-001-04  A refusal is returned as a response, not raised as an error.
+  PASS        AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  PASS        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  PASS        AC-001-07  No request is retried unless retries are configured.
+  PASS        AC-001-08  The API key never appears in a connector's repr or in any er
+  not tested  AC-001-09  Every connector implements the `ModelConnector` port and pas
+  not tested  AC-001-10  A `FakeConnector` answers from a script (answers, refusals, 
+UC-004: Evaluate responses  (0/5 passing)
+  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
+  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
+  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  not tested  AC-004-04  Record evaluator provider/model identity.
+  not tested  AC-004-05  Switching the judge profile does not change benchmark data o
+8 PASS · 7 not tested
+29 passed in 0.90s
 ```
 
-All 29 tests still pass without a single change to them. That is what makes this a refactor: the structure changed, the behaviour didn't, and the tests are the evidence. The two new criteria show up as "not tested", which is your to-do list for the rest of the chapter.
+All 29 tests still pass without a single change to them. That is what makes this a refactor: the structure changed, the behaviour didn't, and the tests are the evidence. The two new criteria show up as "not tested", and the use case line now says `(8/10 passing)`, which is your to-do list for the rest of the chapter.
 
-This is a good moment to make a commit, while the refactor is complete and the tests are green, and before you start adding new behaviour. Stage only the three files you changed (leave `T003.md` for the next commit, since its new criteria are about the work still to come):
+This is a good moment to make a commit, while the refactor is complete and the tests are green, and before you start adding new behaviour. Stage only the three files you changed (leave the UC-001 README and the T003 task file for the next commit, since their new criteria are about the work still to come):
 
 ```bash
 $ git add src/judgelab/connectors/base.py src/judgelab/connectors/openai_connector.py src/judgelab/connectors/__init__.py
@@ -396,7 +432,7 @@ You may wonder why a test helper lives in the main package instead of under `tes
 
 ## 3.9 Testing the Fake
 
-Now let's verify AC10. Create a new test file:
+Now let's verify AC-001-10. Create a new test file:
 
 _tests/connectors/test_fake_connector.py_: Tests for the fake connector
 
@@ -411,7 +447,7 @@ from judgelab.connectors import (
 )
 
 
-@pytest.mark.acceptance("T003-AC10")
+@pytest.mark.acceptance("AC-001-10")
 def test_answers_from_the_script_and_records_prompts():
     fake = FakeConnector(replies={"2+2?": "4", "Capital of France?": "Paris"})
     assert fake.generate("Capital of France?").text == "Paris"
@@ -419,30 +455,30 @@ def test_answers_from_the_script_and_records_prompts():
     assert fake.prompts == ["Capital of France?", "2+2?"]
 
 
-@pytest.mark.acceptance("T003-AC10")
+@pytest.mark.acceptance("AC-001-10")
 def test_scripted_refusal_is_a_response():
     response = FakeConnector(default=Refusal("I can't help with that.")).generate("anything")
     assert (response.text, response.refusal) == (None, "I can't help with that.")
 
 
-@pytest.mark.acceptance("T003-AC10")
+@pytest.mark.acceptance("AC-001-10")
 def test_scripted_error_is_raised():
     fake = FakeConnector(replies={"hi": ConnectorRateLimitError("HTTP 429", status_code=429)})
     with pytest.raises(ConnectorRateLimitError):
         fake.generate("hi")
 
 
-@pytest.mark.acceptance("T003-AC10")
+@pytest.mark.acceptance("AC-001-10")
 def test_unscripted_prompt_fails_loudly():
     with pytest.raises(ConnectorRequestError, match="no reply for prompt 'surprise'"):
         FakeConnector(replies={"hi": "hello"}).generate("surprise")
 ```
 
-After the HTTP plumbing of chapter 2, these tests are refreshingly simple, and that is the whole point of a fake: no fixtures, no fake servers, no environment variables. Each test checks one sentence of the AC10 criterion. The first one asks the questions in a different order from the script, to show that `prompts` records the order in which they were *asked*. The last one checks not only that an unscripted prompt raises, but that the message names the prompt, since that message is what you will read when one of your future tests sends something unexpected.
+After the HTTP plumbing of chapter 2, these tests are refreshingly simple, and that is the whole point of a fake: no fixtures, no fake servers, no environment variables. Each test checks one part of the AC-001-10 criterion. The first one asks the questions in a different order from the script, to show that `prompts` records the order in which they were *asked*. The last one checks not only that an unscripted prompt raises, but that the message names the prompt, since that message is what you will read when one of your future tests sends something unexpected.
 
 ## 3.10 The Contract Tests
 
-The tests in chapter 2 check that the OpenAI connector behaves correctly, and the tests you just wrote check the fake. But neither checks the thing that matters most to the rest of JudgeLab: that every connector keeps the *same* promises, so that code written against `ModelConnector` works with any of them. That is what AC9 asks for, and it is the job of contract tests.
+The tests in chapter 2 check that the OpenAI connector behaves correctly, and the tests you just wrote check the fake. But neither checks the thing that matters most to the rest of JudgeLab: that every connector keeps the *same* promises, so that code written against `ModelConnector` works with any of them. That is what AC-001-09 asks for, and it is the job of contract tests.
 
 The idea is to write each test once, in terms of the port only, and run it against every connector. Create the file:
 
@@ -514,13 +550,13 @@ def connectors(request, monkeypatch):
     return request.param(monkeypatch)
 
 
-@pytest.mark.acceptance("T003-AC9")
+@pytest.mark.acceptance("AC-001-09")
 def test_is_a_model_connector(connectors):
     for connector in connectors:
         assert isinstance(connector, ModelConnector)
 
 
-@pytest.mark.acceptance("T003-AC9")
+@pytest.mark.acceptance("AC-001-09")
 def test_answers_with_a_model_response(connectors):
     answering, _ = connectors
     response = answering.generate(PROMPT)
@@ -532,21 +568,21 @@ def test_answers_with_a_model_response(connectors):
     assert response.latency_ms >= 0
 
 
-@pytest.mark.acceptance("T003-AC9")
+@pytest.mark.acceptance("AC-001-09")
 def test_failures_are_connector_errors(connectors):
     _, failing = connectors
     with pytest.raises(ConnectorError):
         failing.generate(PROMPT)
 
 
-@pytest.mark.acceptance("T003-AC9")
+@pytest.mark.acceptance("AC-001-09")
 def test_repr_names_the_model_and_hides_secrets(connectors):
     for connector in connectors:
         assert connector.model in repr(connector)
         assert SECRET not in repr(connector)
 
 
-@pytest.mark.acceptance("T003-AC9")
+@pytest.mark.acceptance("AC-001-09")
 def test_the_port_cannot_be_used_directly():
     with pytest.raises(TypeError):
         ModelConnector(model="m")
@@ -576,7 +612,7 @@ Four contract tests, two connectors, eight runs, plus one test about the port it
 
 **The port itself.** The last test isn't parametrized. It is the `TypeError` you saw in section 3.5, written as a test, so that if someone ever changes `ModelConnector` in a way that makes it instantiable, the suite says so.
 
-**Adding a connector.** The module docstring explains how a new connector joins the contract: write a factory and add it to `FACTORIES`. That's all. You don't write a single new test, and every existing contract test runs against the new connector automatically. This is what I meant at the start of the chapter when I said the next connector would be built "in the image" of the first: in chapter 4, the Claude connector will join this dictionary, and it will have to keep every promise the OpenAI connector keeps before AC9 says PASS.
+**Adding a connector.** The module docstring explains how a new connector joins the contract: write a factory and add it to `FACTORIES`. That's all. You don't write a single new test, and every existing contract test runs against the new connector automatically. This is what I meant at the start of the chapter when I said the next connector would be built "in the image" of the first: in chapter 4, the Claude connector will join this dictionary, and it will have to keep every promise the OpenAI connector keeps before AC-001-09 says PASS.
 
 ## 3.11 Running the Tests
 
@@ -586,21 +622,28 @@ Time to see the whole suite:
 $ uv run pytest -q
 ..........................................                               [100%]
 ============================= acceptance criteria ==============================
-PASS        T003-AC1   A missing or empty API-key variable raises an auth error that names th
-PASS        T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
-PASS        T003-AC3   A successful reply returns the answer, requested and served model, fin
-PASS        T003-AC4   A refusal is returned as a response, not raised as an error.
-PASS        T003-AC5   A reply that cannot be trusted (not a chat completion, no choices, no 
-PASS        T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
-PASS        T003-AC7   No request is retried unless retries are configured.
-PASS        T003-AC8   The API key never appears in the connector's repr or in any error mess
-PASS        T003-AC9   Every connector implements the `ModelConnector` port and passes the sh
-PASS        T003-AC10  A `FakeConnector` answers from a script (answers, refusals, errors) an
-10 PASS
-42 passed in 0.93s
+UC-001: Configure model connections  (10/10 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  PASS        AC-001-02  A connector is configured only from its arguments: provider 
+  PASS        AC-001-03  A successful reply returns the answer text, the requested an
+  PASS        AC-001-04  A refusal is returned as a response, not raised as an error.
+  PASS        AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  PASS        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  PASS        AC-001-07  No request is retried unless retries are configured.
+  PASS        AC-001-08  The API key never appears in a connector's repr or in any er
+  PASS        AC-001-09  Every connector implements the `ModelConnector` port and pas
+  PASS        AC-001-10  A `FakeConnector` answers from a script (answers, refusals, 
+UC-004: Evaluate responses  (0/5 passing)
+  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
+  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
+  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  not tested  AC-004-04  Record evaluator provider/model identity.
+  not tested  AC-004-05  Switching the judge profile does not change benchmark data o
+10 PASS · 5 not tested
+42 passed in 0.95s
 ```
 
-Ten out of ten. The 42 tests are the 29 from chapter 2, the 4 fake connector tests, and the 9 runs of the contract tests. Notice also that AC10 is listed after AC9 and not after AC1. That is the `sort_key()` function from chapter 2 earning its keep.
+Ten out of ten, and the use case line says so: `(10/10 passing)`. The 42 tests are the 29 from chapter 2, the 4 fake connector tests, and the 9 runs of the contract tests. Notice also that AC-001-10 is listed right after AC-001-09, in the order you wrote them in the README. The plugin from chapter 2 keeps the criteria in file order, so the table always reads like the use case. The UC-004 lines are still "not tested"; their turn comes in chapter 8.
 
 ## 3.12 Troubleshooting
 
@@ -612,7 +655,7 @@ Ten out of ten. The 42 tests are the 29 from chapter 2, the 4 fake connector tes
 
 ## 3.13 Exercises
 
-1. Write a class `Broken(ModelConnector)` with `provider = "broken"` and a `generate()` method that raises `RuntimeError`. Add a factory for it to `FACTORIES` and run the contract tests. Which test catches it, and what does the acceptance table say about AC9? Remove it afterwards.
+1. Write a class `Broken(ModelConnector)` with `provider = "broken"` and a `generate()` method that raises `RuntimeError`. Add a factory for it to `FACTORIES` and run the contract tests. Which test catches it, and what does the acceptance table say about AC-001-09? Remove it afterwards.
 2. Use `FakeConnector` to write a test for this small function, which you can put in the test file itself:
 
    ```python
@@ -627,12 +670,14 @@ Ten out of ten. The 42 tests are the 29 from chapter 2, the 4 fake connector tes
 
 ## 3.14 Committing Your Work
 
-You already committed the refactor in section 3.6. What is left is new behaviour: the fake connector, the tests and the two new criteria. Tick AC9 and AC10 in `T003.md`. All ten criteria now pass, so set **Status** to `Done`, and update **Branch** to this chapter's branch, `refactor/p1-connector-port-T003`. Check the docs, then stage and commit:
+You already committed the refactor in section 3.6. What is left is new behaviour: the fake connector, the tests and the two new criteria. Tick AC-001-09 and AC-001-10 in the UC-001 `README.md`. Every criterion T003 delivers now passes, so its slice is complete: set the Status of T003's row in the Slices table to `Done`. In `T003-first-live-model-connector.md`, set **Status** to `Done` as well, and update **Branch** to this chapter's branch, `refactor/p1-connector-port-T003`.
+
+The use case itself is not done, though. UC-001 has other slices still marked `Todo`, and the Claude connector of the next chapter will add a new one. A use case is finished when all of its slices are. Check the docs, then stage and commit:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 34 IDs defined · 0 error(s) · 0 warning(s)
-$ git add docs/releases/v0.1/tasks/T003.md src/judgelab/connectors/fake.py src/judgelab/connectors/__init__.py tests/connectors/test_fake_connector.py tests/connectors/test_contract.py
+$ git add docs/usecases/UC-001-configure-model-connections src/judgelab/connectors/fake.py src/judgelab/connectors/__init__.py tests/connectors/test_fake_connector.py tests/connectors/test_contract.py
 $ git commit
 ```
 
@@ -655,4 +700,4 @@ Then push the branch and open the pull request with the `vbench-pr` skill, pasti
 
 Congratulations, JudgeLab now knows what a connector is! The `ModelConnector` port holds only what has proven to be general: a model, an optional URL, a `generate()` method, and a `repr()` that can't leak secrets. Python refuses to create a connector that doesn't implement the port, the contract tests check that every connector keeps the port's promises, and the `FakeConnector` gives the rest of JudgeLab a model to talk to that is free, instant and does exactly what it's told.
 
-In the next codealong you are going to put all of this to work by writing a second real connector, for Anthropic's Claude. You'll find that the port and the contract tests make it a much more guided job than the first one was: once its factory is in `FACTORIES` and AC9 says PASS, you'll know it keeps every promise the OpenAI connector does. And with two real connectors side by side, you'll be able to judge for yourself whether the key, timeout and retries from section 3.2 have earned a place in the port.
+In the next codealong you are going to put all of this to work by writing a second real connector, for Anthropic's Claude. You'll find that the port and the contract tests make it a much more guided job than the first one was: once its factory is in `FACTORIES` and AC-001-09 says PASS, you'll know it keeps every promise the OpenAI connector does. And with two real connectors side by side, you'll be able to judge for yourself whether the key, timeout and retries from section 3.2 have earned a place in the port.

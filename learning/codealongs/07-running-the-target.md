@@ -15,31 +15,60 @@ $ git switch main && git pull --ff-only
 $ git switch -c feat/p1-target-runner-T007
 ```
 
-This chapter covers task [T007](../../docs/releases/v0.1/tasks/T007.md) of the v0.1 plan. In the plan's vocabulary, the model you are evaluating is called the *target*, to tell it apart from the *judge* model that you will meet in the next chapter.
+This chapter covers the use case [UC-003 Execute target model](../../docs/usecases/UC-003-execute-target-model/README.md), which has a single slice, [T007](../../docs/usecases/UC-003-execute-target-model/T007-target-inference.md). That slice delivers all five of the use case's acceptance criteria, AC-003-01 to AC-003-05, which you are about to write. In the plan's vocabulary, the model you are evaluating is called the *target*, to tell it apart from the *judge* model that you will meet in the next chapter.
 
 As always, I strongly recommend that you type the code yourself.
 
 ## 7.2 Writing the Acceptance Criteria First
 
-Open the T007 task file and fill in its Objective and Acceptance criteria, replacing the empty `- [ ]` line:
+UC-003 has no criteria yet, so the docs script will tell you to start at `01`:
 
-_docs/releases/v0.1/tasks/T007.md_: Objective and acceptance criteria
+```bash
+$ python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-003
+AC-003-01
+```
+
+Open `docs/usecases/UC-003-execute-target-model/README.md` and add the criteria under the comment in its Acceptance criteria section:
+
+_docs/usecases/UC-003-execute-target-model/README.md_: The acceptance criteria
+
+```markdown
+- [ ] **AC-003-01**: Each case's question is sent to the target once, in order, and each result keeps its case and the model response.
+- [ ] **AC-003-02**: A connector error on one case is recorded against that case and the run continues.
+- [ ] **AC-003-03**: An auth or quota error stops the run: remaining cases are not sent and are recorded as not sent, naming the cause.
+- [ ] **AC-003-04**: An optional progress callback is called after every case.
+- [ ] **AC-003-05**: Exceptions that are not connector errors are not swallowed, so bugs stay visible.
+```
+
+Then open the T007 task file, fill in its Objective, and list all five criteria under `## Delivers`:
+
+_docs/usecases/UC-003-execute-target-model/T007-target-inference.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Send each benchmark question to the target model and capture what happened.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T007-AC1**: Each case's question is sent to the target once, in order, and each result keeps its case and the model response.
-- [ ] **T007-AC2**: A connector error on one case is recorded against that case and the run continues.
-- [ ] **T007-AC3**: An auth or quota error stops the run: remaining cases are not sent and are recorded as not sent, naming the cause.
-- [ ] **T007-AC4**: An optional progress callback is called after every case.
-- [ ] **T007-AC5**: Exceptions that are not connector errors are not swallowed, so bugs stay visible.
+- AC-003-01
+- AC-003-02
+- AC-003-03
+- AC-003-04
+- AC-003-05
 ```
 
-Read through them before you continue. The first criterion is the obvious one, and the other four are all about failures and visibility. That ratio is about right for code that talks to the network.
+And repeat the list in T007's row of the Slices table, back in the use case README:
+
+_docs/usecases/UC-003-execute-target-model/README.md_: The Slices table
+
+```markdown
+| Task | Slice | Delivers | Status |
+|---|---|---|---|
+| [T007](T007-target-inference.md) | Target inference | AC-003-01, AC-003-02, AC-003-03, AC-003-04, AC-003-05 | Todo |
+```
+
+Read through the five criteria before you continue. The first one is the obvious one, and the other four are all about failures and visibility. That ratio is about right for code that talks to the network.
 
 ## 7.3 Which Errors Should Stop a Run?
 
@@ -132,7 +161,7 @@ Why not just `break` out of the loop? Because then the results would be shorter 
 
 ### Catching only connector errors
 
-Look carefully at the `except` clause. It catches `ConnectorError`, and nothing else. This is deliberate, and it is the subject of T007-AC5.
+Look carefully at the `except` clause. It catches `ConnectorError`, and nothing else. This is deliberate, and it is the subject of AC-003-05.
 
 The connector port promises that any failure while talking to a model comes out as a `ConnectorError`. So if something else escapes from `generate()`, say a `ZeroDivisionError` or an `AttributeError`, then it isn't a problem with the model or the network. It's a bug in our code. If the runner caught all exceptions with `except Exception`, that bug would be quietly recorded as a failed case, the run would carry on, and you might never notice. Worse, the report would blame the target model for a mistake that is ours. By catching only the errors that it knows how to handle, the runner lets bugs crash the program, loudly, which is what you want from a bug.
 
@@ -225,7 +254,7 @@ BENCH = Benchmark(
 )
 
 
-@pytest.mark.acceptance("T007-AC1")
+@pytest.mark.acceptance("AC-003-01")
 def test_each_question_is_sent_once_in_order():
     target = FakeConnector(
         replies={"Capital of France?": "Paris", "2+2?": "4", "Largest planet?": "Jupiter"}
@@ -237,7 +266,7 @@ def test_each_question_is_sent_once_in_order():
     assert all(r.error is None for r in results)
 
 
-@pytest.mark.acceptance("T007-AC2")
+@pytest.mark.acceptance("AC-003-02")
 @pytest.mark.parametrize(
     "error",
     [ConnectorUnavailableError("HTTP 500"), ConnectorRateLimitError("HTTP 429")],
@@ -252,7 +281,7 @@ def test_a_failed_case_is_recorded_and_the_run_continues(error):
     assert len(target.prompts) == 3
 
 
-@pytest.mark.acceptance("T007-AC3")
+@pytest.mark.acceptance("AC-003-03")
 @pytest.mark.parametrize(
     "error",
     [ConnectorAuthError("HTTP 401"), ConnectorQuotaError("HTTP 429 (credit_balance_exhausted)")],
@@ -267,14 +296,14 @@ def test_auth_and_quota_errors_stop_the_run(error):
     assert str(skipped.error) == f"not sent: run stopped after {type(error).__name__} on case c2"
 
 
-@pytest.mark.acceptance("T007-AC4")
+@pytest.mark.acceptance("AC-003-04")
 def test_progress_callback_sees_every_result():
     seen = []
     run_target(BENCH, FakeConnector(default="ok"), on_result=lambda r: seen.append(r.case.id))
     assert seen == ["c1", "c2", "c3"]
 
 
-@pytest.mark.acceptance("T007-AC5")
+@pytest.mark.acceptance("AC-003-05")
 def test_bugs_are_not_hidden():
     class Broken(FakeConnector):
         def generate(self, prompt):
@@ -300,17 +329,18 @@ Run the suite:
 $ uv run pytest
 ```
 
-The new criteria in the acceptance table, and the last two lines, should look like this:
+The acceptance table now has a group for UC-003. That group, and the last two lines, should look like this:
 
 ```text
-PASS        T007-AC1   Each case's question is sent to the target once, in order, and each re
-PASS        T007-AC2   A connector error on one case is recorded against that case and the ru
-PASS        T007-AC3   An auth or quota error stops the run: remaining cases are not sent and
-PASS        T007-AC4   An optional progress callback is called after every case.
-PASS        T007-AC5   Exceptions that are not connector errors are not swallowed, so bugs st
+UC-003: Execute target model  (5/5 passing)
+  PASS        AC-003-01  Each case's question is sent to the target once, in order, a
+  PASS        AC-003-02  A connector error on one case is recorded against that case 
+  PASS        AC-003-03  An auth or quota error stops the run: remaining cases are no
+  PASS        AC-003-04  An optional progress callback is called after every case.
+  PASS        AC-003-05  Exceptions that are not connector errors are not swallowed, 
 ...
-42 PASS
-111 passed in 3.67s
+36 PASS · 4 not tested
+111 passed in 2.42s
 ```
 
 ## 7.7 Troubleshooting
@@ -330,7 +360,7 @@ PASS        T007-AC5   Exceptions that are not connector errors are not swallowe
 
 ## 7.9 Committing Your Work
 
-Once the tests pass, update [T007](../../docs/releases/v0.1/tasks/T007.md): tick its acceptance criteria, set Branch to `feat/p1-target-runner-T007`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
+Once the tests pass, update the [UC-003 README](../../docs/usecases/UC-003-execute-target-model/README.md): tick its five acceptance criteria and set the Status of T007's row in the Slices table to `Done`. Then, in [T007](../../docs/usecases/UC-003-execute-target-model/T007-target-inference.md), set Branch to `feat/p1-target-runner-T007`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -339,7 +369,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 Then commit your work, following [CONTRIBUTING.md](../../CONTRIBUTING.md):
 
 ```bash
-$ git add src/judgelab/runner.py tests/test_runner.py docs/releases/v0.1/tasks/T007.md
+$ git add src/judgelab/runner.py tests/test_runner.py docs/usecases/UC-003-execute-target-model
 $ git commit
 ```
 

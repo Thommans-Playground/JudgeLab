@@ -2,7 +2,7 @@
 
 In the first codealong you built a working OpenAI connector in a notebook. Notebooks are great for exploring, but they are not a good home for code that the rest of a project depends on: nothing imports from them, nothing tests them automatically, and a cell you forgot to re-run can make you believe something that is no longer true. In this codealong you are going to move the connector into the `judgelab.connectors` package, cover it with pytest tests that run in under a second without touching the network, and fix a real problem with error handling that we found after chapter 1 was written.
 
-By the end you will have a `judgelab.connectors` package with five small modules, a test suite of 29 tests, and a pytest plugin that prints, after every run, a table showing which of the task's acceptance criteria pass. That table is going to follow you for the rest of the project.
+By the end you will have a `judgelab.connectors` package with five small modules, a test suite of 29 tests, and a pytest plugin that prints, after every run, a table showing which of the use case's acceptance criteria pass. That table is going to follow you for the rest of the project.
 
 > **AI-Assist level:** this is a guided codealong, so record this work as **AI-Assist L4**.
 
@@ -14,38 +14,83 @@ Every unit of work in JudgeLab lives on its own short-lived branch (the rules ar
 $ git switch main && git pull --ff-only && git switch -c feat/p1-openai-connector-T003
 ```
 
+Before going further, it's worth knowing where this task sits in the project's documents, because you are going to edit two of them in the next section. JudgeLab's docs describe the work in three layers:
+
+- A **use case** is a goal a user has. This chapter belongs to **UC-001 Configure model connections**: a developer wants JudgeLab to talk to the target and judge models they choose. Each use case is a folder, here `docs/usecases/UC-001-configure-model-connections/`, and its `README.md` holds the flows of the use case, its acceptance criteria and a list of its slices.
+- The **acceptance criteria** describe the use case's observable behaviour, one checkable sentence each. They are defined in the use case's README, and nowhere else.
+- A **task** is the work that delivers a *slice* of the use case: a thin, end-to-end piece that makes some of its criteria pass. T003 is one slice of UC-001, and its task file lives in the same folder as the use case.
+
+UC-001 has other slices (connection profiles, credentials, switching models) that you will build in chapter 5. T003 is the slice that gets one real connector working end to end, and it is delivered over two chapters: this one and the next.
+
 The notebook from chapter 1 is a useful reference to have open next to you, because a lot of what you are going to type is that code, cleaned up. Where something changes, I will tell you why.
 
 As before, I strongly recommend that you type the code yourself. There is a lot more of it in this chapter, but the tests in particular are worth typing, because writing them is how you learn to write the next ones.
 
 ## 2.2 Requirements First
 
-Before writing any code, let's write down what "done" means. JudgeLab follows a V-model style of working: a requirement comes first, then a test that checks it, and only then the code that makes the test pass. For a task, the requirements are its acceptance criteria, and they live in the task file.
+Before writing any code, let's write down what "done" means. JudgeLab follows a V-model style of working: a requirement comes first, then a test that checks it, and only then the code that makes the test pass. Here the requirements are acceptance criteria, and they belong to the use case, not to the task, because they describe what UC-001 does for its user, whichever slice happens to deliver them.
 
-Open [docs/releases/v0.1/tasks/T003.md](../../docs/releases/v0.1/tasks/T003.md). Under `## Objective` there is nothing yet, and under `## Acceptance criteria` there is a single empty checkbox. Fill in the objective and replace the empty checkbox with these eight criteria:
+Open [docs/usecases/UC-001-configure-model-connections/README.md](../../docs/usecases/UC-001-configure-model-connections/README.md). Under `## Acceptance criteria` there is only a comment showing the format. Add these eight criteria below the comment:
 
-_docs/releases/v0.1/tasks/T003.md_: Objective and acceptance criteria
+_docs/usecases/UC-001-configure-model-connections/README.md_: The first eight acceptance criteria
+
+```markdown
+## Acceptance criteria
+
+<!-- Observable behaviour, one line each: - [ ] **AC-UUU-NN**: ... (UUU = this use case's number). Tests are marked with these IDs. -->
+- [ ] **AC-001-01**: A missing, empty or whitespace-only API-key variable raises an auth error that names the variable and contains no secret.
+- [ ] **AC-001-02**: A connector is configured only from its arguments: provider environment variables such as `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` and `ANTHROPIC_BASE_URL` have no effect.
+- [ ] **AC-001-03**: A successful reply returns the answer text, the requested and served model, the finish reason, token counts and the request id.
+- [ ] **AC-001-04**: A refusal is returned as a response, not raised as an error.
+- [ ] **AC-001-05**: A reply that cannot be trusted (wrong type, no choices, or no answer and no refusal) raises a response error.
+- [ ] **AC-001-06**: Provider failures map to JudgeLab errors: bad credentials to auth; out of credit or over a spend limit to quota; too many requests to rate limit; timeouts, connection failures and server errors to unavailable; other rejected requests to request.
+- [ ] **AC-001-07**: No request is retried unless retries are configured.
+- [ ] **AC-001-08**: The API key never appears in a connector's repr or in any error message.
+```
+
+Most of these are the lessons of chapter 1, written as sentences that can be checked. AC-001-06 contains something new, "out of credit or over a spend limit to quota", which you are going to learn about in section 2.8.
+
+Notice that the criteria talk about "a connector" and "provider failures", not about OpenAI and HTTP status codes. That is because they belong to the use case, and UC-001 will have more than one connector: the Claude connector of chapter 4 will be held to the same sentences, which is why AC-001-02 already names the Anthropic variables. How a particular provider signals "out of credit" is a detail for that provider's connector and its tests.
+
+Each criterion has an ID in bold, such as `**AC-001-01**:`, made of the use case number and a criterion number within it. You don't have to work out the next free number yourself; the docs script prints it:
+
+```bash
+$ python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-001
+AC-001-01
+```
+
+This exact format matters, because later in this chapter you are going to write a small pytest plugin that reads these lines out of the use case files and reports on them. The IDs also give every test a precise thing to point at: instead of a vague "tests the connector", a test will say "I verify AC-001-06".
+
+The task file says which of these criteria its slice delivers. Open [docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md](../../docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md). Under `## Objective` there is nothing yet, and under `## Delivers` there is a comment and an empty bullet. Fill in the objective, and replace the comment and the bullet with the IDs of the eight criteria:
+
+_docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md_: Objective and delivered criteria
 
 ```markdown
 ## Objective
 
 Send one prompt to an OpenAI-compatible Chat Completions endpoint and return the answer, the model identity and the call metadata in JudgeLab's own types, turning every failure into a JudgeLab connector error.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T003-AC1**: A missing or empty API-key variable raises an auth error that names the variable and contains no secret.
-- [ ] **T003-AC2**: The client is configured only from its arguments; `OPENAI_API_KEY` and `OPENAI_BASE_URL` in the environment have no effect.
-- [ ] **T003-AC3**: A successful reply returns the answer, requested and served model, finish reason, token counts and request id.
-- [ ] **T003-AC4**: A refusal is returned as a response, not raised as an error.
-- [ ] **T003-AC5**: A reply that cannot be trusted (not a chat completion, no choices, no content and no refusal) raises a response error.
-- [ ] **T003-AC6**: SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 402 quota, other 429 rate limit, timeouts/connection/5xx unavailable, other 4xx request.
-- [ ] **T003-AC7**: No request is retried unless retries are configured.
-- [ ] **T003-AC8**: The API key never appears in the connector's repr or in any error message.
+- AC-001-01
+- AC-001-02
+- AC-001-03
+- AC-001-04
+- AC-001-05
+- AC-001-06
+- AC-001-07
+- AC-001-08
 ```
 
-Most of these are the lessons of chapter 1, written as sentences that can be checked. AC6 contains something new, "billing codes and 402 quota", which you are going to learn about in section 2.8.
+The task file lists only the IDs. The sentences themselves stay in the use case README, so there is exactly one place where each criterion is worded, and no second copy to drift out of date.
 
-Each criterion has an ID in bold, such as `**T003-AC1**:`, made of the task number and a criterion number. This exact format matters, because later in this chapter you are going to write a small pytest plugin that reads these lines out of the task files and reports on them. The IDs also give every test a precise thing to point at: instead of a vague "tests the connector", a test will say "I verify T003-AC6".
+Finally, go back to the use case README and find the `## Slices` table at the bottom. It has one row per task, and the "Delivers" column of T003's row is empty. Fill it with the same list, so that someone reading the use case can see at a glance which slice delivers which criteria:
+
+_docs/usecases/UC-001-configure-model-connections/README.md_: T003's row in the Slices table
+
+```markdown
+| [T003](T003-first-live-model-connector.md) | First live model connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-07, AC-001-08 | Todo |
+```
 
 ## 2.3 One Module, One Job
 
@@ -196,7 +241,7 @@ As in chapter 1, the error message names the variable and never shows a value. Y
 ConnectorAuthError: environment variable NOPE_NOT_SET is not set
 ```
 
-Credential handling has its own task, T002, and you are going to give it formal acceptance criteria in chapter 5. The function is born here because the connector needs it now.
+Credential handling is its own slice of UC-001, task T002, and you are going to give it formal acceptance criteria in chapter 5. The function is born here because the connector needs it now.
 
 ## 2.7 The OpenAI Connector
 
@@ -334,7 +379,7 @@ The module docstring lists the documents this code is based on. When somebody (i
 
 Let me go through what changed compared to the notebook version, because each change has a reason.
 
-**The constructor.** The `api_key_env` argument no longer has a default. In chapter 1 it defaulted to `"OPENAI_API_KEY"`, which was convenient, but it was also a hidden piece of configuration: a connector pointed at some other OpenAI-compatible server would quietly pick up your OpenAI key unless you remembered to override it. Now the caller always says which variable holds the key. That is also what AC2 asks for: the connector is configured from its arguments and nothing else. The key is read with `read_secret()` and handed straight to the SDK, so it is still never stored on `self`. The default timeout went up from 30 to 60 seconds, a more forgiving value for the longer answers that evaluations ask for. The `max_retries=0` default stays exactly where it was.
+**The constructor.** The `api_key_env` argument no longer has a default. In chapter 1 it defaulted to `"OPENAI_API_KEY"`, which was convenient, but it was also a hidden piece of configuration: a connector pointed at some other OpenAI-compatible server would quietly pick up your OpenAI key unless you remembered to override it. Now the caller always says which variable holds the key. That is also what AC-001-02 asks for: the connector is configured from its arguments and nothing else. The key is read with `read_secret()` and handed straight to the SDK, so it is still never stored on `self`. The default timeout went up from 30 to 60 seconds, a more forgiving value for the longer answers that evaluations ask for. The `max_retries=0` default stays exactly where it was.
 
 **The `try` block.** In the notebook, you replaced the `create()` call with a `try`/`except` version in section 1.7. Here it is in its final place. Notice that the `try` wraps only the call to the SDK and nothing else. If the `try` covered the whole method, a bug in our own code that happened to raise an `openai` exception would be misreported as a provider failure.
 
@@ -409,11 +454,12 @@ $ uv run python -c "from judgelab.connectors import OpenAIConnector; print(OpenA
 
 ## 2.10 Seeing Your Progress
 
-You now have eight acceptance criteria and some code, but nothing that connects them. Pytest will tell you how many tests passed, but "29 passed" doesn't tell you whether AC7 is covered at all. I'd like pytest to finish every run with a table like this:
+You now have eight acceptance criteria and some code, but nothing that connects them. Pytest will tell you how many tests passed, but "29 passed" doesn't tell you whether AC-001-07 is covered at all. I'd like pytest to finish every run with a table like this, grouped by use case:
 
 ```text
-PASS        T003-AC1   A missing or empty API-key variable raises an auth error that names th
-not tested  T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
+UC-001: Configure model connections  (3/8 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  not tested  AC-001-02  A connector is configured only from its arguments: provider 
 ```
 
 Pytest can be extended with plugins, and the simplest way to write one is a file named `conftest.py`. Pytest loads it automatically before collecting tests, and any functions in it that have special names, called *hooks*, are called by pytest at specific moments of a run. Create `tests/conftest.py`:
@@ -423,14 +469,14 @@ _tests/conftest.py_: The acceptance-criteria progress plugin
 ```python
 """Acceptance-criteria progress for the whole test suite.
 
-Mark a test with the acceptance criteria it verifies:
+Mark a test with the use-case acceptance criteria it verifies:
 
-    @pytest.mark.acceptance("T003-AC1")
+    @pytest.mark.acceptance("AC-001-01")
     def test_something(): ...
 
-After every run, pytest prints a table of all criteria defined in the task
-files (docs/releases/*/tasks/T*.md, written as **T003-AC1**: ...) with their
-status in that run.
+After every run, pytest prints every criterion defined in the use cases
+(docs/usecases/*/README.md, written as **AC-001-01**: ...), grouped by use
+case, with its status in that run.
 """
 
 import re
@@ -439,14 +485,14 @@ from pathlib import Path
 
 import pytest
 
-TASKS_DIR = Path(__file__).resolve().parents[1] / "docs" / "releases"
-CRITERION = re.compile(r"\*\*(T\d{3}-AC\d+)\*\*:?\s*(.*)")
+USECASES_DIR = Path(__file__).resolve().parents[1] / "docs" / "usecases"
+CRITERION = re.compile(r"\*\*(AC-\d{3}-\d{2,})\*\*:?\s*(.*)")
 RESULTS = pytest.StashKey[dict]()
 
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", "acceptance(*ids): acceptance criteria verified by this test"
+        "markers", "acceptance(*ids): use-case acceptance criteria verified by this test"
     )
     config.stash[RESULTS] = defaultdict(list)
 
@@ -461,43 +507,55 @@ def pytest_runtest_makereport(item, call):
     return report
 
 
-def defined_criteria() -> dict[str, str]:
-    criteria = {}
-    for task_file in sorted(TASKS_DIR.glob("*/tasks/T*.md")):
-        for line in task_file.read_text(encoding="utf-8").splitlines():
+def defined_criteria() -> dict[str, dict[str, str]]:
+    """{use case heading: {criterion id: description}}, in use-case order."""
+    usecases = {}
+    for readme in sorted(USECASES_DIR.glob("UC-*/README.md")):
+        lines = readme.read_text(encoding="utf-8").splitlines()
+        heading = lines[0].removeprefix("# ").strip() if lines else readme.parent.name
+        criteria = {}
+        for line in lines:
             match = CRITERION.search(line)
             if match:
                 criteria[match.group(1)] = match.group(2).strip()
-    return criteria
+        usecases[heading] = criteria
+    return usecases
 
 
-def sort_key(criterion: str) -> tuple[str, int]:
-    task, number = criterion.split("-AC")
-    return task, int(number)
+def status_of(outcomes: list[str]) -> str:
+    if not outcomes:
+        return "not tested"
+    if "failed" in outcomes:
+        return "FAIL"
+    if all(outcome == "passed" for outcome in outcomes):
+        return "PASS"
+    return "skipped"
 
 
 def pytest_terminal_summary(terminalreporter, config):
     results = config.stash[RESULTS]
-    criteria = defined_criteria()
-    ids = sorted(set(criteria) | set(results), key=sort_key)
-    if not ids:
+    usecases = defined_criteria()
+    known = {criterion for criteria in usecases.values() for criterion in criteria}
+    undefined = sorted(set(results) - known)
+    if not known and not undefined:
         return
     counts = defaultdict(int)
+    write = terminalreporter.write_line
     terminalreporter.write_sep("=", "acceptance criteria")
-    for criterion in ids:
-        outcomes = results.get(criterion, [])
-        if not outcomes:
-            status = "not tested"
-        elif "failed" in outcomes:
-            status = "FAIL"
-        elif all(outcome == "passed" for outcome in outcomes):
-            status = "PASS"
-        else:
-            status = "skipped"
+    for heading, criteria in usecases.items():
+        if not criteria:
+            continue
+        statuses = {criterion: status_of(results.get(criterion, [])) for criterion in criteria}
+        passing = sum(status == "PASS" for status in statuses.values())
+        write(f"{heading}  ({passing}/{len(criteria)} passing)")
+        for criterion, description in criteria.items():
+            counts[statuses[criterion]] += 1
+            write(f"  {statuses[criterion]:<11} {criterion}  {description[:60]}")
+    for criterion in undefined:
+        status = status_of(results[criterion])
         counts[status] += 1
-        description = criteria.get(criterion, "(not in any task file)")
-        terminalreporter.write_line(f"{status:<11} {criterion:<10} {description[:70]}")
-    terminalreporter.write_line(
+        write(f"  {status:<11} {criterion}  (marked on a test but not defined in any use case)")
+    write(
         " · ".join(
             f"{counts[s]} {s}" for s in ("PASS", "FAIL", "skipped", "not tested") if counts[s]
         )
@@ -506,7 +564,7 @@ def pytest_terminal_summary(terminalreporter, config):
 
 This is the most "framework-y" code in the chapter, so don't worry if it doesn't all make sense on the first read. You don't need to master pytest's plugin system to use this file. Here are the five ideas it is built on.
 
-**A custom marker.** A marker is a label you attach to a test with a decorator, such as `@pytest.mark.acceptance("T003-AC1")`. Pytest has a few built-in markers, like `parametrize`, and you can invent your own. The `pytest_configure()` hook runs once at the start, and the `addinivalue_line()` call registers the `acceptance` marker, so that pytest knows it exists and doesn't warn about an unknown marker.
+**A custom marker.** A marker is a label you attach to a test with a decorator, such as `@pytest.mark.acceptance("AC-001-01")`. Pytest has a few built-in markers, like `parametrize`, and you can invent your own. The `pytest_configure()` hook runs once at the start, and the `addinivalue_line()` call registers the `acceptance` marker, so that pytest knows it exists and doesn't warn about an unknown marker.
 
 **Somewhere to keep the results.** The plugin needs to remember each test's outcome until the end of the run. You could use a global variable, but pytest offers a cleaner place: `config.stash`, a dictionary-like store attached to the run's configuration. Instead of string keys, it uses typed keys created with `pytest.StashKey`, which is what the `RESULTS` constant is. In `pytest_configure()` the plugin puts an empty `defaultdict(list)` in the stash, which will map each criterion ID to the list of outcomes of the tests that verify it.
 
@@ -514,35 +572,46 @@ This is the most "framework-y" code in the chapter, so don't worry if it doesn't
 
 The condition `report.when == "call" or report.outcome != "passed"` decides which phases count. The `call` phase is the test itself, so it always counts. A setup or teardown phase that passed is not interesting, but one that failed or skipped is, because a test whose fixture crashed never got to verify anything.
 
-**Reading the criteria from the task files.** The `defined_criteria()` function opens every `T*.md` file under `docs/releases/*/tasks/` and runs the `CRITERION` regular expression on each line. The expression looks for an ID like `**T003-AC1**`, captures it as group 1, and captures the rest of the line, the description, as group 2. This is why the bold ID format from section 2.2 matters.
+**Reading the criteria from the use cases.** The `defined_criteria()` function opens the `README.md` of every `UC-*` folder under `docs/usecases/`. It takes the use case's name from the first line of the file (the `# UC-001: Configure model connections` heading, with the `# ` removed), and runs the `CRITERION` regular expression on every line. The expression looks for an ID like `**AC-001-01**`, captures it as group 1, and captures the rest of the line, the description, as group 2. The result is a dictionary of dictionaries: for each use case heading, its criteria in the order they are written in the file. This is why the bold ID format from section 2.2 matters, and why task files only list IDs: if a task file repeated a criterion's sentence, it would not be read here, but it could drift away from the real one.
 
-**Printing the table.** At the very end of a run, pytest calls `pytest_terminal_summary()`. The function combines the criteria defined in the task files with the ones that tests mentioned, sorts them (with `sort_key()`, so that `AC10` comes after `AC9` rather than after `AC1`), and decides a status for each:
+**Printing the table.** At the very end of a run, pytest calls `pytest_terminal_summary()`. For each use case that has criteria, it works out a status for every criterion with `status_of()`:
 
 - **not tested**: no test with this criterion ran.
 - **FAIL**: at least one of its tests failed.
 - **PASS**: all of its tests passed.
 - **skipped**: none failed, but not all of them passed.
 
-A criterion that a test mentions but no task file defines is printed with `(not in any task file)`, which catches typos in marker IDs.
+It then prints the use case heading with a count, such as `(8/8 passing)`, followed by one indented line per criterion. Because the criteria come straight from the README in file order, the table lists them in the order you wrote them, with no sorting needed.
+
+The `known` and `undefined` sets catch mistakes in the other direction. A criterion that a test mentions but no use case defines is collected in `undefined` and printed at the end with `(marked on a test but not defined in any use case)`, which catches typos in marker IDs.
 
 You don't have any tests yet, but you can already run pytest and see the plugin at work:
 
 ```bash
 $ uv run pytest -q
 ============================= acceptance criteria ==============================
-not tested  T003-AC1   A missing or empty API-key variable raises an auth error that names th
-not tested  T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
-not tested  T003-AC3   A successful reply returns the answer, requested and served model, fin
-not tested  T003-AC4   A refusal is returned as a response, not raised as an error.
-not tested  T003-AC5   A reply that cannot be trusted (not a chat completion, no choices, no 
-not tested  T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
-not tested  T003-AC7   No request is retried unless retries are configured.
-not tested  T003-AC8   The API key never appears in the connector's repr or in any error mess
-8 not tested
+UC-001: Configure model connections  (0/8 passing)
+  not tested  AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  not tested  AC-001-02  A connector is configured only from its arguments: provider 
+  not tested  AC-001-03  A successful reply returns the answer text, the requested an
+  not tested  AC-001-04  A refusal is returned as a response, not raised as an error.
+  not tested  AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  not tested  AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  not tested  AC-001-07  No request is retried unless retries are configured.
+  not tested  AC-001-08  The API key never appears in a connector's repr or in any er
+UC-004: Evaluate responses  (0/5 passing)
+  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
+  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
+  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  not tested  AC-004-04  Record evaluator provider/model identity.
+  not tested  AC-004-05  Switching the judge profile does not change benchmark data o
+13 not tested
 no tests ran in 0.01s
 ```
 
-Eight criteria, all of them "not tested". The descriptions are cut at 70 characters to keep the table narrow, but the IDs are what matter. This is your to-do list, and the rest of the chapter is about turning it into eight PASS lines.
+Eight criteria of UC-001, all of them "not tested". The descriptions are cut at 60 characters to keep the table narrow, but the IDs are what matter. This is your to-do list, and the rest of the chapter is about turning it into eight PASS lines.
+
+And what is UC-004 doing there? When you planned v0.1, you wrote five criteria for "Evaluate responses" straight into that use case, and the plugin reads every use case, so they show up too. Use cases with no criteria yet, like UC-002 and UC-003, are left out. Think of the UC-004 lines as a preview of what's ahead: they will stay "not tested" until you build the judge in chapter 8, and they are a useful reminder that the table covers the whole project, not just the chapter you are on.
 
 ## 2.11 The Test Helpers
 
@@ -638,7 +707,7 @@ Finally, `connect` is a *fixture*. A test asks for a fixture by naming it as an 
 
 ## 2.12 Testing Construction
 
-Below the helpers, add the tests for creating a connector. They cover AC1, AC2 and part of AC8.
+Below the helpers, add the tests for creating a connector. They cover AC-001-01, AC-001-02 and part of AC-001-08.
 
 _tests/connectors/test_openai_connector.py_: Construction tests
 
@@ -646,7 +715,7 @@ _tests/connectors/test_openai_connector.py_: Construction tests
 # --- construction ---------------------------------------------------------------
 
 
-@pytest.mark.acceptance("T003-AC1", "T003-AC8")
+@pytest.mark.acceptance("AC-001-01", "AC-001-08")
 @pytest.mark.parametrize("value", [None, "", "   "])
 def test_missing_key_names_the_variable(monkeypatch, value):
     if value is None:
@@ -657,7 +726,7 @@ def test_missing_key_names_the_variable(monkeypatch, value):
         OpenAIConnector(model="m", api_key_env="NOT_SET_ANYWHERE")
 
 
-@pytest.mark.acceptance("T003-AC2")
+@pytest.mark.acceptance("AC-001-02")
 def test_environment_defaults_have_no_effect(connect, monkeypatch):
     monkeypatch.setenv("OPENAI_BASE_URL", "http://somewhere-else.example/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-wrong-key-from-env")
@@ -667,7 +736,7 @@ def test_environment_defaults_have_no_effect(connect, monkeypatch):
     assert seen[0].headers["authorization"] == f"Bearer {SECRET}"
 
 
-@pytest.mark.acceptance("T003-AC2")
+@pytest.mark.acceptance("AC-001-02")
 def test_default_base_url_is_openai(monkeypatch):
     monkeypatch.setenv(KEY_ENV, SECRET)
     monkeypatch.setenv("OPENAI_BASE_URL", "http://somewhere-else.example/v1")
@@ -675,7 +744,7 @@ def test_default_base_url_is_openai(monkeypatch):
     assert connector.base_url == "https://api.openai.com/v1"
 
 
-@pytest.mark.acceptance("T003-AC8")
+@pytest.mark.acceptance("AC-001-08")
 def test_repr_shows_model_and_url_only(connect):
     connector = connect(server(body=completion()))
     assert (
@@ -683,15 +752,15 @@ def test_repr_shows_model_and_url_only(connect):
     )
 ```
 
-Here you meet the `acceptance` marker for the first time. The first test is marked with two criteria, because it checks both that the auth error names the variable (AC1) and, implicitly, that it shows no secret (AC8).
+Here you meet the `acceptance` marker for the first time. The first test is marked with two criteria, because it checks both that the auth error names the variable (AC-001-01) and, implicitly, that it shows no secret (AC-001-08).
 
 That first test also uses `@pytest.mark.parametrize`, which runs the same test once for each value in a list. Here the three values are the three ways a key can be missing: the variable doesn't exist at all (`None`), it is empty, or it contains only spaces. One test function, three test runs. The `pytest.raises()` context manager checks that the code inside the `with` block raises the given exception, and its `match` argument is a regular expression that must appear in the error message.
 
-The second test is the proof of AC2. It sets `OPENAI_BASE_URL` and `OPENAI_API_KEY` to wrong values, which the SDK would happily pick up if the connector let it, then sends a request and inspects it through `seen`. The request must go to the URL the connector was given and carry the key from `KEY_ENV`, not the one from the environment. The third test covers the default case, with no `base_url` argument at all. It never sends a request, so it doesn't need a fake server.
+The second test is the proof of AC-001-02. It sets `OPENAI_BASE_URL` and `OPENAI_API_KEY` to wrong values, which the SDK would happily pick up if the connector let it, then sends a request and inspects it through `seen`. The request must go to the URL the connector was given and carry the key from `KEY_ENV`, not the one from the environment. The third test covers the default case, with no `base_url` argument at all. It never sends a request, so it doesn't need a fake server.
 
 ## 2.13 Testing Successful Replies
 
-Next, the tests for replies that should come back as a `ModelResponse`, covering AC3 and AC4. Add them below the construction tests.
+Next, the tests for replies that should come back as a `ModelResponse`, covering AC-001-03 and AC-001-04. Add them below the construction tests.
 
 _tests/connectors/test_openai_connector.py_: Successful replies
 
@@ -699,7 +768,7 @@ _tests/connectors/test_openai_connector.py_: Successful replies
 # --- successful replies --------------------------------------------------------------
 
 
-@pytest.mark.acceptance("T003-AC3")
+@pytest.mark.acceptance("AC-001-03")
 def test_returns_answer_and_metadata(connect):
     response = connect(server(body=completion())).generate("Capital of France?")
     assert response == ModelResponse(
@@ -716,7 +785,7 @@ def test_returns_answer_and_metadata(connect):
     assert response.latency_ms >= 0
 
 
-@pytest.mark.acceptance("T003-AC3")
+@pytest.mark.acceptance("AC-001-03")
 def test_sends_one_user_message(connect):
     seen = []
     connect(server(body=completion(), seen=seen)).generate("hello")
@@ -726,19 +795,19 @@ def test_sends_one_user_message(connect):
     }
 
 
-@pytest.mark.acceptance("T003-AC3")
+@pytest.mark.acceptance("AC-001-03")
 def test_missing_usage_gives_unknown_token_counts(connect):
     response = connect(server(body=completion(usage=False))).generate("hi")
     assert (response.prompt_tokens, response.completion_tokens) == (None, None)
 
 
-@pytest.mark.acceptance("T003-AC3")
+@pytest.mark.acceptance("AC-001-03")
 def test_truncated_answer_keeps_its_finish_reason(connect):
     response = connect(server(body=completion("Par", finish="length"))).generate("hi")
     assert (response.text, response.finish_reason) == ("Par", "length")
 
 
-@pytest.mark.acceptance("T003-AC4")
+@pytest.mark.acceptance("AC-001-04")
 def test_refusal_is_a_response(connect):
     body = completion(None, refusal="I can't help with that.", finish="content_filter")
     response = connect(server(body=body)).generate("hi")
@@ -753,7 +822,7 @@ The truncated-answer test may look odd, since nothing went wrong. That's the poi
 
 ## 2.14 Testing Replies We Can't Trust
 
-Now the replies from section 1.6 of the first codealong, which must raise a `ConnectorResponseError` (AC5).
+Now the replies from section 1.6 of the first codealong, which must raise a `ConnectorResponseError` (AC-001-05).
 
 _tests/connectors/test_openai_connector.py_: Untrustworthy replies
 
@@ -761,7 +830,7 @@ _tests/connectors/test_openai_connector.py_: Untrustworthy replies
 # --- replies we can't trust ------------------------------------------------------------
 
 
-@pytest.mark.acceptance("T003-AC5")
+@pytest.mark.acceptance("AC-001-05")
 @pytest.mark.parametrize(
     "client_args, message",
     [
@@ -782,7 +851,7 @@ The `ids` argument gives each row a readable name. Without it, pytest would make
 
 ## 2.15 Testing Failures
 
-The last group of tests covers failures: AC6, AC7 and the rest of AC8. Add them at the end of the file.
+The last group of tests covers failures: AC-001-06, AC-001-07 and the rest of AC-001-08. Add them at the end of the file.
 
 _tests/connectors/test_openai_connector.py_: Failures
 
@@ -790,7 +859,7 @@ _tests/connectors/test_openai_connector.py_: Failures
 # --- failures --------------------------------------------------------------------------
 
 
-@pytest.mark.acceptance("T003-AC6")
+@pytest.mark.acceptance("AC-001-06")
 @pytest.mark.parametrize(
     "status, code, expected",
     [
@@ -814,7 +883,7 @@ def test_http_errors_are_translated(connect, status, code, expected):
     assert caught.value.request_id == "req_1"
 
 
-@pytest.mark.acceptance("T003-AC6")
+@pytest.mark.acceptance("AC-001-06")
 @pytest.mark.parametrize(
     "exception, message",
     [(httpx2.ReadTimeout, "timed out"), (httpx2.ConnectError, "connection failed")],
@@ -825,7 +894,7 @@ def test_network_failures_are_unavailable(connect, exception, message):
         connect(client).generate("hi")
 
 
-@pytest.mark.acceptance("T003-AC7")
+@pytest.mark.acceptance("AC-001-07")
 def test_no_hidden_retries(connect):
     seen = []
     with pytest.raises(ConnectorUnavailableError):
@@ -833,7 +902,7 @@ def test_no_hidden_retries(connect):
     assert len(seen) == 1
 
 
-@pytest.mark.acceptance("T003-AC8")
+@pytest.mark.acceptance("AC-001-08")
 def test_errors_never_contain_the_key(connect):
     with pytest.raises(ConnectorAuthError) as caught:
         connect(server(401, body=error_body("invalid_api_key"))).generate("hi")
@@ -849,7 +918,7 @@ The network-failure test uses the `raises` option of `server()`. The `handler()`
 
 The retry test is the automated version of the "Do you see how fast that was?" moment from section 1.8. A 500 is exactly the kind of error the SDK would retry by default, so the test sends one and counts the requests that reached the server. One request means no hidden retries.
 
-And the last test is AC8's sharpest check. The fake server's 401 message contains the first seven characters of `SECRET`, just like the real OpenAI message does. The error message must not contain them, but it must still contain the short code `invalid_api_key`, so it remains useful.
+And the last test is AC-001-08's sharpest check. The fake server's 401 message contains the first seven characters of `SECRET`, just like the real OpenAI message does. The error message must not contain them, but it must still contain the short code `invalid_api_key`, so it remains useful.
 
 ## 2.16 Running the Tests
 
@@ -859,16 +928,23 @@ That was a lot of typing. Let's see if it all works:
 $ uv run pytest -q
 .............................                                            [100%]
 ============================= acceptance criteria ==============================
-PASS        T003-AC1   A missing or empty API-key variable raises an auth error that names th
-PASS        T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
-PASS        T003-AC3   A successful reply returns the answer, requested and served model, fin
-PASS        T003-AC4   A refusal is returned as a response, not raised as an error.
-PASS        T003-AC5   A reply that cannot be trusted (not a chat completion, no choices, no 
-PASS        T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
-PASS        T003-AC7   No request is retried unless retries are configured.
-PASS        T003-AC8   The API key never appears in the connector's repr or in any error mess
-8 PASS
-29 passed in 0.89s
+UC-001: Configure model connections  (8/8 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  PASS        AC-001-02  A connector is configured only from its arguments: provider 
+  PASS        AC-001-03  A successful reply returns the answer text, the requested an
+  PASS        AC-001-04  A refusal is returned as a response, not raised as an error.
+  PASS        AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  PASS        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  PASS        AC-001-07  No request is retried unless retries are configured.
+  PASS        AC-001-08  The API key never appears in a connector's repr or in any er
+UC-004: Evaluate responses  (0/5 passing)
+  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
+  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
+  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  not tested  AC-004-04  Record evaluator provider/model identity.
+  not tested  AC-004-05  Switching the judge profile does not change benchmark data o
+8 PASS · 5 not tested
+29 passed in 0.95s
 ```
 
 Your time will be different, but it should be well under a second, for 29 tests that each run the real OpenAI SDK. That is the payoff of faking only the network. You can run this suite every time you save a file and never wait for it, and it costs nothing.
@@ -881,29 +957,39 @@ The table becomes even more useful when you run only part of the suite. The `-k`
 $ uv run pytest -q -k "missing_key or http_errors"
 ..............                                                           [100%]
 ============================= acceptance criteria ==============================
-PASS        T003-AC1   A missing or empty API-key variable raises an auth error that names th
-not tested  T003-AC2   The client is configured only from its arguments; `OPENAI_API_KEY` and
-not tested  T003-AC3   A successful reply returns the answer, requested and served model, fin
-not tested  T003-AC4   A refusal is returned as a response, not raised as an error.
-not tested  T003-AC5   A reply that cannot be trusted (not a chat completion, no choices, no 
-PASS        T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
-not tested  T003-AC7   No request is retried unless retries are configured.
-PASS        T003-AC8   The API key never appears in the connector's repr or in any error mess
-3 PASS · 5 not tested
-14 passed, 15 deselected in 0.18s
+UC-001: Configure model connections  (3/8 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  not tested  AC-001-02  A connector is configured only from its arguments: provider 
+  not tested  AC-001-03  A successful reply returns the answer text, the requested an
+  not tested  AC-001-04  A refusal is returned as a response, not raised as an error.
+  not tested  AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  PASS        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  not tested  AC-001-07  No request is retried unless retries are configured.
+  PASS        AC-001-08  The API key never appears in a connector's repr or in any er
+UC-004: Evaluate responses  (0/5 passing)
+  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
+  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
+  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  not tested  AC-004-04  Record evaluator provider/model identity.
+  not tested  AC-004-05  Switching the judge profile does not change benchmark data o
+3 PASS · 10 not tested
+14 passed, 15 deselected in 0.19s
 ```
 
-The table tells you honestly which requirements this particular run did and did not check, which a plain "14 passed" never would.
+The table tells you honestly which requirements this particular run did and did not check, which a plain "14 passed" never would. The count on the use case line, `(3/8 passing)`, sums it up.
 
 If you'd like to see the table do its job, break something on purpose. In `translate_error()`, swap the quota check and the rate-limit check (the two `if` statements with their `return` lines), and run the tests again:
 
 ```text
-FAIL        T003-AC6   SDK failures map to JudgeLab errors: 401/403 auth, billing codes and 4
+UC-001: Configure model connections  (7/8 passing)
 ...
-7 PASS · 1 FAIL
+  FAIL        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+...
+7 PASS · 1 FAIL · 5 not tested
+=========================== short test summary info ============================
 FAILED tests/connectors/test_openai_connector.py::test_http_errors_are_translated[429-credit_balance_exhausted-ConnectorQuotaError]
 FAILED tests/connectors/test_openai_connector.py::test_http_errors_are_translated[429-project_spend_limit_exceeded-ConnectorQuotaError]
-2 failed, 27 passed in 0.28s
+2 failed, 27 passed in 1.66s
 ```
 
 Exactly the two billing rows fail, because they now get a `ConnectorRateLimitError`. Put the checks back in the right order before you continue.
@@ -911,8 +997,9 @@ Exactly the two billing rows fail, because they now get a `ConnectorRateLimitErr
 ## 2.17 Troubleshooting
 
 - **`ModuleNotFoundError: No module named 'judgelab.connectors'`.** Check that the directory is `src/judgelab/connectors` (inside `src/judgelab`, next to the existing `__init__.py`), and that you are running pytest through `uv run`, which uses the project's environment where `judgelab` is installed.
-- **No acceptance table at the end of the run.** Pytest only loads `conftest.py` from the test directories, so the file must be at `tests/conftest.py` exactly. If the table appears but every criterion is "not tested" even though the tests pass, check the spelling of the IDs in your markers: an ID that no task file defines shows up in the table with `(not in any task file)`.
-- **A criterion is missing from the table.** The line in the task file doesn't match the pattern. The ID must be in bold, with two asterisks on each side: `**T003-AC1**:`.
+- **No acceptance table at the end of the run.** Pytest only loads `conftest.py` from the test directories, so the file must be at `tests/conftest.py` exactly. If the table appears but every criterion is "not tested" even though the tests pass, check the spelling of the IDs in your markers: an ID that no use case defines shows up at the end of the table with `(marked on a test but not defined in any use case)`.
+- **A criterion is missing from the table.** The line in the use case README doesn't match the pattern. The ID must be in bold, with two asterisks on each side, and the criterion number has two digits: `**AC-001-01**:`. Remember also that the plugin only reads `docs/usecases/UC-*/README.md`, so a criterion written in a task file is not picked up; task files only list IDs under `## Delivers`.
+- **A whole use case is missing from the table.** That's expected for a use case with no criteria yet: the plugin skips it.
 - **`PytestUnknownMarkWarning: Unknown pytest.mark.acceptance`.** The `pytest_configure()` hook did not run, which usually means a typo in its name. Hook names must be spelled exactly.
 - **`TypeError: OpenAIConnector.__init__() missing 1 required keyword-only argument: 'api_key_env'`.** The argument no longer has a default (section 2.7). Pass it explicitly: `OpenAIConnector(model=..., api_key_env="OPENAI_API_KEY")`.
 - **Saving a file removed an import you just typed.** As in chapter 1, Ruff's fix-on-save deletes imports that are not used yet. Write the code that uses it, then save.
@@ -921,13 +1008,15 @@ Exactly the two billing rows fail, because they now get a `ConnectorRateLimitErr
 
 1. Add a row to the HTTP error table for a 429 with the code `insufficient_quota`, and another for a 408. Before running them, predict which error each one produces.
 2. Write a test that proves the whitespace around a real key is stripped. Use the `connect` fixture, but before calling it, use `monkeypatch.setenv()` to set `KEY_ENV` to `f"  {SECRET}  "`. Send a request with a `seen` list and check the `authorization` header. Which criterion would you mark it with?
-3. Mark one of your tests with `@pytest.mark.acceptance("T003-AC99")` and run the suite. What does the table say, and why is that useful?
-4. Add `pytest.skip("not today")` as the first line of `test_no_hidden_retries` and run the tests. What status does AC7 get? Remove the line afterwards.
+3. Mark one of your tests with `@pytest.mark.acceptance("AC-001-99")` and run the suite. What does the table say, and why is that useful?
+4. Add `pytest.skip("not today")` as the first line of `test_no_hidden_retries` and run the tests. What status does AC-001-07 get? Remove the line afterwards.
 5. Explain out loud, without looking, why `translate_error()` checks for billing codes before it checks for status 429.
 
 ## 2.19 Committing Your Work
 
-When all eight criteria pass, the task file should say so. Open `T003.md` again and tick the eight checkboxes (`- [x]`). In the table at the top, set **Branch** to `feat/p1-openai-connector-T003`, **Status** to `In progress` (T003 isn't finished, as you will add two more criteria in the next chapter), and **AI-Assist** to `L4`. Then check that the docs are still consistent:
+When all eight criteria pass, the documents should say so. The criteria live in the use case, so that is where they are ticked: open the UC-001 `README.md` again and tick the eight checkboxes of AC-001-01 to AC-001-08 (`- [x]`). In the Slices table at the bottom, set the Status of T003's row to `In progress`. T003 isn't finished, as you will add two more criteria to its slice in the next chapter.
+
+Then open `T003-first-live-model-connector.md`, and in the table at the top set **Branch** to `feat/p1-openai-connector-T003`, **Status** to `In progress` (the same value as its row in the Slices table), and **AI-Assist** to `L4`. Then check that the docs are still consistent. Among other things, the `check` command verifies that every criterion is defined exactly once, in its own use case, and that every ID a task's `## Delivers` list mentions really exists:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -937,7 +1026,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 Now stage exactly the files of this chapter. Naming them, instead of using `git add .`, keeps unrelated changes (like an edited notebook) out of the commit:
 
 ```bash
-$ git add docs/releases/v0.1/tasks/T003.md src/judgelab/connectors tests/conftest.py tests/connectors
+$ git add docs/usecases/UC-001-configure-model-connections src/judgelab/connectors tests/conftest.py tests/connectors
 $ git status
 ```
 
@@ -954,8 +1043,8 @@ OpenAI sends billing and spend-limit errors as HTTP 429 with a code,
 so the code is checked before the status: those become
 ConnectorQuotaError instead of a retryable rate-limit error.
 
-A conftest plugin prints the status of every acceptance criterion
-after each pytest run.
+A conftest plugin prints the status of every use-case acceptance
+criterion after each pytest run, grouped by use case.
 
 AI-Assist: L4
 ```

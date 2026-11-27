@@ -15,47 +15,80 @@ $ git switch main && git pull --ff-only
 $ git switch -c feat/p1-benchmark-loader-T005
 ```
 
-The work in this chapter covers two tasks from the v0.1 plan: [T005](../../docs/releases/v0.1/tasks/T005.md) (the JSON loader) and [T006](../../docs/releases/v0.1/tasks/T006.md) (validating the cases). Both live on this one branch, because a loader that doesn't validate is not really finished.
+Up to now, your work has been on UC-001, configuring model connections. This chapter moves on to a new use case, [UC-002 Prepare benchmark dataset](../../docs/usecases/UC-002-prepare-benchmark-dataset/README.md), whose goal in the v0.1 plan is simply "validated test cases". The work covers two of its slices: [T005](../../docs/usecases/UC-002-prepare-benchmark-dataset/T005-json-dataset-loader.md) (the JSON loader) and [T006](../../docs/usecases/UC-002-prepare-benchmark-dataset/T006-test-case-validation.md) (validating the cases). Between them, they deliver eight new acceptance criteria for the use case, AC-002-01 to AC-002-08. Both slices live on this one branch, because a loader that doesn't validate is not really finished.
 
 As always, I strongly recommend that you type the code yourself instead of copying and pasting it.
 
 ## 6.2 Writing the Acceptance Criteria First
 
-Before writing any code, let's decide what "done" means. Open the task file for T005 and fill in its Objective and Acceptance criteria sections. Replace the empty `- [ ]` line with the three criteria below.
+Before writing any code, let's decide what "done" means. As you know from the earlier chapters, acceptance criteria belong to the use case, not to the task, so they go in the use case's README. UC-002 doesn't have any criteria yet, so its numbering starts at `01`. You don't have to work that out by hand, the docs script prints the next free criterion ID for any use case:
 
-_docs/releases/v0.1/tasks/T005.md_: Objective and acceptance criteria
+```bash
+$ python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-002
+AC-002-01
+```
+
+Open `docs/usecases/UC-002-prepare-benchmark-dataset/README.md` and add these eight lines under the comment in its Acceptance criteria section:
+
+_docs/usecases/UC-002-prepare-benchmark-dataset/README.md_: The acceptance criteria
+
+```markdown
+- [ ] **AC-002-01**: A valid JSON benchmark loads into a `Benchmark` with its id, name and `TestCase`s in file order.
+- [ ] **AC-002-02**: A missing file or invalid JSON raises a `BenchmarkError` naming the file and, for bad JSON, the line and column.
+- [ ] **AC-002-03**: The bundled `benchmarks/sample.json` loads and has at least five cases.
+- [ ] **AC-002-04**: Required fields (benchmark `id`, `name`, `cases`; case `id`, `question`, `expected_answer`) must be non-empty strings, and errors give the location, like `cases[1].question`.
+- [ ] **AC-002-05**: Duplicate case ids are rejected, naming the id and both positions.
+- [ ] **AC-002-06**: Unknown fields are rejected, so typos like `expected_anwser` are caught.
+- [ ] **AC-002-07**: An empty or missing case list is rejected.
+- [ ] **AC-002-08**: Every problem in a file is reported at once, not one per run.
+```
+
+Now say which slice delivers which criteria. Open the task file for T005, fill in its Objective, and replace the placeholder under `## Delivers` with the first three criteria:
+
+_docs/usecases/UC-002-prepare-benchmark-dataset/T005-json-dataset-loader.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Load a benchmark of question and expected-answer cases from a JSON file.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T005-AC1**: A valid JSON benchmark loads into a `Benchmark` with its id, name and `TestCase`s in file order.
-- [ ] **T005-AC2**: A missing file or invalid JSON raises a `BenchmarkError` naming the file and, for bad JSON, the line and column.
-- [ ] **T005-AC3**: The bundled `benchmarks/sample.json` loads and has at least five cases.
+- AC-002-01
+- AC-002-02
+- AC-002-03
 ```
 
-Then do the same in the task file for T006:
+Then do the same in the task file for T006, which delivers the other five:
 
-_docs/releases/v0.1/tasks/T006.md_: Objective and acceptance criteria
+_docs/usecases/UC-002-prepare-benchmark-dataset/T006-test-case-validation.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Reject malformed benchmarks with errors that say exactly what to fix.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T006-AC1**: Required fields (benchmark `id`, `name`, `cases`; case `id`, `question`, `expected_answer`) must be non-empty strings, and errors give the location, like `cases[1].question`.
-- [ ] **T006-AC2**: Duplicate case ids are rejected, naming the id and both positions.
-- [ ] **T006-AC3**: Unknown fields are rejected, so typos like `expected_anwser` are caught.
-- [ ] **T006-AC4**: An empty or missing case list is rejected.
-- [ ] **T006-AC5**: Every problem in a file is reported at once, not one per run.
+- AC-002-04
+- AC-002-05
+- AC-002-06
+- AC-002-07
+- AC-002-08
 ```
 
-You know from earlier chapters that the test suite reads these files. Run `uv run pytest` now and you will see the eight new criteria in the acceptance table, all marked `not tested`. That is your to-do list for the rest of the chapter.
+Finally, go back to the use case README and copy the same lists into the Delivers column of its Slices table:
+
+_docs/usecases/UC-002-prepare-benchmark-dataset/README.md_: The Slices table
+
+```markdown
+| Task | Slice | Delivers | Status |
+|---|---|---|---|
+| [T005](T005-json-dataset-loader.md) | JSON dataset loader | AC-002-01, AC-002-02, AC-002-03 | Todo |
+| [T006](T006-test-case-validation.md) | Test-case validation | AC-002-04, AC-002-05, AC-002-06, AC-002-07, AC-002-08 | Todo |
+```
+
+You know from earlier chapters that the test suite reads the use case READMEs. Run `uv run pytest` now and you will see a new `UC-002: Prepare benchmark dataset` group in the acceptance table, with all eight criteria marked `not tested`. That is your to-do list for the rest of the chapter.
 
 ## 6.3 The Benchmark Format
 
@@ -251,7 +284,7 @@ The first stage reads and parses the file. There are two ways this can go wrong,
 
 The same goes for a file whose top level is valid JSON, but not an object, like a list or a number. There is nothing useful to check in that case, so the loader stops right there.
 
-The second stage is the validation, and here the loader changes strategy. Instead of raising at the first problem, it appends each problem to the `problems` list and keeps going. Only at the very end, if the list is not empty, does it raise a single `BenchmarkError` with all of them. This is what makes T006-AC5 possible.
+The second stage is the validation, and here the loader changes strategy. Instead of raising at the first problem, it appends each problem to the `problems` list and keeps going. Only at the very end, if the list is not empty, does it raise a single `BenchmarkError` with all of them. This is what makes AC-002-08 possible.
 
 Each problem names its location: `benchmark.name` for a field of the benchmark itself, and `cases[1].question` for a field of the second case (the index starts at zero, as in Python). The `where` variable builds this prefix for each case. When you open the file to fix it, you know exactly where to look.
 
@@ -267,7 +300,7 @@ The helper returns `True` if the object is usable, and the loader uses that answ
 
 The last check is the one for duplicate case ids. The obvious way to find duplicates is to compare every case with every other case, with two nested loops. That works, but for `n` cases it makes about `n²/2` comparisons, which is what is called O(n²). For a benchmark of 10,000 cases, that is 50 million comparisons.
 
-The loader does it in a single pass instead, with the help of a dictionary called `first_seen`, which maps each case id to the index where it first appeared. For each case, it asks the dictionary "have I seen this id before?". Looking up a key in a dictionary takes about the same time no matter how big the dictionary is, so the whole check is O(n): 10,000 cases, 10,000 lookups. And since the dictionary stores the index of the first occurrence, the error message can name both positions, as T006-AC2 asks.
+The loader does it in a single pass instead, with the help of a dictionary called `first_seen`, which maps each case id to the index where it first appeared. For each case, it asks the dictionary "have I seen this id before?". Looking up a key in a dictionary takes about the same time no matter how big the dictionary is, so the whole check is O(n): 10,000 cases, 10,000 lookups. And since the dictionary stores the index of the first occurrence, the error message can name both positions, as AC-002-05 asks.
 
 If this sounds familiar, it is because this is the classic "Contains Duplicate" problem, which is the practice exercise listed for T005-T006 in the DSA and GoF learning ledger of the [v0.1 plan](../../docs/releases/v0.1/README.md). Solving it on its own, after this chapter, is a good way to make sure the idea sticks.
 
@@ -365,7 +398,7 @@ def problems(path):
     return caught.value.problems
 
 
-@pytest.mark.acceptance("T005-AC1")
+@pytest.mark.acceptance("AC-002-01")
 def test_loads_cases_in_order(tmp_path):
     path = write(
         tmp_path, bench(case("c1", "2+2?", "4"), case("c2", "Capital of France?", "Paris"))
@@ -377,33 +410,33 @@ def test_loads_cases_in_order(tmp_path):
     )
 
 
-@pytest.mark.acceptance("T005-AC2")
+@pytest.mark.acceptance("AC-002-02")
 def test_missing_file(tmp_path):
     with pytest.raises(BenchmarkError, match="nope.json") as caught:
         load_benchmark(tmp_path / "nope.json")
     assert caught.value.problems == ["file not found"]
 
 
-@pytest.mark.acceptance("T005-AC2")
+@pytest.mark.acceptance("AC-002-02")
 def test_invalid_json_gives_line_and_column(tmp_path):
     path = write(tmp_path, '{"id": "b1",\n  "name": }')
     assert problems(path) == ["not valid JSON (line 2, column 11)"]
 
 
-@pytest.mark.acceptance("T005-AC3")
+@pytest.mark.acceptance("AC-002-03")
 def test_sample_benchmark_loads():
     benchmark = load_benchmark(SAMPLE)
     assert benchmark.id == "general-knowledge-v1"
     assert len(benchmark.cases) >= 5
 
 
-@pytest.mark.acceptance("T006-AC1")
+@pytest.mark.acceptance("AC-002-04")
 def test_missing_and_blank_fields_give_their_location(tmp_path):
     path = write(tmp_path, bench(case("c1"), {"id": "c2", "question": " ", "expected_answer": "A"}))
     assert problems(path) == ["cases[1].question must be a non-empty string"]
 
 
-@pytest.mark.acceptance("T006-AC1")
+@pytest.mark.acceptance("AC-002-04")
 def test_benchmark_fields_are_required(tmp_path):
     path = write(tmp_path, {"cases": [case("c1")]})
     assert problems(path) == [
@@ -412,13 +445,13 @@ def test_benchmark_fields_are_required(tmp_path):
     ]
 
 
-@pytest.mark.acceptance("T006-AC2")
+@pytest.mark.acceptance("AC-002-05")
 def test_duplicate_ids_name_both_positions(tmp_path):
     path = write(tmp_path, bench(case("c1"), case("c2"), case("c1")))
     assert problems(path) == ["cases[2].id 'c1' duplicates cases[0].id"]
 
 
-@pytest.mark.acceptance("T006-AC3")
+@pytest.mark.acceptance("AC-002-06")
 def test_unknown_fields_are_rejected(tmp_path):
     typo = {"id": "c1", "question": "Q?", "expected_anwser": "A"}
     assert problems(write(tmp_path, bench(typo))) == [
@@ -427,14 +460,14 @@ def test_unknown_fields_are_rejected(tmp_path):
     ]
 
 
-@pytest.mark.acceptance("T006-AC4")
+@pytest.mark.acceptance("AC-002-07")
 @pytest.mark.parametrize("cases", [[], None])
 def test_empty_or_missing_case_list(tmp_path, cases):
     data = {"id": "b1", "name": "Bench"} | ({} if cases is None else {"cases": cases})
     assert "cases must be a non-empty list" in problems(write(tmp_path, data))
 
 
-@pytest.mark.acceptance("T006-AC5")
+@pytest.mark.acceptance("AC-002-08")
 def test_every_problem_is_reported_at_once(tmp_path):
     path = write(tmp_path, {"id": "", "name": "Bench", "cases": [case("c1"), "oops", case("c1")]})
     assert problems(path) == [
@@ -462,23 +495,24 @@ Let's run the whole test suite:
 $ uv run pytest
 ```
 
-The acceptance table at the end now has all of T005 and T006 in it. This is the relevant part, plus the last two lines:
+The acceptance table at the end now has a complete UC-002 group. This is the relevant part, plus the last two lines:
 
 ```text
-PASS        T005-AC1   A valid JSON benchmark loads into a `Benchmark` with its id, name and
-PASS        T005-AC2   A missing file or invalid JSON raises a `BenchmarkError` naming the fi
-PASS        T005-AC3   The bundled `benchmarks/sample.json` loads and has at least five cases
-PASS        T006-AC1   Required fields (benchmark `id`, `name`, `cases`; case `id`, `question
-PASS        T006-AC2   Duplicate case ids are rejected, naming the id and both positions.
-PASS        T006-AC3   Unknown fields are rejected, so typos like `expected_anwser` are caugh
-PASS        T006-AC4   An empty or missing case list is rejected.
-PASS        T006-AC5   Every problem in a file is reported at once, not one per run.
+UC-002: Prepare benchmark dataset  (8/8 passing)
+  PASS        AC-002-01  A valid JSON benchmark loads into a `Benchmark` with its id,
+  PASS        AC-002-02  A missing file or invalid JSON raises a `BenchmarkError` nam
+  PASS        AC-002-03  The bundled `benchmarks/sample.json` loads and has at least 
+  PASS        AC-002-04  Required fields (benchmark `id`, `name`, `cases`; case `id`,
+  PASS        AC-002-05  Duplicate case ids are rejected, naming the id and both posi
+  PASS        AC-002-06  Unknown fields are rejected, so typos like `expected_anwser`
+  PASS        AC-002-07  An empty or missing case list is rejected.
+  PASS        AC-002-08  Every problem in a file is reported at once, not one per run
 ...
-37 PASS
-104 passed in 2.28s
+31 PASS · 4 not tested
+104 passed in 2.42s
 ```
 
-Your timing will be different, but every line should say `PASS`, and there should be no warnings.
+Your timing will be different, but every UC-002 line should say `PASS`, and there should be no warnings. The four `not tested` criteria are the ones from the "Evaluate responses" use case, UC-004, which you wrote yourself in the v0.1 plan. Their turn comes in chapter 8.
 
 ## 6.9 Troubleshooting
 
@@ -497,7 +531,7 @@ Your timing will be different, but every line should say `PASS`, and there shoul
 
 ## 6.11 Committing Your Work
 
-Once all the tests pass, you can mark the work as done. In both [T005](../../docs/releases/v0.1/tasks/T005.md) and [T006](../../docs/releases/v0.1/tasks/T006.md), tick the acceptance-criteria checkboxes (`- [ ]` becomes `- [x]`), set the Branch field to `feat/p1-benchmark-loader-T005`, Status to `Done` and AI-Assist to `L4`. Then check that the docs are still consistent:
+Once all the tests pass, you can mark the work as done. In the [UC-002 README](../../docs/usecases/UC-002-prepare-benchmark-dataset/README.md), tick the eight acceptance criteria (`- [ ]` becomes `- [x]`) and set the Status of both rows in the Slices table to `Done`. In both [T005](../../docs/usecases/UC-002-prepare-benchmark-dataset/T005-json-dataset-loader.md) and [T006](../../docs/usecases/UC-002-prepare-benchmark-dataset/T006-test-case-validation.md), set the Branch field to `feat/p1-benchmark-loader-T005`, Status to `Done` and AI-Assist to `L4`. Then check that the docs are still consistent:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -506,7 +540,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 Now commit. Following [CONTRIBUTING.md](../../CONTRIBUTING.md), the commit message uses the Conventional Commits format, with a body that explains the design and an `AI-Assist` trailer:
 
 ```bash
-$ git add benchmarks src/judgelab/benchmark.py tests/test_benchmark.py docs/releases/v0.1/tasks
+$ git add benchmarks src/judgelab/benchmark.py tests/test_benchmark.py docs/usecases/UC-002-prepare-benchmark-dataset
 $ git commit
 ```
 

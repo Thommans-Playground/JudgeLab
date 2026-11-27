@@ -14,6 +14,8 @@ You need everything from chapter 10, with its pull request merged, and a green t
 $ git switch main && git pull --ff-only && git switch -c test/p1-live-validation-T013
 ```
 
+This chapter finishes [UC-006 Run complete evaluation](../../docs/usecases/UC-006-run-complete-evaluation/README.md), the use case you started in chapter 10. Its second and last slice is [T013](../../docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md) (live end-to-end benchmark), which delivers four more criteria, AC-006-08 to AC-006-11. Once they are met, every use case in v0.1 works, and the release can be tagged.
+
 For the live parts of this chapter, your `.env` file in the root of the project needs **both** keys, because the bundled configuration uses an OpenAI model as the target and a Claude model as the judge:
 
 ```text
@@ -27,24 +29,50 @@ How much will this cost? Very little. The smoke tests make two short calls. A fu
 
 ## 11.2 Writing the Acceptance Criteria First
 
-Open [docs/releases/v0.1/tasks/T013.md](../../docs/releases/v0.1/tasks/T013.md). Put the objective under the "Objective" heading, and replace the empty `- [ ]` line under "Acceptance criteria" with the four criteria:
+UC-006 already has seven criteria from chapter 10, so the next one is `08`:
 
-_docs/releases/v0.1/tasks/T013.md_: Objective and acceptance criteria
+```bash
+$ python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-006
+AC-006-08
+```
+
+Open `docs/usecases/UC-006-run-complete-evaluation/README.md` and add these four lines right after AC-006-07, in its Acceptance criteria section:
+
+_docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteria for T013
+
+```markdown
+- [ ] **AC-006-08**: Opt-in live smoke tests (`pytest -m live`) make one real call through each configured connector and get a sensible answer; they never run by default.
+- [ ] **AC-006-09**: A live run of the five-case sample benchmark with the bundled config completes and writes a report with full coverage, or explains every ERROR.
+- [ ] **AC-006-10**: A human has read every case in the live report and agrees with the judge's verdicts (or records the disagreements) in the release report.
+- [ ] **AC-006-11**: Swapping the target and judge providers in the config, with no code change, produces a second valid live report.
+```
+
+Then open the task file for T013, fill in its Objective, and replace the placeholder under `## Delivers` with the four new criteria:
+
+_docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md_: Objective and Delivers
 
 ```markdown
 ## Objective
 
 Validate v0.1 against real models end to end, and review the results as a human.
 
-## Acceptance criteria
+## Delivers
 
-- [ ] **T013-AC1**: Opt-in live smoke tests (`pytest -m live`) make one real call through each configured connector and get a sensible answer; they never run by default.
-- [ ] **T013-AC2**: A live run of the five-case sample benchmark with the bundled config completes and writes a report with full coverage, or explains every ERROR.
-- [ ] **T013-AC3**: A human has read every case in the live report and agrees with the judge's verdicts (or records the disagreements) in the release report.
-- [ ] **T013-AC4**: Swapping the target and judge providers in the config, with no code change, produces a second valid live report.
+- AC-006-08
+- AC-006-09
+- AC-006-10
+- AC-006-11
 ```
 
-Only AC1 can be checked by pytest. The other three are verified by you, with the reports and the release report as evidence. That's normal for acceptance testing: some criteria are about whether a human finds the result useful, and no test can decide that for you.
+And fill in the Delivers column of T013's row in the use case's Slices table:
+
+_docs/usecases/UC-006-run-complete-evaluation/README.md_: T013's row in the Slices table
+
+```markdown
+| [T013](T013-live-end-to-end-benchmark.md) | Live end-to-end benchmark | AC-006-08, AC-006-09, AC-006-10, AC-006-11 | Todo |
+```
+
+Only AC-006-08 can be checked by pytest, and only when you ask for the live tests and have the keys. The other three are verified by you, with the reports and the release report as evidence. That's normal for acceptance testing: some criteria are about whether a human finds the result useful, and no test can decide that for you. You'll see what this means for the progress table in a moment.
 
 ## 11.3 Keeping Live Tests Out of the Default Run
 
@@ -101,7 +129,7 @@ PROMPT = "What is the capital of France? Answer with one word."
 pytestmark = pytest.mark.live
 
 
-@pytest.mark.acceptance("T013-AC1")
+@pytest.mark.acceptance("AC-006-08")
 @pytest.mark.parametrize("role", ["target", "judge"])
 def test_one_real_call(role):
     profile = getattr(load_config(CONFIG), role)
@@ -119,7 +147,7 @@ Let's go through the parts that are new.
 
 The test is parametrized over `role`, so it runs once for the target and once for the judge. `getattr(load_config(CONFIG), role)` reads `config.target` or `config.judge`, depending on the parameter. The test uses the *real* configuration file, which it finds relative to its own location: `parents[2]` of `tests/live/test_live_smoke.py` is the root of the project. That makes these tests check the exact setup you are going to run, not a copy of it.
 
-If the key for a connection isn't set, the test calls `pytest.skip()` with a message naming the variable. A skip is not a pass and not a failure. It shows up in the output, so you know the test didn't run and why, and the acceptance table marks AC1 as `skipped` instead of `PASS`. Skipping, rather than failing, means that someone with only one of the two keys can still check the connector they *can* reach.
+If the key for a connection isn't set, the test calls `pytest.skip()` with a message naming the variable. A skip is not a pass and not a failure. It shows up in the output, so you know the test didn't run and why, and the acceptance table marks AC-006-08 as `skipped` instead of `PASS`. Skipping, rather than failing, means that someone with only one of the two keys can still check the connector they *can* reach.
 
 Finally, the assertions are deliberately loose. The test doesn't check that the answer is exactly `Paris`, because models add punctuation, a trailing period, or a polite sentence, and a smoke test that breaks every time a model changes its style is worse than none. It checks that there is an answer, that it mentions Paris in any capitalisation, and that the response records which model served it and the provider's request id. Those last two are what you'll need if you ever have to report a problem to a provider.
 
@@ -131,17 +159,26 @@ First, confirm that the default run is unaffected:
 $ uv run pytest
 ```
 
-The end of the output now says that two tests were deselected, and the four T013 criteria show as `not tested`:
+The end of the output now says that two tests were deselected, and UC-006 shows the four new criteria as `not tested`:
 
 ```text
-not tested  T013-AC1   Opt-in live smoke tests (`pytest -m live`) make one real call through 
-not tested  T013-AC2   A live run of the five-case sample benchmark with the bundled config c
-not tested  T013-AC3   A human has read every case in the live report and agrees with the jud
-not tested  T013-AC4   Swapping the target and judge providers in the config, with no code ch
-...
-63 PASS · 4 not tested
-162 passed, 2 deselected in 2.54s
+UC-006: Run complete evaluation  (7/11 passing)
+  PASS        AC-006-01  Every case goes to the target, then its answer goes to the j
+  PASS        AC-006-02  Target errors and truncated answers are ERROR at the target 
+  PASS        AC-006-03  Judge errors are ERROR at the judge stage, never FAIL; a jud
+  PASS        AC-006-04  A refusal from the target is sent to the judge as the answer
+  PASS        AC-006-05  `judgelab run --config <file>` runs the whole evaluation, pr
+  PASS        AC-006-06  Configuration problems (missing or invalid file, unknown set
+  PASS        AC-006-07  The config file names both connections, the dataset, the rub
+  not tested  AC-006-08  Opt-in live smoke tests (`pytest -m live`) make one real cal
+  not tested  AC-006-09  A live run of the five-case sample benchmark with the bundle
+  not tested  AC-006-10  A human has read every case in the live report and agrees wi
+  not tested  AC-006-11  Swapping the target and judge providers in the config, with 
+56 PASS · 4 not tested
+162 passed, 2 deselected in 2.72s
 ```
+
+This is the honest state of things. Everything that can be checked offline passes, and the four criteria that need real models or a human are listed as not yet tested, instead of quietly missing from the table.
 
 Next, run the live tests *without* the keys. Remember that `uv run` doesn't read `.env` on its own, so this is what happens when you forget to load it. I'm adding `-rs`, which asks pytest to list the reason for every skip at the end:
 
@@ -150,11 +187,16 @@ $ uv run pytest -m live -rs
 ```
 
 ```text
-skipped     T013-AC1   Opt-in live smoke tests (`pytest -m live`) make one real call through
 ...
+  skipped     AC-006-08  Opt-in live smoke tests (`pytest -m live`) make one real cal
+  not tested  AC-006-09  A live run of the five-case sample benchmark with the bundle
+  not tested  AC-006-10  A human has read every case in the live report and agrees wi
+  not tested  AC-006-11  Swapping the target and judge providers in the config, with 
+1 skipped · 59 not tested
+=========================== short test summary info ============================
 SKIPPED [1] tests/live/test_live_smoke.py:26: OPENAI_API_KEY is not set
 SKIPPED [1] tests/live/test_live_smoke.py:26: ANTHROPIC_API_KEY is not set
-====================== 2 skipped, 162 deselected in 0.59s ======================
+====================== 2 skipped, 162 deselected in 0.62s ======================
 ```
 
 Look at the last line: `-m live` selected the two live tests and deselected the other 162. Your explicit option replaced the default one, as promised.
@@ -168,13 +210,15 @@ $ uv run --env-file .env pytest -m live -rs
 I didn't capture this run, since it would have spent real money, so the following is **illustrative only: your timings will differ**. With both keys loaded and both models reachable, the end of the output looks like this:
 
 ```text
-PASS        T013-AC1   Opt-in live smoke tests (`pytest -m live`) make one real call through
-...
-1 PASS · 66 not tested
+UC-006: Run complete evaluation  (1/11 passing)
+  ...
+  PASS        AC-006-08  Opt-in live smoke tests (`pytest -m live`) make one real cal
+  ...
+1 PASS · 59 not tested
 ====================== 2 passed, 162 deselected in 3.84s ======================
 ```
 
-The 66 "not tested" criteria are simply the ones whose tests were deselected in this run. Your first real requests through JudgeLab's configuration, registry and connectors have succeeded.
+AC-006-08 is now `PASS`. The 59 "not tested" criteria are simply the ones whose tests were deselected in this run. Your first real requests through JudgeLab's configuration, registry and connectors have succeeded.
 
 ## 11.6 The First Live Evaluation
 
@@ -202,7 +246,7 @@ Report: reports/run-20261127T101512Z-7d41e0c2.json
 
 A modern model should do well on five general-knowledge questions, so a 100% pass rate would not be surprising. But don't celebrate the number yet. The number is the least interesting thing in that output, and you are about to see why.
 
-If any case comes out as `ERROR`, the progress line shows the stage and the message in parentheses, and T013-AC2 says that each of those must be explained. A one-off `ConnectorUnavailableError` is worth a rerun. Anything that repeats is a finding, and section 11.11 lists the usual suspects.
+If any case comes out as `ERROR`, the progress line shows the stage and the message in parentheses, and AC-006-09 says that each of those must be explained. A one-off `ConnectorUnavailableError` is worth a rerun. Anything that repeats is a finding, and section 11.11 lists the usual suspects.
 
 ## 11.7 Reviewing the Report as a Human
 
@@ -251,11 +295,11 @@ For each of the five cases, ask yourself these questions, and write the answers 
 
 If you disagree with the judge on a case, that is not something to fix quietly by rerunning until you get the verdict you want. A disagreement is a *finding*: it tells you something about the rubric, the judge model or the expected answer in the benchmark, and it is exactly the kind of thing your v0.1 plan wants recorded. Phase 1 deliberately doesn't include statistical judge calibration, so your review is the only check there is on the judge in this release. Write each disagreement down for the release report in section 11.9, with the case id and your reasoning. A release report that says "I disagreed with the judge on gk-003, because..." is far more trustworthy than one that says "100%, all good".
 
-When you're done, you have satisfied T013-AC2 (a complete live run) and the reading part of T013-AC3.
+When you're done, you have the evidence for AC-006-09 (a complete live run) and the reading part of AC-006-10.
 
 ## 11.8 Swapping Providers with Configuration Only
 
-Your v0.1 plan promises that the target and the judge can be switched independently through configuration (REQ-003 and T004). The tests have proven this with fakes since chapter 5, but T013-AC4 asks for proof with real models. Let's swap the two roles: Claude becomes the model under test, and the OpenAI model becomes the judge.
+Your v0.1 plan promises that the target and the judge can be switched independently through configuration (REQ-003, and AC-001-22 in UC-001). The tests have proven this with fakes since chapter 5, but AC-006-11 asks for proof with real models. Let's swap the two roles: Claude becomes the model under test, and the OpenAI model becomes the judge.
 
 You'll want to keep this configuration as evidence of how the second report was produced, so create the release's evidence folder now and save the swapped configuration in it:
 
@@ -301,11 +345,11 @@ $ uv run --env-file .env judgelab run --config docs/releases/v0.1/evidence/evalu
 
 The header now reads `target: anthropic claude-opus-5-5` and `judge:  openai_compatible gpt-6.2-astra`, and a second report appears in `reports/`. Not a single line of Python changed. Review this report the same way you reviewed the first one. It's also interesting to compare the two: did the two judges agree on the same kinds of answers? Did one write more useful justifications than the other? Write down anything you notice.
 
-That's T013-AC4 done, and T004 proven with real models.
+That's the evidence for AC-006-11, and AC-001-22 proven with real models.
 
 ## 11.9 Preparing the Release
 
-Everything works, and you have looked at the evidence yourself. Now let's put the release together. There are four steps.
+Everything works, and you have looked at the evidence yourself. Now let's put the release together. There are five steps.
 
 **1. Keep the evidence.** The `reports/` folder is ignored by Git, which is right for the dozens of reports you generate while developing, but these two live reports are your release evidence, and they need to be kept. Copy them into the evidence folder, using your own file names:
 
@@ -319,36 +363,113 @@ The reports are safe to commit: you tested in chapter 9 that they never contain 
 $ uv run pytest > docs/releases/v0.1/evidence/pytest.txt
 ```
 
-**2. Write the release report.** Open [docs/releases/v0.1/release-report.md](../../docs/releases/v0.1/release-report.md) and fill in each section. This is your writing, so I'll only describe what belongs where:
+Open `pytest.txt` and look at the acceptance table at the end. It's the whole of v0.1 on one screen, grouped by use case:
+
+```text
+UC-001: Configure model connections  (22/22 passing)
+  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
+  PASS        AC-001-02  A connector is configured only from its arguments: provider 
+  PASS        AC-001-03  A successful reply returns the answer text, the requested an
+  PASS        AC-001-04  A refusal is returned as a response, not raised as an error.
+  PASS        AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
+  PASS        AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
+  PASS        AC-001-07  No request is retried unless retries are configured.
+  PASS        AC-001-08  The API key never appears in a connector's repr or in any er
+  PASS        AC-001-09  Every connector implements the `ModelConnector` port and pas
+  PASS        AC-001-10  A `FakeConnector` answers from a script (answers, refusals, 
+  PASS        AC-001-11  Truncation is reported the same way for every provider: `tru
+  PASS        AC-001-12  A connection is described by a validated profile built from 
+  PASS        AC-001-13  Missing or blank required profile settings are rejected, and
+  PASS        AC-001-14  `api_key_env` must look like an environment variable name; t
+  PASS        AC-001-15  `base_url` must be an https URL (plain http only for localho
+  PASS        AC-001-16  Unknown profile settings (typos, or an `api_key` field) are 
+  PASS        AC-001-17  `timeout_s` must be greater than 0 and `max_retries` a whole
+  PASS        AC-001-18  The key is read from the environment variable the profile na
+  PASS        AC-001-19  The connector is chosen by the profile's provider.
+  PASS        AC-001-20  An unknown provider is rejected with the list of known provi
+  PASS        AC-001-21  Provider-specific options (like Claude's `max_tokens`) reach
+  PASS        AC-001-22  Target and judge connections are independent, and swapping p
+UC-002: Prepare benchmark dataset  (8/8 passing)
+  PASS        AC-002-01  A valid JSON benchmark loads into a `Benchmark` with its id,
+  PASS        AC-002-02  A missing file or invalid JSON raises a `BenchmarkError` nam
+  PASS        AC-002-03  The bundled `benchmarks/sample.json` loads and has at least 
+  PASS        AC-002-04  Required fields (benchmark `id`, `name`, `cases`; case `id`,
+  PASS        AC-002-05  Duplicate case ids are rejected, naming the id and both posi
+  PASS        AC-002-06  Unknown fields are rejected, so typos like `expected_anwser`
+  PASS        AC-002-07  An empty or missing case list is rejected.
+  PASS        AC-002-08  Every problem in a file is reported at once, not one per run
+UC-003: Execute target model  (5/5 passing)
+  PASS        AC-003-01  Each case's question is sent to the target once, in order, a
+  PASS        AC-003-02  A connector error on one case is recorded against that case 
+  PASS        AC-003-03  An auth or quota error stops the run: remaining cases are no
+  PASS        AC-003-04  An optional progress callback is called after every case.
+  PASS        AC-003-05  Exceptions that are not connector errors are not swallowed, 
+UC-004: Evaluate responses  (7/7 passing)
+  PASS        AC-004-01  Include question, expected answer, actual answer, and rubric
+  PASS        AC-004-02  Accept only supported verdict values and a nonempty justific
+  PASS        AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
+  PASS        AC-004-04  Record evaluator provider/model identity.
+  PASS        AC-004-05  Switching the judge profile does not change benchmark data o
+  PASS        AC-004-06  The judge's instructions reach every provider: a `system` me
+  PASS        AC-004-07  Rubrics are looked up by id; an unknown id is rejected with 
+UC-005: Generate report  (7/7 passing)
+  PASS        AC-005-01  Totals for passed, failed and errored cases are counted in a
+  PASS        AC-005-02  `pass_rate` is passed / (passed + failed): errors are never 
+  PASS        AC-005-03  `coverage` is the share of cases that reached a verdict, rep
+  PASS        AC-005-04  Each case records its question, expected and actual answer, 
+  PASS        AC-005-05  The report records the run id, UTC start and finish times, J
+  PASS        AC-005-06  The report never contains an API key or the name of the vari
+  PASS        AC-005-07  Reports are written as UTF-8 JSON into an output directory (
+UC-006: Run complete evaluation  (7/11 passing)
+  PASS        AC-006-01  Every case goes to the target, then its answer goes to the j
+  PASS        AC-006-02  Target errors and truncated answers are ERROR at the target 
+  PASS        AC-006-03  Judge errors are ERROR at the judge stage, never FAIL; a jud
+  PASS        AC-006-04  A refusal from the target is sent to the judge as the answer
+  PASS        AC-006-05  `judgelab run --config <file>` runs the whole evaluation, pr
+  PASS        AC-006-06  Configuration problems (missing or invalid file, unknown set
+  PASS        AC-006-07  The config file names both connections, the dataset, the rub
+  not tested  AC-006-08  Opt-in live smoke tests (`pytest -m live`) make one real cal
+  not tested  AC-006-09  A live run of the five-case sample benchmark with the bundle
+  not tested  AC-006-10  A human has read every case in the live report and agrees wi
+  not tested  AC-006-11  Swapping the target and judge providers in the config, with 
+56 PASS · 4 not tested
+162 passed, 2 deselected in 2.72s
+```
+
+Five use cases are complete, and UC-006 stands at 7 out of 11. The four criteria left are exactly the ones this chapter is about, and none of them can be ticked by a default test run. AC-006-08 becomes `PASS` when you run the live tests with your keys, as you did in section 11.5, so that run's output is its evidence. AC-006-09, AC-006-10 and AC-006-11 are manual: the live run, your review and the swapped run are their evidence, and they are recorded in the release report instead of in a pytest table. That's not a gap in the testing. It's the table telling you, correctly, which promises a machine can check and which ones need you.
+
+**2. Tick the criteria and close the slices.** In the [UC-006 README](../../docs/usecases/UC-006-run-complete-evaluation/README.md), tick AC-006-08 to AC-006-11, now that you have the evidence for each, and set the Status of T013's row in the Slices table to `Done`. In [T013](../../docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md), set **Status** to `Done`, fill in **Branch** (`test/p1-live-validation-T013`) and set **AI-Assist** to `L4`.
+
+Then go through every use case README, from UC-001 to UC-006, and make sure every acceptance criterion is ticked and every row of every Slices table says `Done`. Open each task file too, from T001 to T014, and check that its Status says `Done`. If something isn't, either finish it or say in the release report why it isn't part of v0.1.
+
+**3. Update the traceability matrix.** Open [docs/traceability.md](../../docs/traceability.md) and update the Status column, which still says `Not started` for every requirement. The `vbench-docs` skill has one rule to respect here: a requirement is only `Verified` when a test case (`TC-###`) exists for it and there's test evidence. Your evidence is in `pytest.txt`, but [docs/verification.md](../../docs/verification.md) still only has a placeholder row. So add one test case row per test area to the table in `verification.md` (for example, a row for the dataset tests in `tests/test_benchmark.py` that verifies REQ-001 and REQ-002), getting each new ID from the script with `python3 .claude/skills/vbench-docs/scripts/docids.py next TC`. Put the TC ids in the Verification column of the traceability matrix, and then mark the requirements `Verified`. If you'd rather not do this now, mark them `In progress` and record the missing test cases under Known issues. Either way, the matrix tells the truth.
+
+**4. Write the release report.** Open [docs/releases/v0.1/release-report.md](../../docs/releases/v0.1/release-report.md) and fill in each section. This is your writing, so I'll only describe what belongs where:
 
 - **Summary:** what v0.1 does in two or three sentences, the tag (`v0.1.0`) and the date.
-- **Requirements status:** REQ-001 to REQ-013 are all in scope for v0.1. Say which tests and which evidence cover each, and note anything deferred and why.
-- **Verification evidence:** the test totals and the acceptance table summary from `pytest.txt`, links to the two reports in `evidence/`, the swapped configuration, and your human review from section 11.7: for each case of each run, the verdict, whether you agreed, and your reasoning when you didn't. This is where T013-AC3 is satisfied.
+- **Requirements status:** REQ-001 to REQ-013 are all in scope for v0.1. Say which use cases, tests and evidence cover each, and note anything deferred and why.
+- **Verification evidence:** the test totals and the acceptance table from `pytest.txt`, the result of the live smoke tests (the evidence for AC-006-08), links to the two reports in `evidence/`, the swapped configuration, and your human review from section 11.7: for each case of each run, the verdict, whether you agreed, and your reasoning when you didn't. This is where the three manual criteria, AC-006-09, AC-006-10 and AC-006-11, are recorded, each with the evidence that satisfies it.
 - **Known issues:** anything that surprised you, every disagreement with the judge, and limitations you know about. For example, the progress output says nothing during the target stage, and there's no judge calibration yet.
 - **Learning outcomes:** the DSA and pattern concepts from the ledger in the [v0.1 plan](../../docs/releases/v0.1/README.md) (single-pass counting, Adapter, dependency inversion and test doubles, and the rest), and your AI-Assist levels across the release.
 - **Retrospective:** what went well and what you'd change, honestly.
 
-**3. Update the task files and traceability.** In [T013](../../docs/releases/v0.1/tasks/T013.md), tick all four criteria, set **Status** to `Done`, fill in **Branch** and set **AI-Assist** to `L4`. Then open every task file from T001 to T014 and make sure each one is `Done` with all its criteria ticked. If one isn't, either finish it or say in the release report why it isn't part of v0.1.
-
-Next, open [docs/traceability.md](../../docs/traceability.md) and update the Status column, which still says `Not started` for every requirement. The `vbench-docs` skill has one rule to respect here: a requirement is only `Verified` when a test case (`TC-###`) exists for it and there's test evidence. Your evidence is in `pytest.txt`, but [docs/verification.md](../../docs/verification.md) still only has a placeholder row. So add one test case row per test area to the table in `verification.md` (for example, a row for the dataset tests in `tests/test_benchmark.py` that verifies REQ-001 and REQ-002), getting each new ID from the script with `python3 .claude/skills/vbench-docs/scripts/docids.py next TC`. Put the TC ids in the Verification column of the traceability matrix, and then mark the requirements `Verified`. If you'd rather not do this now, mark them `In progress` and record the missing test cases under Known issues. Either way, the matrix tells the truth.
-
-**4. Check the docs.** Finally, run the hygiene check and fix anything it reports:
+**5. Check the docs.** Finally, run the hygiene check and fix anything it reports:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 ```
 
-It should finish with `0 error(s)`.
+It should finish with `0 error(s)`. Among other things, it confirms that every criterion is defined once, in its own use case, and that every `AC-…` you mentioned in the release report points at a real one.
 
 ## 11.10 The Release Gates
 
 Section 11 of your [v0.1 plan](../../docs/releases/v0.1/README.md) lists six gates that a release has to pass. Let's walk through them one by one, and for each, point at the evidence:
 
-1. **Requirements baseline.** The scope, the IDs and the acceptance criteria were reviewed. Evidence: the plan, the requirement files and every task file's acceptance criteria, all written *before* the code in each chapter.
-2. **Design baseline.** The use cases, ontology, interfaces and key trade-offs are documented. Evidence: the plan's design sections and the decisions you recorded along the way. If a significant decision from these chapters isn't written down anywhere (`yaml.safe_load`, errors never counted as failures, the injected connector factory), now is the time to add it.
+1. **Requirements baseline.** The scope, the IDs and the acceptance criteria were reviewed. Evidence: the plan, the requirement files and every use case's acceptance criteria, all written *before* the code in each chapter.
+2. **Design baseline.** The use cases, ontology, interfaces and key trade-offs are documented. Evidence: the plan's design sections, the use case folders with their slices, and the decisions you recorded along the way. If a significant decision from these chapters isn't written down anywhere (`yaml.safe_load`, errors never counted as failures, the injected connector factory), now is the time to add it.
 3. **Implementation.** All must-have capabilities work through the CLI. Evidence: the live run from section 11.6, which exercised every one of them in a single command.
-4. **Verification.** Unit, component, integration and system tests pass. Evidence: `pytest.txt`, with the acceptance table showing every automated criterion as `PASS`, plus the passing live smoke tests.
-5. **Validation.** One real benchmark was executed and its results were reviewed by hand. Evidence: the two live reports and your review in the release report.
+4. **Verification.** Unit, component, integration and system tests pass. Evidence: `pytest.txt`, with the acceptance table showing every automated criterion as `PASS`, plus the passing live smoke tests for AC-006-08.
+5. **Validation.** One real benchmark was executed and its results were reviewed by hand. Evidence: the two live reports and your review in the release report, which together satisfy AC-006-09 to AC-006-11.
 6. **Learning review.** Independent coding, DSA, patterns and assistance records are up to date. Evidence: the release report's learning section, the AI-Assist trailers in your commits, and your notes in `learning/dsa/` and `learning/patterns/`. Be honest with this one: the release is about the code, but the project is about what *you* can now build on your own.
 
 If a gate isn't met, don't tag. Fix what's missing, or record clearly in the release report why you are accepting the gap.
@@ -357,9 +478,9 @@ If a gate isn't met, don't tag. Fix what's missing, or record clearly in the rel
 
 - **The live tests are skipped even though your keys are in `.env`.** You ran `uv run pytest -m live` without `--env-file .env`. `uv run` doesn't load `.env` files on its own.
 - **`ConnectorRequestError: HTTP 404 (model_not_found)`** or a similar request error. The model id in the config isn't available to your account. Change the `model` in `configs/evaluation.yaml` to one that is, and run the smoke tests again. Note that this error doesn't stop the run, so in a full evaluation every case would come out as `ERROR` at the target stage, which is exactly what the report should show.
-- **Every case is `ERROR` at the judge stage, and the later ones say `not judged: judging stopped after ConnectorAuthError`.** The judge's key is wrong or missing permissions. This is the chapter 9 stopping logic doing its job: one failed judge call, not five.
+- **Every case is `ERROR` at the judge stage, and the later ones say `not judged: judging stopped after ConnectorAuthError`.** The judge's key is wrong or missing permissions. This is the stopping logic from chapter 10 doing its job: one failed judge call, not five.
 - **`ConnectorQuotaError`.** Your account is out of credit or over its quota. Check the provider's billing page. Like an auth error, it stops the stage it happens in.
-- **An `ERROR` saying `answer was cut off by its length limit`.** The model hit its maximum output length. For the Claude connector, raise `max_tokens` under `options`. That case is not judged, as you saw in chapter 9.
+- **An `ERROR` saying `answer was cut off by its length limit`.** The model hit its maximum output length. For the Claude connector, raise `max_tokens` under `options`. That case is not judged, as you saw in chapter 10.
 - **Running `uv run pytest -m live` runs no tests at all.** Check that the `pytestmark = pytest.mark.live` line is in the test file, and that the marker is spelled the same in `conftest.py` and in `addopts`.
 
 ## 11.12 Exercises
@@ -371,11 +492,11 @@ If a gate isn't met, don't tag. Fix what's missing, or record clearly in the rel
 
 ## 11.13 Committing Your Work and Tagging v0.1.0
 
-This branch holds two logical changes, so make two commits. The first is the live smoke tests and the T013 criteria:
+This branch holds two logical changes, so make two commits. The first is the live smoke tests, together with the T013 criteria and slice that you wrote in section 11.2. The cleanest moment to make it is as soon as the smoke tests pass, before you tick anything in section 11.9. If you have already ticked the criteria, `git add -p` lets you stage the new criteria lines and the Delivers list without the ticks and statuses, which belong to the second commit:
 
 ```bash
 $ git add tests/live/test_live_smoke.py tests/conftest.py pyproject.toml \
-    docs/releases/v0.1/tasks/T013.md
+    docs/usecases/UC-006-run-complete-evaluation
 $ git commit
 ```
 
@@ -390,7 +511,7 @@ uv run --env-file .env pytest -m live. A missing key skips its test.
 AI-Assist: L4
 ```
 
-The second is the release documentation: the evidence, the release report, the task statuses, verification and traceability:
+The second is the release documentation: the evidence, the ticked criteria and finished slices in the use case folders, the release report, verification and traceability:
 
 ```bash
 $ git add docs/
@@ -402,8 +523,9 @@ docs(repo): record the v0.1 live evaluation and release report
 
 Adds the two live reports (bundled config and target/judge swapped),
 the swapped config and the test output as release evidence, the human
-review of every case, and the release report. Marks all v0.1 tasks
-done and updates traceability.
+review of every case, and the release report. Ticks the remaining
+UC-006 criteria (AC-006-08 to AC-006-11) with their evidence, marks
+every v0.1 slice done and updates traceability.
 
 AI-Assist: L4
 ```
