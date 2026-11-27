@@ -11,10 +11,10 @@ By the end, JudgeLab will have a single, well-defined idea of what "a connector"
 This chapter starts where chapter 2 ended, with the connector package merged into `main`. The work is mostly a restructuring of existing code, so the branch is a `refactor/` one:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c refactor/p1-connector-port-T003
+$ git switch main && git pull --ff-only && git switch -c refactor/p1-connector-port-T-001-03
 ```
 
-This chapter is the second half of the same slice as chapter 2. It belongs to use case **UC-001 Configure model connections** and is delivered by task T003, which is why the branch name ends in `T003` again. A slice, remember, is a thin, end-to-end piece of a use case that makes some of its criteria pass. In chapter 2, T003's slice made AC-001-01 to AC-001-08 pass for one connector. In this chapter it grows by two more criteria, about what *every* connector must do, and with those T003 is complete.
+This chapter is the second half of the same slice as chapter 2. It belongs to use case **UC-001 Configure model connections** and is delivered by task T-001-03, which is why the branch name ends in `T-001-03` again. A slice, remember, is a thin, end-to-end piece of a use case that makes some of its criteria pass. In chapter 2, T-001-03's slice made AC-001-01 to AC-001-08 pass for one connector. In this chapter it grows by two more criteria, about what *every* connector must do, and with those T-001-03 is complete.
 
 Run the tests once before you change anything, and make sure you get the eight PASS lines and `(8/8 passing)` for UC-001, and `29 passed`, from the end of chapter 2. A refactor starts from green tests and must end with green tests, so you need to know they are green now.
 
@@ -73,9 +73,9 @@ _docs/usecases/UC-001-configure-model-connections/README.md_: Two new acceptance
 
 (If you ticked AC-001-01 to AC-001-08 at the end of chapter 2, leave them ticked. The new ones start unticked.)
 
-Both criteria are part of T003's slice, so the task needs to say so in two places. In [T003-first-live-model-connector.md](../../docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md), add them to the end of the `## Delivers` list:
+Both criteria are part of T-001-03's slice, so the task needs to say so in two places. In [T-001-03-first-live-model-connector.md](../../docs/usecases/UC-001-configure-model-connections/T-001-03-first-live-model-connector.md), add them to the end of the `## Delivers` list:
 
-_docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md_: Two more delivered criteria
+_docs/usecases/UC-001-configure-model-connections/T-001-03-first-live-model-connector.md_: Two more delivered criteria
 
 ```markdown
 - AC-001-08
@@ -83,17 +83,39 @@ _docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connecto
 - AC-001-10
 ```
 
-And in the use case README, add them to the "Delivers" cell of T003's row in the Slices table:
+And in the use case README, add them to the "Delivers" cell of T-001-03's row in the Slices table:
 
-_docs/usecases/UC-001-configure-model-connections/README.md_: T003's row in the Slices table
+_docs/usecases/UC-001-configure-model-connections/README.md_: T-001-03's row in the Slices table
 
 ```markdown
-| [T003](T003-first-live-model-connector.md) | First live model connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-07, AC-001-08, AC-001-09, AC-001-10 | Todo |
+| [T-001-03](T-001-03-first-live-model-connector.md) | First live model connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-07, AC-001-08, AC-001-09, AC-001-10 | Todo |
 ```
 
 (If you set the row's Status to `In progress` at the end of chapter 2, leave it that way.)
 
-AC-001-09 uses the word *port*. This comes from the "ports and adapters" style of architecture: the core of an application defines the *port*, the shape of the thing it needs ("something I can give a prompt to and get a `ModelResponse` back"), and each connector is an *adapter* that plugs a particular provider into that port. The core of JudgeLab will only ever talk to the port, never to OpenAI or Anthropic directly. This is the dependency inversion idea mentioned for T003 and T004 in the learning ledger of the [v0.1 release plan](../../docs/releases/v0.1/README.md).
+Finally, link the new criteria to the requirements they verify. AC-001-09 says every connector fits the same port, which is part of obtaining answers from the target model, so add it to the end of the `## Verified by` list in [REQ-005.md](../../docs/requirements/REQ-005.md):
+
+_docs/requirements/REQ-005.md_: One more criterion verifies REQ-005
+
+```markdown
+- AC-001-07
+- AC-001-09
+```
+
+REQ-012, "Support deterministic tests with fake connectors", is exactly what this chapter is about. Both new criteria verify it. Its `## Verified by` list is still empty, so in [REQ-012.md](../../docs/requirements/REQ-012.md) replace the empty bullet with:
+
+_docs/requirements/REQ-012.md_: The criteria that verify REQ-012
+
+```markdown
+## Verified by
+
+<!-- IDs of the use-case acceptance criteria (AC-UUU-NN) that prove this requirement; their text lives in the use case. -->
+
+- AC-001-09
+- AC-001-10
+```
+
+AC-001-09 uses the word *port*. This comes from the "ports and adapters" style of architecture: the core of an application defines the *port*, the shape of the thing it needs ("something I can give a prompt to and get a `ModelResponse` back"), and each connector is an *adapter* that plugs a particular provider into that port. The core of JudgeLab will only ever talk to the port, never to OpenAI or Anthropic directly. This is the dependency inversion idea mentioned for T-001-03 and T-001-04 in the learning ledger of the [v0.1 release plan](../../docs/releases/v0.1/README.md).
 
 ## 3.4 The Port
 
@@ -293,7 +315,7 @@ UC-004: Evaluate responses  (0/5 passing)
 
 All 29 tests still pass without a single change to them. That is what makes this a refactor: the structure changed, the behaviour didn't, and the tests are the evidence. The two new criteria show up as "not tested", and the use case line now says `(8/10 passing)`, which is your to-do list for the rest of the chapter.
 
-This is a good moment to make a commit, while the refactor is complete and the tests are green, and before you start adding new behaviour. Stage only the three files you changed (leave the UC-001 README and the T003 task file for the next commit, since their new criteria are about the work still to come):
+This is a good moment to make a commit, while the refactor is complete and the tests are green, and before you start adding new behaviour. Stage only the three files you changed (leave the UC-001 README, the T-001-03 task file and the two requirement files for the next commit, since the new criteria are about the work still to come):
 
 ```bash
 $ git add src/judgelab/connectors/base.py src/judgelab/connectors/openai_connector.py src/judgelab/connectors/__init__.py
@@ -724,14 +746,14 @@ Ten out of ten, and the use case line says so: `(10/10 passing)`. The 42 tests a
 
 ## 3.14 Committing Your Work
 
-You already committed the refactor in section 3.6. What is left is new behaviour: the fake connector, the tests and the two new criteria. Tick AC-001-09 and AC-001-10 in the UC-001 `README.md`. Every criterion T003 delivers now passes, so its slice is complete: set the Status of T003's row in the Slices table to `Done`. In `T003-first-live-model-connector.md`, set **Status** to `Done` as well, and update **Branch** to this chapter's branch, `refactor/p1-connector-port-T003`.
+You already committed the refactor in section 3.6. What is left is new behaviour: the fake connector, the tests and the two new criteria. Tick AC-001-09 and AC-001-10 in the UC-001 `README.md`. Every criterion T-001-03 delivers now passes, so its slice is complete: set the Status of T-001-03's row in the Slices table to `Done`. In `T-001-03-first-live-model-connector.md`, set **Status** to `Done` as well, and update **Branch** to this chapter's branch, `refactor/p1-connector-port-T-001-03`.
 
 The use case itself is not done, though. UC-001 has other slices still marked `Todo`, and the Claude connector of the next chapter will add a new one. A use case is finished when all of its slices are. Check the docs, then stage and commit:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 34 IDs defined · 0 error(s) · 0 warning(s)
-$ git add docs/usecases/UC-001-configure-model-connections src/judgelab/connectors/fake.py src/judgelab/connectors/__init__.py tests/connectors/test_fake_connector.py tests/connectors/test_contract.py
+$ git add docs/usecases/UC-001-configure-model-connections docs/requirements src/judgelab/connectors/fake.py src/judgelab/connectors/__init__.py tests/connectors/test_fake_connector.py tests/connectors/test_contract.py
 $ git commit
 ```
 

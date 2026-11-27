@@ -14,7 +14,7 @@ Start from an up-to-date `main` that includes the runner from chapter 7, and cre
 
 ```bash
 $ git switch main && git pull --ff-only
-$ git switch -c feat/p1-llm-judge-T008
+$ git switch -c feat/p1-llm-judge-T-004-01
 ```
 
 This chapter is about a use case that you already know well, because you wrote it: [UC-004 Evaluate responses](../../docs/usecases/UC-004-evaluate-responses/README.md). When the docs were reorganized into use-case folders, the flow you drafted in your v0.1 plan moved into its README. Open it and have a look. It is triggered when "a target response is available", it needs a test case, a target response, a rubric and a judge connector, and its main success scenario is five steps: assemble the judge request, invoke the evaluator, parse its structured output, validate the verdict, and record the result. The alternate flows are invalid judge output, an authentication failure, a timeout and a provider error. That is a very good description of what you are about to build.
@@ -31,7 +31,7 @@ Below the flow are the five acceptance criteria from your plan:
 
 You wrote these before there was any code to test them, and that is exactly how it should be. Your plan calls its method a lightweight V-cycle: on the left side of the V, requirements and use cases are written first, and on the right side, each one is verified by a test. This chapter is where the V closes its loop for UC-004: by the end of it, the requirements you wrote before JudgeLab had a single line of code will be passing tests in the acceptance table.
 
-One of them is already done. AC-004-05 is about swapping the judge's connection without touching anything else, and you proved that in chapter 5, when the connector registry made the target and judge profiles independent. The other four are the job of this chapter's two slices: [T008](../../docs/usecases/UC-004-evaluate-responses/T008-judge-request-builder.md) builds the judge's request (AC-004-01) and records who the judge was (AC-004-04), and [T009](../../docs/usecases/UC-004-evaluate-responses/T009-verdict-parser.md) parses its reply (AC-004-02 and AC-004-03).
+One of them is already done. AC-004-05 is about swapping the judge's connection without touching anything else, and you proved that in chapter 5, when the connector registry made the target and judge profiles independent. The other four are the job of this chapter's two slices: [T-004-01](../../docs/usecases/UC-004-evaluate-responses/T-004-01-judge-request-builder.md) builds the judge's request (AC-004-01) and records who the judge was (AC-004-04), and [T-004-02](../../docs/usecases/UC-004-evaluate-responses/T-004-02-verdict-parser.md) parses its reply (AC-004-02 and AC-004-03).
 
 Keep AC-004-03 in mind in particular:
 
@@ -61,9 +61,9 @@ _docs/usecases/UC-004-evaluate-responses/README.md_: The two new acceptance crit
 
 Notice that you add criteria to your use case, but you don't rewrite the ones that are there. The wording of AC-004-01 to AC-004-05 is yours, and the tests in this chapter will be measured against it.
 
-Now open the T008 task file and fill in its Objective and Delivers sections. T008 builds the request, so it delivers AC-004-01 and AC-004-04, plus the two new criteria:
+Now open the T-004-01 task file and fill in its Objective and Delivers sections. T-004-01 builds the request, so it delivers AC-004-01 and AC-004-04, plus the two new criteria:
 
-_docs/usecases/UC-004-evaluate-responses/T008-judge-request-builder.md_: Objective and Delivers
+_docs/usecases/UC-004-evaluate-responses/T-004-01-judge-request-builder.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -78,9 +78,9 @@ Ask a judge model to evaluate an answer against the question, the expected answe
 - AC-004-07
 ```
 
-Then the same for T009, which is all about the reply:
+Then the same for T-004-02, which is all about the reply:
 
-_docs/usecases/UC-004-evaluate-responses/T009-verdict-parser.md_: Objective and Delivers
+_docs/usecases/UC-004-evaluate-responses/T-004-02-verdict-parser.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -100,8 +100,19 @@ _docs/usecases/UC-004-evaluate-responses/README.md_: The Slices table
 ```markdown
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T008](T008-judge-request-builder.md) | Judge request builder | AC-004-01, AC-004-04, AC-004-06, AC-004-07 | Todo |
-| [T009](T009-verdict-parser.md) | Verdict parser | AC-004-02, AC-004-03 | Todo |
+| [T-004-01](T-004-01-judge-request-builder.md) | Judge request builder | AC-004-01, AC-004-04, AC-004-06, AC-004-07 | Todo |
+| [T-004-02](T-004-02-verdict-parser.md) | Verdict parser | AC-004-02, AC-004-03 | Todo |
+```
+
+The last link goes from the requirements to the criteria. Because your five criteria came from the plan, the requirements they prove already say so in their `## Verified by` sections: REQ-006 lists AC-004-01 and AC-004-04, REQ-007 lists AC-004-02 and AC-004-03, REQ-008 lists AC-004-03 too, and AC-004-05 sits under REQ-003, the requirement about configuring the target and judge independently. Only the two new criteria need a home. Both are about getting the rubric to the judge, which is what REQ-006, "Judge actual answers against question, reference, and rubric", asks for. Add them at the end of its list:
+
+_docs/requirements/REQ-006.md_: The Verified by section
+
+```markdown
+- AC-004-01
+- AC-004-04
+- AC-004-06
+- AC-004-07
 ```
 
 Run `uv run pytest` now and look at the UC-004 group of the acceptance table. AC-004-05 passes, and the other six are `not tested`.
@@ -715,7 +726,7 @@ Take a moment to enjoy that group. The first five lines are the acceptance crite
 
 ## 8.12 Committing Your Work
 
-When everything passes, open the [UC-004 README](../../docs/usecases/UC-004-evaluate-responses/README.md) and tick the six criteria this chapter delivers: AC-004-01 to AC-004-04, AC-004-06 and AC-004-07. AC-004-05 should already be ticked from chapter 5; if it isn't, tick it too, since its test passes. Set the Status of both rows in the Slices table to `Done`. Then, in [T008](../../docs/usecases/UC-004-evaluate-responses/T008-judge-request-builder.md) and [T009](../../docs/usecases/UC-004-evaluate-responses/T009-verdict-parser.md), set the Branch field to `feat/p1-llm-judge-T008`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
+When everything passes, open the [UC-004 README](../../docs/usecases/UC-004-evaluate-responses/README.md) and tick the six criteria this chapter delivers: AC-004-01 to AC-004-04, AC-004-06 and AC-004-07. AC-004-05 should already be ticked from chapter 5; if it isn't, tick it too, since its test passes. Set the Status of both rows in the Slices table to `Done`. Then, in [T-004-01](../../docs/usecases/UC-004-evaluate-responses/T-004-01-judge-request-builder.md) and [T-004-02](../../docs/usecases/UC-004-evaluate-responses/T-004-02-verdict-parser.md), set the Branch field to `feat/p1-llm-judge-T-004-01`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -742,10 +753,10 @@ instructions alongside prompts.
 AI-Assist: L4
 ```
 
-Then the judge and the use case docs:
+Then the judge and its docs:
 
 ```bash
-$ git add src/judgelab/judge.py tests/test_judge.py docs/usecases/UC-004-evaluate-responses
+$ git add src/judgelab/judge.py tests/test_judge.py docs/usecases/UC-004-evaluate-responses docs/requirements
 $ git commit
 ```
 

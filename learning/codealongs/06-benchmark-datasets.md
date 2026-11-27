@@ -12,10 +12,10 @@ Make sure you are on an up-to-date `main` and create a topic branch for this wor
 
 ```bash
 $ git switch main && git pull --ff-only
-$ git switch -c feat/p1-benchmark-loader-T005
+$ git switch -c feat/p1-benchmark-loader-T-002-01
 ```
 
-Up to now, your work has been on UC-001, configuring model connections. This chapter moves on to a new use case, [UC-002 Prepare benchmark dataset](../../docs/usecases/UC-002-prepare-benchmark-dataset/README.md), whose goal in the v0.1 plan is simply "validated test cases". The work covers two of its slices: [T005](../../docs/usecases/UC-002-prepare-benchmark-dataset/T005-json-dataset-loader.md) (the JSON loader) and [T006](../../docs/usecases/UC-002-prepare-benchmark-dataset/T006-test-case-validation.md) (validating the cases). Between them, they deliver eight new acceptance criteria for the use case, AC-002-01 to AC-002-08. Both slices live on this one branch, because a loader that doesn't validate is not really finished.
+Up to now, your work has been on UC-001, configuring model connections. This chapter moves on to a new use case, [UC-002 Prepare benchmark dataset](../../docs/usecases/UC-002-prepare-benchmark-dataset/README.md), whose goal in the v0.1 plan is simply "validated test cases". The work covers two of its slices: [T-002-01](../../docs/usecases/UC-002-prepare-benchmark-dataset/T-002-01-json-dataset-loader.md) (the JSON loader) and [T-002-02](../../docs/usecases/UC-002-prepare-benchmark-dataset/T-002-02-test-case-validation.md) (validating the cases). Between them, they deliver eight new acceptance criteria for the use case, AC-002-01 to AC-002-08. Both slices live on this one branch, because a loader that doesn't validate is not really finished.
 
 As always, I strongly recommend that you type the code yourself instead of copying and pasting it.
 
@@ -43,9 +43,9 @@ _docs/usecases/UC-002-prepare-benchmark-dataset/README.md_: The acceptance crite
 - [ ] **AC-002-08**: Every problem in a file is reported at once, not one per run.
 ```
 
-Now say which slice delivers which criteria. Open the task file for T005, fill in its Objective, and replace the placeholder under `## Delivers` with the first three criteria:
+Now say which slice delivers which criteria. Open the task file for T-002-01, fill in its Objective, and replace the placeholder under `## Delivers` with the first three criteria:
 
-_docs/usecases/UC-002-prepare-benchmark-dataset/T005-json-dataset-loader.md_: Objective and Delivers
+_docs/usecases/UC-002-prepare-benchmark-dataset/T-002-01-json-dataset-loader.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -59,9 +59,9 @@ Load a benchmark of question and expected-answer cases from a JSON file.
 - AC-002-03
 ```
 
-Then do the same in the task file for T006, which delivers the other five:
+Then do the same in the task file for T-002-02, which delivers the other five:
 
-_docs/usecases/UC-002-prepare-benchmark-dataset/T006-test-case-validation.md_: Objective and Delivers
+_docs/usecases/UC-002-prepare-benchmark-dataset/T-002-02-test-case-validation.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -84,9 +84,33 @@ _docs/usecases/UC-002-prepare-benchmark-dataset/README.md_: The Slices table
 ```markdown
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T005](T005-json-dataset-loader.md) | JSON dataset loader | AC-002-01, AC-002-02, AC-002-03 | Todo |
-| [T006](T006-test-case-validation.md) | Test-case validation | AC-002-04, AC-002-05, AC-002-06, AC-002-07, AC-002-08 | Todo |
+| [T-002-01](T-002-01-json-dataset-loader.md) | JSON dataset loader | AC-002-01, AC-002-02, AC-002-03 | Todo |
+| [T-002-02](T-002-02-test-case-validation.md) | Test-case validation | AC-002-04, AC-002-05, AC-002-06, AC-002-07, AC-002-08 | Todo |
 ```
+
+There is one more link to make, from the requirements to the criteria that prove them. The use case README lists two requirements in its header, REQ-001 and REQ-002, and each requirement file has a `## Verified by` section where those criteria IDs go. Loading the cases is what REQ-001 asks for, so it is verified by the first three criteria. Replace the `-` placeholder under the comment in its Verified by section with them:
+
+_docs/requirements/REQ-001.md_: The Verified by section
+
+```markdown
+- AC-002-01
+- AC-002-02
+- AC-002-03
+```
+
+REQ-002 is about validating the cases, so the other five go in its Verified by section:
+
+_docs/requirements/REQ-002.md_: The Verified by section
+
+```markdown
+- AC-002-04
+- AC-002-05
+- AC-002-06
+- AC-002-07
+- AC-002-08
+```
+
+Only the IDs go there. The text of each criterion stays in the use case, so that there is a single place to change it.
 
 You know from earlier chapters that the test suite reads the use case READMEs. Run `uv run pytest` now and you will see a new `UC-002: Prepare benchmark dataset` group in the acceptance table, with all eight criteria marked `not tested`. That is your to-do list for the rest of the chapter.
 
@@ -324,7 +348,7 @@ The last check is the one for duplicate case ids. The obvious way to find duplic
 
 The loader does it in a single pass instead, with the help of a dictionary called `first_seen`, which maps each case id to the index where it first appeared. For each case, it asks the dictionary "have I seen this id before?". Looking up a key in a dictionary takes about the same time no matter how big the dictionary is, so the whole check is O(n): 10,000 cases, 10,000 lookups. And since the dictionary stores the index of the first occurrence, the error message can name both positions, as AC-002-05 asks.
 
-If this sounds familiar, it is because this is the classic "Contains Duplicate" problem, which is the practice exercise listed for T005-T006 in the DSA and GoF learning ledger of the [v0.1 plan](../../docs/releases/v0.1/README.md). Solving it on its own, after this chapter, is a good way to make sure the idea sticks.
+If this sounds familiar, it is because this is the classic "Contains Duplicate" problem, which is the practice exercise listed for T-002-01 to T-002-02 in the DSA and GoF learning ledger of the [v0.1 plan](../../docs/releases/v0.1/README.md). Solving it on its own, after this chapter, is a good way to make sure the idea sticks.
 
 There is one more detail to notice: a case is only checked for duplicates if `_check_fields()` says it is valid. If a case is broken, its `id` might be missing, or not even a string, and comparing it with other ids would only produce confusing follow-up errors. The case has already been reported, so the loader moves on.
 
@@ -553,7 +577,7 @@ Your timing will be different, but every UC-002 line should say `PASS`, and ther
 
 ## 6.11 Committing Your Work
 
-Once all the tests pass, you can mark the work as done. In the [UC-002 README](../../docs/usecases/UC-002-prepare-benchmark-dataset/README.md), tick the eight acceptance criteria (`- [ ]` becomes `- [x]`) and set the Status of both rows in the Slices table to `Done`. In both [T005](../../docs/usecases/UC-002-prepare-benchmark-dataset/T005-json-dataset-loader.md) and [T006](../../docs/usecases/UC-002-prepare-benchmark-dataset/T006-test-case-validation.md), set the Branch field to `feat/p1-benchmark-loader-T005`, Status to `Done` and AI-Assist to `L4`. Then check that the docs are still consistent:
+Once all the tests pass, you can mark the work as done. In the [UC-002 README](../../docs/usecases/UC-002-prepare-benchmark-dataset/README.md), tick the eight acceptance criteria (`- [ ]` becomes `- [x]`) and set the Status of both rows in the Slices table to `Done`. In both [T-002-01](../../docs/usecases/UC-002-prepare-benchmark-dataset/T-002-01-json-dataset-loader.md) and [T-002-02](../../docs/usecases/UC-002-prepare-benchmark-dataset/T-002-02-test-case-validation.md), set the Branch field to `feat/p1-benchmark-loader-T-002-01`, Status to `Done` and AI-Assist to `L4`. Then check that the docs are still consistent:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -562,7 +586,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 Now commit. Following [CONTRIBUTING.md](../../CONTRIBUTING.md), the commit message uses the Conventional Commits format, with a body that explains the design and an `AI-Assist` trailer:
 
 ```bash
-$ git add benchmarks src/judgelab/benchmark.py tests/test_benchmark.py docs/usecases/UC-002-prepare-benchmark-dataset
+$ git add benchmarks src/judgelab/benchmark.py tests/test_benchmark.py docs/usecases/UC-002-prepare-benchmark-dataset docs/requirements
 $ git commit
 ```
 

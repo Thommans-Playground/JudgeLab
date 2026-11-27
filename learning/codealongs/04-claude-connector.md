@@ -11,35 +11,35 @@ Along the way you are going to discover something about the abstraction you buil
 Start from an up-to-date `main`, with chapter 3 merged, and create the topic branch for this chapter:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c feat/p1-claude-connector-T014
+$ git switch main && git pull --ff-only && git switch -c feat/p1-claude-connector-T-001-05
 ```
 
 You don't need a Claude API key for this chapter. Everything is tested against a fake HTTP server, the same way you tested the OpenAI connector, so none of the tests cost anything. If you do have a key, there is an optional live check at the end of section 4.8.
 
 As always, I strongly recommend that you type the code yourself instead of copying and pasting it.
 
-## 4.2 A Second Slice of UC-001: T014
+## 4.2 A Second Slice of UC-001: T-001-05
 
 Before writing any code, let's decide where this work belongs. Connecting JudgeLab to a model is use case UC-001, *Configure model connections*, and its folder, [docs/usecases/UC-001-configure-model-connections/](../../docs/usecases/UC-001-configure-model-connections/), already holds everything about it. Its `README.md` has the flows, the acceptance criteria that the OpenAI connector made pass in chapters 2 and 3, and a Slices table that lists the tasks delivering them. A Claude connector isn't a new use case. A developer who configures a connection to Claude wants exactly what one who configures a connection to OpenAI wants. What you're adding is a second *slice* of the same use case.
 
-The v0.1 release plan has tasks T001 to T013, and none of them is "add a second provider". This is new work, so it gets its own task. You never invent a task id by hand. The `vbench-docs` skill has a script that picks the next free one and creates the file from the template, inside the use case's folder:
+The v0.1 release plan gives UC-001 four tasks, T-001-01 to T-001-04, and none of them is "add a second provider". This is new work, so it gets its own task. Task ids are numbered per use case, `T-UUU-NN`, just like the criteria, so you never invent one by hand. If you want to see the id before you commit to it, `python3 .claude/skills/vbench-docs/scripts/docids.py next T --usecase UC-001` prints `T-001-05`. The `new` command of the same script picks the next free id and creates the file from the template, inside the use case's folder:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py new T --usecase UC-001 --title "Anthropic (Claude) connector" --release v0.1
-T014
-Created docs/usecases/UC-001-configure-model-connections/T014-anthropic-claude-connector.md
-Next: list T014 in the Slices table of docs/usecases/UC-001-configure-model-connections/README.md and the release plan and add a row to docs/traceability.md
+T-001-05
+Created docs/usecases/UC-001-configure-model-connections/T-001-05-anthropic-claude-connector.md
+Next: list T-001-05 in the Slices table of docs/usecases/UC-001-configure-model-connections/README.md and the release plan and add a row to docs/traceability.md
 ```
 
-The script is telling you that it has done only part of the job. Before you register the task anywhere, though, there's a more important question to answer: what will this slice make true?
+Because the numbering is per use case, the Claude task sits as task 05 among UC-001's own slices, instead of being tacked on at the end of the whole project's list. The script is also telling you that it has done only part of the job. Before you register the task anywhere, though, there's a more important question to answer: what will this slice make true?
 
-### Which criteria does T014 deliver?
+### Which criteria does T-001-05 deliver?
 
 Open [docs/usecases/UC-001-configure-model-connections/README.md](../../docs/usecases/UC-001-configure-model-connections/README.md) and read the "Acceptance criteria" section with Claude in mind. AC-001-01 says a missing key variable raises an auth error that names it. That's true of any connector, so it must be true of the Claude one. AC-001-02 already names `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN` and `ANTHROPIC_BASE_URL` among the environment variables that must have no effect. AC-001-03 to AC-001-06 describe a successful reply, a refusal, an untrustworthy reply and the error mapping, all in words that don't mention any provider. And AC-001-09 says that *every* connector passes the shared contract tests.
 
-This is where criteria that belong to the use case, and not to a task, pay off. The criteria describe what a developer can rely on when they configure a connection, whichever provider is behind it. So T014 doesn't need new criteria for "the same behaviour, but on Claude". It *delivers the existing ones* for a second provider: AC-001-01 to AC-001-06, and AC-001-09. If every task had its own list of criteria, T014 would need its own copy of "a missing key raises an auth error", "a refusal is a response", and so on, a near-duplicate of T003's list that would slowly drift away from it, and a third provider would bring a third copy.
+This is where criteria that belong to the use case, and not to a task, pay off. The criteria describe what a developer can rely on when they configure a connection, whichever provider is behind it. So T-001-05 doesn't need new criteria for "the same behaviour, but on Claude". It *delivers the existing ones* for a second provider: AC-001-01 to AC-001-06, and AC-001-09. If every task had its own list of criteria, T-001-05 would need its own copy of "a missing key raises an auth error", "a refusal is a response", and so on, a near-duplicate of T-001-03's list that would slowly drift away from it, and a third provider would bring a third copy.
 
-T014 doesn't claim AC-001-07, AC-001-08 or AC-001-10. AC-001-10 is about the fake connector, and the Claude tests you'll write in this chapter don't add new evidence about retries or about keeping the key out of a connector's repr. A slice lists only what its own tests prove.
+T-001-05 doesn't claim AC-001-07, AC-001-08 or AC-001-10. AC-001-10 is about the fake connector, and the Claude tests you'll write in this chapter don't add new evidence about retries or about keeping the key out of a connector's repr. A slice lists only what its own tests prove.
 
 There is one behaviour, though, that no existing criterion describes, and you'll discover it in section 4.5: when an answer is cut off by a length limit, every provider has to report it the same way. That is genuinely new, so it gets a new criterion. Ask the script for the next free id in UC-001:
 
@@ -56,45 +56,59 @@ _docs/usecases/UC-001-configure-model-connections/README.md_: The new criterion
 - [ ] **AC-001-11**: Truncation is reported the same way for every provider: `truncated` is true when the answer was cut off by a length limit.
 ```
 
+A new criterion should also be linked to the requirement it proves. Each requirement file in [docs/requirements/](../../docs/requirements/) has a `## Verified by` section that lists the ids of those criteria. Reporting truncation honestly is part of obtaining the target model's actual answer, so AC-001-11 verifies REQ-005, which already lists the UC-001 criteria about replies, refusals and errors. Open `docs/requirements/REQ-005.md` and add AC-001-11 to the end of its list:
+
+_docs/requirements/REQ-005.md_: Verified by
+
+```markdown
+- AC-001-03
+- AC-001-04
+- AC-001-05
+- AC-001-06
+- AC-001-07
+- AC-001-09
+- AC-001-11
+```
+
 ### Registering the slice
 
-Now let's register T014 in the three places the script's message mentions, so that it isn't an orphan. First, in the same README, add a row for T014 at the end of the Slices table. The "Delivers" column lists the criteria you just chose:
+Now let's register T-001-05 in the three places the script's message mentions, so that it isn't an orphan. First, in the same README, add a row for T-001-05 at the end of the Slices table. The "Delivers" column lists the criteria you just chose:
 
 _docs/usecases/UC-001-configure-model-connections/README.md_: New row in the Slices table
 
 ```markdown
-| [T014](T014-anthropic-claude-connector.md) | Anthropic (Claude) connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-09, AC-001-11 | Todo |
+| [T-001-05](T-001-05-anthropic-claude-connector.md) | Anthropic (Claude) connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-09, AC-001-11 | Todo |
 ```
 
-Next, open [docs/releases/v0.1/README.md](../../docs/releases/v0.1/README.md), find the release plan table (the one with the `| Task | UC | Deliverable | Verification |` header), and add this row at the end, right after the T013 row:
+Next, open [docs/releases/v0.1/README.md](../../docs/releases/v0.1/README.md), find the release plan table (the one with the `| Task | UC | Deliverable | Verification |` header), and add this row at the end, right after the T-006-02 row:
 
 _docs/releases/v0.1/README.md_: New row in the release plan table
 
 ```markdown
-| T014 | UC-001 | Anthropic (Claude) connector | Fake HTTP + contract tests + live smoke test |
+| T-001-05 | UC-001 | Anthropic (Claude) connector | Fake HTTP + contract tests + live smoke test |
 ```
 
-Then, in [docs/traceability.md](../../docs/traceability.md), three requirements are delivered by the connector tasks: REQ-003, REQ-004 and REQ-013. Add `T014` to the tasks column of each one, so the three rows look like this:
+Then, in [docs/traceability.md](../../docs/traceability.md), three requirements are delivered by the connector tasks: REQ-003, REQ-004 and REQ-013. Add `T-001-05` to the tasks column of each one, so the three rows look like this:
 
 _docs/traceability.md_: Updated rows
 
 ```markdown
-| REQ-003 | UC-001 | v0.1 | T001, T002, T003, T004, T014 | Config, connector, secret tests | Not started |
-| REQ-004 | UC-001 | v0.1 | T001, T002, T003, T004, T014 | Config, connector, secret tests | Not started |
+| REQ-003 | UC-001 | v0.1 | T-001-01, T-001-02, T-001-03, T-001-04, T-001-05 | Config, connector, secret tests | Not started |
+| REQ-004 | UC-001 | v0.1 | T-001-01, T-001-02, T-001-03, T-001-04, T-001-05 | Config, connector, secret tests | Not started |
 ```
 
 ```markdown
-| REQ-013 | UC-001 | v0.1 | T001, T002, T003, T004, T014 | Config, connector, secret tests | Not started |
+| REQ-013 | UC-001 | v0.1 | T-001-01, T-001-02, T-001-03, T-001-04, T-001-05 | Config, connector, secret tests | Not started |
 ```
 
 REQ-013 is further down the table than the other two, which is why it's in its own block.
 
 Finally, open the new task file. The script filled in the title and the use case and left the rest of the template empty. Fill in the requirements, the objective and the `## Delivers` section, which repeats the list from the Slices row, one criterion per line. When you are done, the whole file should look like this:
 
-_docs/usecases/UC-001-configure-model-connections/T014-anthropic-claude-connector.md_: The task file
+_docs/usecases/UC-001-configure-model-connections/T-001-05-anthropic-claude-connector.md_: The task file
 
 ```markdown
-# T014: Anthropic (Claude) connector
+# T-001-05: Anthropic (Claude) connector
 
 | Field | Value |
 |---|---|
@@ -142,7 +156,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 35 IDs defined · 0 error(s) · 0 warning(s)
 ```
 
-If you forget the Slices row, the check reports `ERROR   T014: not listed in docs/usecases/UC-001-configure-model-connections/README.md`, and if you forget traceability, you get a warning. The same check runs in CI, so it's better to see it fail here.
+If you forget the Slices row, the check reports `ERROR   T-001-05: not listed in docs/usecases/UC-001-configure-model-connections/README.md`, and if you forget traceability, you get a warning. The same check runs in CI, so it's better to see it fail here.
 
 ## 4.3 How Claude Is Different
 
@@ -832,7 +846,7 @@ FACTORIES = {
 
 The failing connector uses a 529 overloaded error, which is the most Claude-specific failure there is. The contract only promises that it raises *some* `ConnectorError`, and that's all the test checks.
 
-Now look at the markers on the contract tests. They already say `@pytest.mark.acceptance("AC-001-09")`, and AC-001-09 says that *every* connector passes them, so there's nothing to change. Adding `anthropic_connectors` to `FACTORIES` is all it takes for the same tests, with the same marker, to cover Claude. With criteria that belonged to tasks, you'd have had to add a "T014: passes the contract tests" criterion and a second id to every contract test, and do it again for the next provider.
+Now look at the markers on the contract tests. They already say `@pytest.mark.acceptance("AC-001-09")`, and AC-001-09 says that *every* connector passes them, so there's nothing to change. Adding `anthropic_connectors` to `FACTORIES` is all it takes for the same tests, with the same marker, to cover Claude. With criteria that belonged to tasks, you'd have had to add a "T-001-05: passes the contract tests" criterion and a second id to every contract test, and do it again for the next provider.
 
 Finally, `truncated` is now part of the port, so the contract should say so. In `test_answers_with_a_model_response()`, add this line right after `assert response.finish_reason`:
 
@@ -878,7 +892,7 @@ UC-004: Evaluate responses  (0/5 passing)
 64 passed in 2.37s
 ```
 
-The table is grouped by use case, and all eleven UC-001 criteria pass. Notice that it's eleven, not seventeen: the Claude tests didn't add six new rows, they added evidence to rows that were already there, and only AC-001-11 is new. The seven rows that T014 delivers now pass for both providers, which also tells you that the `truncated` change didn't break the OpenAI connector. The UC-004 rows come from your own v0.1 plan. Nothing tests them yet, so they show as `not tested`, and you'll get to them when you build the judge. Your timing will be different.
+The table is grouped by use case, and all eleven UC-001 criteria pass. Notice that it's eleven, not seventeen: the Claude tests didn't add six new rows, they added evidence to rows that were already there, and only AC-001-11 is new. The seven rows that T-001-05 delivers now pass for both providers, which also tells you that the `truncated` change didn't break the OpenAI connector. The UC-004 rows come from your own v0.1 plan. Nothing tests them yet, so they show as `not tested`, and you'll get to them when you build the judge. Your timing will be different.
 
 ## 4.13 Troubleshooting
 
@@ -886,7 +900,7 @@ The table is grouped by use case, and all eleven UC-001 criteria pass. Notice th
 - **`TypeError: ModelResponse.__init__() missing 1 required positional argument: 'truncated'`.** One of the places that builds a `ModelResponse` doesn't set the new field yet. The traceback tells you which file. There are three: the OpenAI connector, the fake connector and the Claude connector.
 - **`test_environment_defaults_have_no_effect` fails with the wrong URL.** You probably wrote `base_url=base_url` instead of `base_url=self.base_url` when creating the client. With `None`, the SDK falls back to `ANTHROPIC_BASE_URL`. Passing `self.base_url`, which the base class has already resolved to the default, closes that door.
 - **The 429 spend-cap test gets a `ConnectorRateLimitError`.** The quota check must come *before* the `status == 429` check in `translate_error()`. The first matching `if` wins.
-- **`docids.py check` reports `T014: not listed in docs/usecases/UC-001-configure-model-connections/README.md`.** Add the T014 row from section 4.2 to the Slices table in the use case README.
+- **`docids.py check` reports `T-001-05: not listed in docs/usecases/UC-001-configure-model-connections/README.md`.** Add the T-001-05 row from section 4.2 to the Slices table in the use case README.
 
 ## 4.14 Exercises
 
@@ -898,14 +912,14 @@ The table is grouped by use case, and all eleven UC-001 criteria pass. Notice th
 
 ## 4.15 Committing Your Work
 
-Before committing, update the docs to reflect what you've done. In the use case README, `docs/usecases/UC-001-configure-model-connections/README.md`, tick AC-001-11 (change `- [ ]` to `- [x]`). AC-001-01 to AC-001-10 were ticked in chapter 3, and they stay ticked: a criterion is ticked once it passes, and the test table is what tells you it still passes for every provider that delivers it. In the same file, set the **Status** of the T014 row in the Slices table to `Done`.
+Before committing, update the docs to reflect what you've done. In the use case README, `docs/usecases/UC-001-configure-model-connections/README.md`, tick AC-001-11 (change `- [ ]` to `- [x]`). AC-001-01 to AC-001-10 were ticked in chapter 3, and they stay ticked: a criterion is ticked once it passes, and the test table is what tells you it still passes for every provider that delivers it. In the same file, set the **Status** of the T-001-05 row in the Slices table to `Done`.
 
-Then, in the task file, `docs/usecases/UC-001-configure-model-connections/T014-anthropic-claude-connector.md`, set **Status** to `Done`, **Branch** to `` `feat/p1-claude-connector-T014` ``, and **AI-Assist** to `L4`. If you learned something worth remembering, such as the `truncated` discovery, write it under "Notes & lessons learned". Run `docids.py check` once more after editing.
+Then, in the task file, `docs/usecases/UC-001-configure-model-connections/T-001-05-anthropic-claude-connector.md`, set **Status** to `Done`, **Branch** to `` `feat/p1-claude-connector-T-001-05` ``, and **AI-Assist** to `L4`. If you learned something worth remembering, such as the `truncated` discovery, write it under "Notes & lessons learned". Run `docids.py check` once more after editing.
 
 Now commit everything as one logical change. Review what you are about to commit with `git status` and `git diff` first, and make sure no `.env` file sneaks in:
 
 ```bash
-$ git add docs/usecases/UC-001-configure-model-connections docs/releases/v0.1/README.md docs/traceability.md pyproject.toml uv.lock src tests
+$ git add docs/usecases/UC-001-configure-model-connections docs/releases/v0.1/README.md docs/traceability.md docs/requirements pyproject.toml uv.lock src tests
 $ git commit
 ```
 

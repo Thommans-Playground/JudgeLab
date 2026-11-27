@@ -11,7 +11,7 @@ There's very little new code in this chapter, about forty lines. Most of the wor
 You need everything from chapter 10, with its pull request merged, and a green test suite. Start a new branch. This one is mostly about validation, so it's a `test/` branch:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c test/p1-live-validation-T013
+$ git switch main && git pull --ff-only && git switch -c test/p1-live-validation-T-006-02
 ```
 
 This is the road from here to a tagged release:
@@ -27,7 +27,7 @@ flowchart LR
     GATES --> TAG["git tag v0.1.0"]
 ```
 
-This chapter finishes [UC-006 Run complete evaluation](../../docs/usecases/UC-006-run-complete-evaluation/README.md), the use case you started in chapter 10. Its second and last slice is [T013](../../docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md) (live end-to-end benchmark), which delivers four more criteria, AC-006-08 to AC-006-11. Once they are met, every use case in v0.1 works, and the release can be tagged.
+This chapter finishes [UC-006 Run complete evaluation](../../docs/usecases/UC-006-run-complete-evaluation/README.md), the use case you started in chapter 10. Its second and last slice is [T-006-02](../../docs/usecases/UC-006-run-complete-evaluation/T-006-02-live-end-to-end-benchmark.md) (live end-to-end benchmark), which delivers four more criteria, AC-006-08 to AC-006-11. Once they are met, every use case in v0.1 works, and the release can be tagged.
 
 For the live parts of this chapter, your `.env` file in the root of the project needs **both** keys, because the bundled configuration uses an OpenAI model as the target and a Claude model as the judge:
 
@@ -51,7 +51,7 @@ AC-006-08
 
 Open `docs/usecases/UC-006-run-complete-evaluation/README.md` and add these four lines right after AC-006-07, in its Acceptance criteria section:
 
-_docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteria for T013
+_docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteria for T-006-02
 
 ```markdown
 - [ ] **AC-006-08**: Opt-in live smoke tests (`pytest -m live`) make one real call through each configured connector and get a sensible answer; they never run by default.
@@ -60,9 +60,9 @@ _docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteri
 - [ ] **AC-006-11**: Swapping the target and judge providers in the config, with no code change, produces a second valid live report.
 ```
 
-Then open the task file for T013, fill in its Objective, and replace the placeholder under `## Delivers` with the four new criteria:
+Then open the task file for T-006-02, fill in its Objective, and replace the placeholder under `## Delivers` with the four new criteria:
 
-_docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md_: Objective and Delivers
+_docs/usecases/UC-006-run-complete-evaluation/T-006-02-live-end-to-end-benchmark.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -77,12 +77,63 @@ Validate v0.1 against real models end to end, and review the results as a human.
 - AC-006-11
 ```
 
-And fill in the Delivers column of T013's row in the use case's Slices table:
+And fill in the Delivers column of T-006-02's row in the use case's Slices table:
 
-_docs/usecases/UC-006-run-complete-evaluation/README.md_: T013's row in the Slices table
+_docs/usecases/UC-006-run-complete-evaluation/README.md_: T-006-02's row in the Slices table
 
 ```markdown
-| [T013](T013-live-end-to-end-benchmark.md) | Live end-to-end benchmark | AC-006-08, AC-006-09, AC-006-10, AC-006-11 | Todo |
+| [T-006-02](T-006-02-live-end-to-end-benchmark.md) | Live end-to-end benchmark | AC-006-08, AC-006-09, AC-006-10, AC-006-11 | Todo |
+```
+
+Finally, add the new criteria to the requirements they verify, under `## Verified by` in each file. The live smoke tests prove that the target really answers (REQ-005), the live run proves the whole evaluation works through the command line (REQ-011), your review proves the judge's verdicts are sound (REQ-006), and the swap proves the two roles are configured independently (REQ-003). Each gets one new line at the end of its list:
+
+_docs/requirements/REQ-003.md_: Verified by
+
+```markdown
+- AC-004-05
+- AC-001-12
+- AC-001-19
+- AC-001-22
+- AC-006-11
+```
+
+_docs/requirements/REQ-005.md_: Verified by
+
+```markdown
+- AC-001-03
+- AC-001-04
+- AC-001-05
+- AC-001-06
+- AC-001-07
+- AC-001-09
+- AC-001-11
+- AC-003-01
+- AC-003-02
+- AC-003-03
+- AC-003-04
+- AC-003-05
+- AC-006-08
+```
+
+_docs/requirements/REQ-006.md_: Verified by
+
+```markdown
+- AC-004-01
+- AC-004-04
+- AC-004-06
+- AC-004-07
+- AC-006-04
+- AC-006-10
+```
+
+_docs/requirements/REQ-011.md_: Verified by
+
+```markdown
+- AC-006-01
+- AC-006-05
+- AC-006-06
+- AC-006-07
+- AC-006-09
 ```
 
 Only AC-006-08 can be checked by pytest, and only when you ask for the live tests and have the keys. The other three are verified by you, with the reports and the release report as evidence. That's normal for acceptance testing: some criteria are about whether a human finds the result useful, and no test can decide that for you. You'll see what this means for the progress table in a moment.
@@ -451,11 +502,13 @@ UC-006: Run complete evaluation  (7/11 passing)
 
 Five use cases are complete, and UC-006 stands at 7 out of 11. The four criteria left are exactly the ones this chapter is about, and none of them can be ticked by a default test run. AC-006-08 becomes `PASS` when you run the live tests with your keys, as you did in section 11.5, so that run's output is its evidence. AC-006-09, AC-006-10 and AC-006-11 are manual: the live run, your review and the swapped run are their evidence, and they are recorded in the release report instead of in a pytest table. That's not a gap in the testing. It's the table telling you, correctly, which promises a machine can check and which ones need you.
 
-**2. Tick the criteria and close the slices.** In the [UC-006 README](../../docs/usecases/UC-006-run-complete-evaluation/README.md), tick AC-006-08 to AC-006-11, now that you have the evidence for each, and set the Status of T013's row in the Slices table to `Done`. In [T013](../../docs/usecases/UC-006-run-complete-evaluation/T013-live-end-to-end-benchmark.md), set **Status** to `Done`, fill in **Branch** (`test/p1-live-validation-T013`) and set **AI-Assist** to `L4`.
+**2. Tick the criteria and close the slices.** In the [UC-006 README](../../docs/usecases/UC-006-run-complete-evaluation/README.md), tick AC-006-08 to AC-006-11, now that you have the evidence for each, and set the Status of T-006-02's row in the Slices table to `Done`. In [T-006-02](../../docs/usecases/UC-006-run-complete-evaluation/T-006-02-live-end-to-end-benchmark.md), set **Status** to `Done`, fill in **Branch** (`test/p1-live-validation-T-006-02`) and set **AI-Assist** to `L4`.
 
-Then go through every use case README, from UC-001 to UC-006, and make sure every acceptance criterion is ticked and every row of every Slices table says `Done`. Open each task file too, from T001 to T014, and check that its Status says `Done`. If something isn't, either finish it or say in the release report why it isn't part of v0.1.
+Then go through every use case README, from UC-001 to UC-006, and make sure every acceptance criterion is ticked and every row of every Slices table says `Done`. Open each task file too, all fourteen of them, from T-001-01 in UC-001 to T-006-02 in UC-006, and check that its Status says `Done`. If something isn't, either finish it or say in the release report why it isn't part of v0.1.
 
 **3. Update the traceability matrix.** Open [docs/traceability.md](../../docs/traceability.md) and update the Status column, which still says `Not started` for every requirement. The `vbench-docs` skill has one rule to respect here: a requirement is only `Verified` when a test case (`TC-###`) exists for it and there's test evidence. Your evidence is in `pytest.txt`, but [docs/verification.md](../../docs/verification.md) still only has a placeholder row. So add one test case row per test area to the table in `verification.md` (for example, a row for the dataset tests in `tests/test_benchmark.py` that verifies REQ-001 and REQ-002), getting each new ID from the script with `python3 .claude/skills/vbench-docs/scripts/docids.py next TC`. Put the TC ids in the Verification column of the traceability matrix, and then mark the requirements `Verified`. If you'd rather not do this now, mark them `In progress` and record the missing test cases under Known issues. Either way, the matrix tells the truth.
+
+The matrix isn't the only place that says which requirements are proven. Each requirement's `## Verified by` list names its criteria, each use case README says which of those criteria are met, and the pytest progress table in `pytest.txt` shows which ones pass. Put the three together and you can follow any requirement down to the evidence for it. So before you release, open each requirement file from REQ-001 to REQ-013 and check two things: that its Verified by list has at least one criterion, and that every criterion on it passes. For the automated criteria, that's a `PASS` in the table. For the three manual ones, AC-006-09, AC-006-10 and AC-006-11, it's the evidence you'll record in the release report next. A requirement with an empty list, or with a criterion that doesn't pass, is not proven, however green the test run looks.
 
 **4. Write the release report.** Open [docs/releases/v0.1/release-report.md](../../docs/releases/v0.1/release-report.md) and fill in each section. This is your writing, so I'll only describe what belongs where:
 
@@ -505,11 +558,11 @@ If a gate isn't met, don't tag. Fix what's missing, or record clearly in the rel
 
 ## 11.13 Committing Your Work and Tagging v0.1.0
 
-This branch holds two logical changes, so make two commits. The first is the live smoke tests, together with the T013 criteria and slice that you wrote in section 11.2. The cleanest moment to make it is as soon as the smoke tests pass, before you tick anything in section 11.9. If you have already ticked the criteria, `git add -p` lets you stage the new criteria lines and the Delivers list without the ticks and statuses, which belong to the second commit:
+This branch holds two logical changes, so make two commits. The first is the live smoke tests, together with the T-006-02 criteria, slice and Verified by lines that you wrote in section 11.2. The cleanest moment to make it is as soon as the smoke tests pass, before you tick anything in section 11.9. If you have already ticked the criteria, `git add -p` lets you stage the new criteria lines and the Delivers list without the ticks and statuses, which belong to the second commit:
 
 ```bash
 $ git add tests/live/test_live_smoke.py tests/conftest.py pyproject.toml \
-    docs/usecases/UC-006-run-complete-evaluation
+    docs/usecases/UC-006-run-complete-evaluation docs/requirements
 $ git commit
 ```
 

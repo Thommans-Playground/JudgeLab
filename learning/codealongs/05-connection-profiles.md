@@ -11,7 +11,7 @@ In this codealong you are going to separate the *description* of a connection fr
 Start from an up-to-date `main`, with chapter 4 merged, and create the topic branch:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c feat/p1-connection-profiles-T001
+$ git switch main && git pull --ff-only && git switch -c feat/p1-connection-profiles-T-001-01
 ```
 
 No API keys are needed. Nothing in this chapter sends a request to a model. And, as always, I strongly recommend that you type the code yourself.
@@ -44,7 +44,7 @@ Later, in chapter 10, these profiles will be read from a YAML file. For now you'
 
 ## 5.3 The Acceptance Criteria
 
-This chapter is still use case UC-001, *Configure model connections*. It finishes the three slices of it that are left: T001 (the connection profile), T002 (credential resolution, which you wrote back in chapter 2 but never gave its own slice), and T004 (independent model switching). All three task files already exist in [docs/usecases/UC-001-configure-model-connections/](../../docs/usecases/UC-001-configure-model-connections/), and they're already listed in its Slices table, in the release plan and in the traceability matrix. What they don't have yet is anything to deliver, so let's write the criteria first.
+This chapter is still use case UC-001, *Configure model connections*. It finishes the three slices of it that are left: T-001-01 (the connection profile), T-001-02 (credential resolution, which you wrote back in chapter 2 but never gave its own slice), and T-001-04 (independent model switching). All three task files already exist in [docs/usecases/UC-001-configure-model-connections/](../../docs/usecases/UC-001-configure-model-connections/), and they're already listed in its Slices table, in the release plan and in the traceability matrix. What they don't have yet is anything to deliver, so let's write the criteria first.
 
 Profiles, credentials and switching are new behaviour that none of AC-001-01 to AC-001-11 describes. Running `python3 .claude/skills/vbench-docs/scripts/docids.py next AC --usecase UC-001` tells you that the next free id is `AC-001-12`. Open [docs/usecases/UC-001-configure-model-connections/README.md](../../docs/usecases/UC-001-configure-model-connections/README.md), and add these eleven criteria at the end of the "Acceptance criteria" list, right after AC-001-11:
 
@@ -64,9 +64,9 @@ _docs/usecases/UC-001-configure-model-connections/README.md_: The new criteria
 - [ ] **AC-001-22**: Target and judge connections are independent, and swapping providers or models needs only a configuration change.
 ```
 
-Now decide which slice delivers which criteria. AC-001-12 to AC-001-17 are about the profile, so they belong to T001. AC-001-18 is about reading the key, so it belongs to T002. T002 also delivers a criterion you already have: AC-001-01 says that a missing, empty or whitespace-only key variable raises an auth error that names it, and `read_secret()` is the function that does exactly that. As you saw with Claude in the last chapter, there's no need to write that promise down a second time. AC-001-19 to AC-001-22 are about choosing and switching connectors, so they belong to T004.
+Now decide which slice delivers which criteria. AC-001-12 to AC-001-17 are about the profile, so they belong to T-001-01. AC-001-18 is about reading the key, so it belongs to T-001-02. T-001-02 also delivers a criterion you already have: AC-001-01 says that a missing, empty or whitespace-only key variable raises an auth error that names it, and `read_secret()` is the function that does exactly that. As you saw with Claude in the last chapter, there's no need to write that promise down a second time. AC-001-19 to AC-001-22 are about choosing and switching connectors, so they belong to T-001-04.
 
-T004 delivers one more criterion, and this one isn't in UC-001 at all. Open [docs/usecases/UC-004-evaluate-responses/README.md](../../docs/usecases/UC-004-evaluate-responses/README.md) and look at the last criterion, which came from your own v0.1 plan:
+T-001-04 delivers one more criterion, and this one isn't in UC-001 at all. Open [docs/usecases/UC-004-evaluate-responses/README.md](../../docs/usecases/UC-004-evaluate-responses/README.md) and look at the last criterion, which came from your own v0.1 plan:
 
 _docs/usecases/UC-004-evaluate-responses/README.md_: A criterion from another use case
 
@@ -74,26 +74,26 @@ _docs/usecases/UC-004-evaluate-responses/README.md_: A criterion from another us
 - [ ] **AC-004-05**: Switching the judge profile does not change benchmark data or the use-case logic.
 ```
 
-Switching the judge is exactly what T004 makes possible, and the test you'll write for AC-001-22 swaps the judge's profile without touching anything else. So T004 delivers AC-004-05 as well. A slice belongs to one use case, but the evidence it produces can prove a criterion of another one, and the Delivers list says so.
+Switching the judge is exactly what T-001-04 makes possible, and the test you'll write for AC-001-22 swaps the judge's profile without touching anything else. So T-001-04 delivers AC-004-05 as well. A slice belongs to one use case, but the evidence it produces can prove a criterion of another one, and the Delivers list says so.
 
 Fill in the three Slices rows in the UC-001 README, which are empty in the "Delivers" column so far, so that they look like this:
 
-_docs/usecases/UC-001-configure-model-connections/README.md_: The Slices rows for T001, T002 and T004
+_docs/usecases/UC-001-configure-model-connections/README.md_: The Slices rows for T-001-01, T-001-02 and T-001-04
 
 ```markdown
-| [T001](T001-connection-profile-model.md) | Connection profile model | AC-001-12, AC-001-13, AC-001-14, AC-001-15, AC-001-16, AC-001-17 | Todo |
-| [T002](T002-credential-resolution.md) | Credential resolution | AC-001-01, AC-001-18 | Todo |
+| [T-001-01](T-001-01-connection-profile-model.md) | Connection profile model | AC-001-12, AC-001-13, AC-001-14, AC-001-15, AC-001-16, AC-001-17 | Todo |
+| [T-001-02](T-001-02-credential-resolution.md) | Credential resolution | AC-001-01, AC-001-18 | Todo |
 ```
 
 ```markdown
-| [T004](T004-independent-model-switching.md) | Independent model switching | AC-001-19, AC-001-20, AC-001-21, AC-001-22, AC-004-05 | Todo |
+| [T-001-04](T-001-04-independent-model-switching.md) | Independent model switching | AC-001-19, AC-001-20, AC-001-21, AC-001-22, AC-004-05 | Todo |
 ```
 
-The T003 row sits between T002 and T004, which is why T004 is in its own block.
+The T-001-03 row sits between T-001-02 and T-001-04, which is why T-001-04 is in its own block.
 
-Then fill in each task file's Objective and `## Delivers` section, replacing the template's comment and empty `-`. In [docs/usecases/UC-001-configure-model-connections/T001-connection-profile-model.md](../../docs/usecases/UC-001-configure-model-connections/T001-connection-profile-model.md), the two sections should look like this:
+Then fill in each task file's Objective and `## Delivers` section, replacing the template's comment and empty `-`. In [docs/usecases/UC-001-configure-model-connections/T-001-01-connection-profile-model.md](../../docs/usecases/UC-001-configure-model-connections/T-001-01-connection-profile-model.md), the two sections should look like this:
 
-_docs/usecases/UC-001-configure-model-connections/T001-connection-profile-model.md_: Objective and Delivers
+_docs/usecases/UC-001-configure-model-connections/T-001-01-connection-profile-model.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -110,9 +110,9 @@ Describe one model connection as validated data that never holds a secret.
 - AC-001-17
 ```
 
-Do the same in [docs/usecases/UC-001-configure-model-connections/T002-credential-resolution.md](../../docs/usecases/UC-001-configure-model-connections/T002-credential-resolution.md):
+Do the same in [docs/usecases/UC-001-configure-model-connections/T-001-02-credential-resolution.md](../../docs/usecases/UC-001-configure-model-connections/T-001-02-credential-resolution.md):
 
-_docs/usecases/UC-001-configure-model-connections/T002-credential-resolution.md_: Objective and Delivers
+_docs/usecases/UC-001-configure-model-connections/T-001-02-credential-resolution.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -125,9 +125,9 @@ Read a secret from the environment variable a profile names, in one place only.
 - AC-001-18
 ```
 
-And in [docs/usecases/UC-001-configure-model-connections/T004-independent-model-switching.md](../../docs/usecases/UC-001-configure-model-connections/T004-independent-model-switching.md):
+And in [docs/usecases/UC-001-configure-model-connections/T-001-04-independent-model-switching.md](../../docs/usecases/UC-001-configure-model-connections/T-001-04-independent-model-switching.md):
 
-_docs/usecases/UC-001-configure-model-connections/T004-independent-model-switching.md_: Objective and Delivers
+_docs/usecases/UC-001-configure-model-connections/T-001-04-independent-model-switching.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -141,6 +141,44 @@ Choose and configure the connector for target and judge from configuration alone
 - AC-001-21
 - AC-001-22
 - AC-004-05
+```
+
+The last step links the requirements to the new criteria that prove them, in the `## Verified by` section of each requirement file in [docs/requirements/](../../docs/requirements/). Three requirements are involved. REQ-003 (configure target and judge independently) already lists AC-004-05, which came with your v0.1 plan. Add the criteria that make independence possible to the end of its list: the profile itself, choosing the connector by provider, and swapping by configuration alone:
+
+_docs/requirements/REQ-003.md_: Verified by
+
+```markdown
+- AC-004-05
+- AC-001-12
+- AC-001-19
+- AC-001-22
+```
+
+REQ-004 (support provider, model ID, optional base URL and API-key environment reference) is what the profile and the registry are all about, and it has no criteria yet. Replace the `-` placeholder under its `## Verified by` with these:
+
+_docs/requirements/REQ-004.md_: Verified by
+
+```markdown
+- AC-001-12
+- AC-001-13
+- AC-001-14
+- AC-001-15
+- AC-001-16
+- AC-001-17
+- AC-001-18
+- AC-001-20
+- AC-001-21
+```
+
+And REQ-013 (keep secrets out of logs, errors and reports) gets AC-001-14, the criterion that refuses to echo a pasted key, at the end of its list:
+
+_docs/requirements/REQ-013.md_: Verified by
+
+```markdown
+- AC-001-01
+- AC-001-02
+- AC-001-08
+- AC-001-14
 ```
 
 All three tasks are already registered, so there is nothing else to add this time. Run `python3 .claude/skills/vbench-docs/scripts/docids.py check` to be sure, and it should report `0 error(s) · 0 warning(s)`.
@@ -446,7 +484,7 @@ Two profiles, two different connectors, and not a single `import` of a connector
 
 ## 5.8 Testing the Credentials Function
 
-You wrote `read_secret()` in chapter 2, and it has been tested indirectly through the connectors ever since. Now that T002 is a slice with its own criteria to deliver, it gets its own small test file:
+You wrote `read_secret()` in chapter 2, and it has been tested indirectly through the connectors ever since. Now that T-001-02 is a slice with its own criteria to deliver, it gets its own small test file:
 
 _tests/connectors/test_credentials.py_: Tests for `read_secret()`
 
@@ -762,14 +800,14 @@ All 22 UC-001 criteria pass, delivered by five slices, and the whole connector l
 
 ## 5.14 Committing Your Work
 
-When the tests pass, update the docs. Start with the criteria, which live in the use case READMEs. In `docs/usecases/UC-001-configure-model-connections/README.md`, tick AC-001-12 to AC-001-22 (change `- [ ]` to `- [x]`). AC-001-01 was already ticked, and it stays that way. In `docs/usecases/UC-004-evaluate-responses/README.md`, tick AC-004-05, the first UC-004 criterion to pass. Back in the UC-001 README, set the **Status** of the T001, T002 and T004 rows in the Slices table to `Done`.
+When the tests pass, update the docs. Start with the criteria, which live in the use case READMEs. In `docs/usecases/UC-001-configure-model-connections/README.md`, tick AC-001-12 to AC-001-22 (change `- [ ]` to `- [x]`). AC-001-01 was already ticked, and it stays that way. In `docs/usecases/UC-004-evaluate-responses/README.md`, tick AC-004-05, the first UC-004 criterion to pass. Back in the UC-001 README, set the **Status** of the T-001-01, T-001-02 and T-001-04 rows in the Slices table to `Done`.
 
-Then, in the three task files in the UC-001 folder, `T001-connection-profile-model.md`, `T002-credential-resolution.md` and `T004-independent-model-switching.md`, set **Status** to `Done`, **Branch** to `` `feat/p1-connection-profiles-T001` ``, and **AI-Assist** to `L4`, and add any lessons learned. Then run `python3 .claude/skills/vbench-docs/scripts/docids.py check` one last time.
+Then, in the three task files in the UC-001 folder, `T-001-01-connection-profile-model.md`, `T-001-02-credential-resolution.md` and `T-001-04-independent-model-switching.md`, set **Status** to `Done`, **Branch** to `` `feat/p1-connection-profiles-T-001-01` ``, and **AI-Assist** to `L4`, and add any lessons learned. Then run `python3 .claude/skills/vbench-docs/scripts/docids.py check` one last time.
 
 Review your changes with `git status` and `git diff`, then commit:
 
 ```bash
-$ git add docs/usecases/UC-001-configure-model-connections docs/usecases/UC-004-evaluate-responses/README.md src tests
+$ git add docs/usecases/UC-001-configure-model-connections docs/usecases/UC-004-evaluate-responses/README.md docs/requirements src tests
 $ git commit
 ```
 
@@ -788,7 +826,7 @@ the profile's settings and options to the connector class, so target
 and judge switch providers through configuration alone. Adding a
 provider is one line in the registry (open/closed).
 
-Also gives read_secret() its own T002 tests.
+Also gives read_secret() its own T-001-02 tests.
 
 AI-Assist: L4
 ```

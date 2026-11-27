@@ -12,10 +12,10 @@ Start from an up-to-date `main`, with the benchmark loader from chapter 6 merged
 
 ```bash
 $ git switch main && git pull --ff-only
-$ git switch -c feat/p1-target-runner-T007
+$ git switch -c feat/p1-target-runner-T-003-01
 ```
 
-This chapter covers the use case [UC-003 Execute target model](../../docs/usecases/UC-003-execute-target-model/README.md), which has a single slice, [T007](../../docs/usecases/UC-003-execute-target-model/T007-target-inference.md). That slice delivers all five of the use case's acceptance criteria, AC-003-01 to AC-003-05, which you are about to write. In the plan's vocabulary, the model you are evaluating is called the *target*, to tell it apart from the *judge* model that you will meet in the next chapter.
+This chapter covers the use case [UC-003 Execute target model](../../docs/usecases/UC-003-execute-target-model/README.md), which has a single slice, [T-003-01](../../docs/usecases/UC-003-execute-target-model/T-003-01-target-inference.md). That slice delivers all five of the use case's acceptance criteria, AC-003-01 to AC-003-05, which you are about to write. In the plan's vocabulary, the model you are evaluating is called the *target*, to tell it apart from the *judge* model that you will meet in the next chapter.
 
 As always, I strongly recommend that you type the code yourself.
 
@@ -40,9 +40,9 @@ _docs/usecases/UC-003-execute-target-model/README.md_: The acceptance criteria
 - [ ] **AC-003-05**: Exceptions that are not connector errors are not swallowed, so bugs stay visible.
 ```
 
-Then open the T007 task file, fill in its Objective, and list all five criteria under `## Delivers`:
+Then open the T-003-01 task file, fill in its Objective, and list all five criteria under `## Delivers`:
 
-_docs/usecases/UC-003-execute-target-model/T007-target-inference.md_: Objective and Delivers
+_docs/usecases/UC-003-execute-target-model/T-003-01-target-inference.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -58,14 +58,27 @@ Send each benchmark question to the target model and capture what happened.
 - AC-003-05
 ```
 
-And repeat the list in T007's row of the Slices table, back in the use case README:
+And repeat the list in T-003-01's row of the Slices table, back in the use case README:
 
 _docs/usecases/UC-003-execute-target-model/README.md_: The Slices table
 
 ```markdown
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T007](T007-target-inference.md) | Target inference | AC-003-01, AC-003-02, AC-003-03, AC-003-04, AC-003-05 | Todo |
+| [T-003-01](T-003-01-target-inference.md) | Target inference | AC-003-01, AC-003-02, AC-003-03, AC-003-04, AC-003-05 | Todo |
+```
+
+Last, the requirement. UC-003 has just one, REQ-005, "Obtain actual answers from the target model", and all five criteria prove it. Its Verified by section isn't empty: it already lists the UC-001 criteria that proved the connectors could get an answer from a model. Add the five new IDs at the end of that list:
+
+_docs/requirements/REQ-005.md_: The end of the Verified by section
+
+```markdown
+- AC-001-11
+- AC-003-01
+- AC-003-02
+- AC-003-03
+- AC-003-04
+- AC-003-05
 ```
 
 Read through the five criteria before you continue. The first one is the obvious one, and the other four are all about failures and visibility. That ratio is about right for code that talks to the network.
@@ -375,7 +388,7 @@ UC-003: Execute target model  (5/5 passing)
 
 ## 7.9 Committing Your Work
 
-Once the tests pass, update the [UC-003 README](../../docs/usecases/UC-003-execute-target-model/README.md): tick its five acceptance criteria and set the Status of T007's row in the Slices table to `Done`. Then, in [T007](../../docs/usecases/UC-003-execute-target-model/T007-target-inference.md), set Branch to `feat/p1-target-runner-T007`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
+Once the tests pass, update the [UC-003 README](../../docs/usecases/UC-003-execute-target-model/README.md): tick its five acceptance criteria and set the Status of T-003-01's row in the Slices table to `Done`. Then, in [T-003-01](../../docs/usecases/UC-003-execute-target-model/T-003-01-target-inference.md), set Branch to `feat/p1-target-runner-T-003-01`, Status to `Done` and AI-Assist to `L4`, and run the docs check:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -384,7 +397,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 Then commit your work, following [CONTRIBUTING.md](../../CONTRIBUTING.md):
 
 ```bash
-$ git add src/judgelab/runner.py tests/test_runner.py docs/usecases/UC-003-execute-target-model
+$ git add src/judgelab/runner.py tests/test_runner.py docs/usecases/UC-003-execute-target-model docs/requirements
 $ git commit
 ```
 

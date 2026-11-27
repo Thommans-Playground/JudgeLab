@@ -8,19 +8,19 @@ By the end you will have a `judgelab.connectors` package with five small modules
 
 ## 2.1 Before You Start
 
-Every unit of work in JudgeLab lives on its own short-lived branch (the rules are in [CONTRIBUTING.md](../../CONTRIBUTING.md)). This one implements task T003, the first live model connector, and belongs to phase 1 of the roadmap. Starting from an up-to-date `main`, create the branch:
+Every unit of work in JudgeLab lives on its own short-lived branch (the rules are in [CONTRIBUTING.md](../../CONTRIBUTING.md)). This one implements task T-001-03, the first live model connector, and belongs to phase 1 of the roadmap. Starting from an up-to-date `main`, create the branch:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c feat/p1-openai-connector-T003
+$ git switch main && git pull --ff-only && git switch -c feat/p1-openai-connector-T-001-03
 ```
 
-Before going further, it's worth knowing where this task sits in the project's documents, because you are going to edit two of them in the next section. JudgeLab's docs describe the work in three layers:
+Before going further, it's worth knowing where this task sits in the project's documents, because you are going to edit some of them in the next section. JudgeLab's docs describe the work in three layers:
 
 - A **use case** is a goal a user has. This chapter belongs to **UC-001 Configure model connections**: a developer wants JudgeLab to talk to the target and judge models they choose. Each use case is a folder, here `docs/usecases/UC-001-configure-model-connections/`, and its `README.md` holds the flows of the use case, its acceptance criteria and a list of its slices.
 - The **acceptance criteria** describe the use case's observable behaviour, one checkable sentence each. They are defined in the use case's README, and nowhere else.
-- A **task** is the work that delivers a *slice* of the use case: a thin, end-to-end piece that makes some of its criteria pass. T003 is one slice of UC-001, and its task file lives in the same folder as the use case.
+- A **task** is the work that delivers a *slice* of the use case: a thin, end-to-end piece that makes some of its criteria pass. T-001-03 is one slice of UC-001, and its task file lives in the same folder as the use case. Task IDs are numbered within their use case, like the criteria: T-001-03 is task 3 of UC-001.
 
-UC-001 has other slices (connection profiles, credentials, switching models) that you will build in chapter 5. T003 is the slice that gets one real connector working end to end, and it is delivered over two chapters: this one and the next.
+UC-001 has other slices (connection profiles, credentials, switching models) that you will build in chapter 5. T-001-03 is the slice that gets one real connector working end to end, and it is delivered over two chapters: this one and the next.
 
 The notebook from chapter 1 is a useful reference to have open next to you, because a lot of what you are going to type is that code, cleaned up. Where something changes, I will tell you why.
 
@@ -61,9 +61,9 @@ AC-001-01
 
 This exact format matters, because later in this chapter you are going to write a small pytest plugin that reads these lines out of the use case files and reports on them. The IDs also give every test a precise thing to point at: instead of a vague "tests the connector", a test will say "I verify AC-001-06".
 
-The task file says which of these criteria its slice delivers. Open [docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md](../../docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md). Under `## Objective` there is nothing yet, and under `## Delivers` there is a comment and an empty bullet. Fill in the objective, and replace the comment and the bullet with the IDs of the eight criteria:
+The task file says which of these criteria its slice delivers. Open [docs/usecases/UC-001-configure-model-connections/T-001-03-first-live-model-connector.md](../../docs/usecases/UC-001-configure-model-connections/T-001-03-first-live-model-connector.md). Under `## Objective` there is nothing yet, and under `## Delivers` there is a comment and an empty bullet. Fill in the objective, and replace the comment and the bullet with the IDs of the eight criteria:
 
-_docs/usecases/UC-001-configure-model-connections/T003-first-live-model-connector.md_: Objective and delivered criteria
+_docs/usecases/UC-001-configure-model-connections/T-001-03-first-live-model-connector.md_: Objective and delivered criteria
 
 ```markdown
 ## Objective
@@ -84,13 +84,47 @@ Send one prompt to an OpenAI-compatible Chat Completions endpoint and return the
 
 The task file lists only the IDs. The sentences themselves stay in the use case README, so there is exactly one place where each criterion is worded, and no second copy to drift out of date.
 
-Finally, go back to the use case README and find the `## Slices` table at the bottom. It has one row per task, and the "Delivers" column of T003's row is empty. Fill it with the same list, so that someone reading the use case can see at a glance which slice delivers which criteria:
+Finally, go back to the use case README and find the `## Slices` table at the bottom. It has one row per task, and the "Delivers" column of T-001-03's row is empty. Fill it with the same list, so that someone reading the use case can see at a glance which slice delivers which criteria:
 
-_docs/usecases/UC-001-configure-model-connections/README.md_: T003's row in the Slices table
+_docs/usecases/UC-001-configure-model-connections/README.md_: T-001-03's row in the Slices table
 
 ```markdown
-| [T003](T003-first-live-model-connector.md) | First live model connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-07, AC-001-08 | Todo |
+| [T-001-03](T-001-03-first-live-model-connector.md) | First live model connector | AC-001-01, AC-001-02, AC-001-03, AC-001-04, AC-001-05, AC-001-06, AC-001-07, AC-001-08 | Todo |
 ```
+
+There is one more link to make. The release plan lists JudgeLab's requirements, and each one has its own file in `docs/requirements/`. A requirement says *what is needed*, for example REQ-013, "Keep secrets out of logs, errors, and reports". The use case's criteria say *how we'll know* it is met. Each requirement file has a `## Verified by` section that connects the two, listing the IDs of the criteria that prove it. Only the IDs, for the same reason the task file lists only IDs: the text of a criterion lives in one place, its use case.
+
+Two requirements are proven by the criteria you just wrote. REQ-005, "Obtain actual answers from the target model", is verified by the criteria about replies, refusals, failures and retries. Open [docs/requirements/REQ-005.md](../../docs/requirements/REQ-005.md) and replace the empty bullet under `## Verified by` with their IDs:
+
+_docs/requirements/REQ-005.md_: The criteria that verify REQ-005
+
+```markdown
+## Verified by
+
+<!-- IDs of the use-case acceptance criteria (AC-UUU-NN) that prove this requirement; their text lives in the use case. -->
+
+- AC-001-03
+- AC-001-04
+- AC-001-05
+- AC-001-06
+- AC-001-07
+```
+
+REQ-013 is verified by the three criteria about keys. Do the same in [docs/requirements/REQ-013.md](../../docs/requirements/REQ-013.md):
+
+_docs/requirements/REQ-013.md_: The criteria that verify REQ-013
+
+```markdown
+## Verified by
+
+<!-- IDs of the use-case acceptance criteria (AC-UUU-NN) that prove this requirement; their text lives in the use case. -->
+
+- AC-001-01
+- AC-001-02
+- AC-001-08
+```
+
+A requirement can be verified by criteria from more than one use case. Keeping secrets out of reports, for example, is something UC-005 and UC-006 will have to prove as well, so REQ-013's list is going to grow in later chapters.
 
 ## 2.3 One Module, One Job
 
@@ -254,7 +288,7 @@ As in chapter 1, the error message names the variable and never shows a value. Y
 ConnectorAuthError: environment variable NOPE_NOT_SET is not set
 ```
 
-Credential handling is its own slice of UC-001, task T002, and you are going to give it formal acceptance criteria in chapter 5. The function is born here because the connector needs it now.
+Credential handling is its own slice of UC-001, task T-001-02, and you are going to give it formal acceptance criteria in chapter 5. The function is born here because the connector needs it now.
 
 ## 2.7 The OpenAI Connector
 
@@ -1051,9 +1085,9 @@ Exactly the two billing rows fail, because they now get a `ConnectorRateLimitErr
 
 ## 2.19 Committing Your Work
 
-When all eight criteria pass, the documents should say so. The criteria live in the use case, so that is where they are ticked: open the UC-001 `README.md` again and tick the eight checkboxes of AC-001-01 to AC-001-08 (`- [x]`). In the Slices table at the bottom, set the Status of T003's row to `In progress`. T003 isn't finished, as you will add two more criteria to its slice in the next chapter.
+When all eight criteria pass, the documents should say so. The criteria live in the use case, so that is where they are ticked: open the UC-001 `README.md` again and tick the eight checkboxes of AC-001-01 to AC-001-08 (`- [x]`). In the Slices table at the bottom, set the Status of T-001-03's row to `In progress`. T-001-03 isn't finished, as you will add two more criteria to its slice in the next chapter.
 
-Then open `T003-first-live-model-connector.md`, and in the table at the top set **Branch** to `feat/p1-openai-connector-T003`, **Status** to `In progress` (the same value as its row in the Slices table), and **AI-Assist** to `L4`. Then check that the docs are still consistent. Among other things, the `check` command verifies that every criterion is defined exactly once, in its own use case, and that every ID a task's `## Delivers` list mentions really exists:
+Then open `T-001-03-first-live-model-connector.md`, and in the table at the top set **Branch** to `feat/p1-openai-connector-T-001-03`, **Status** to `In progress` (the same value as its row in the Slices table), and **AI-Assist** to `L4`. Then check that the docs are still consistent. Among other things, the `check` command verifies that every criterion is defined exactly once, in its own use case, and that every ID a task's `## Delivers` list mentions really exists:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -1063,7 +1097,7 @@ $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 Now stage exactly the files of this chapter. Naming them, instead of using `git add .`, keeps unrelated changes (like an edited notebook) out of the commit:
 
 ```bash
-$ git add docs/usecases/UC-001-configure-model-connections src/judgelab/connectors tests/conftest.py tests/connectors
+$ git add docs/usecases/UC-001-configure-model-connections docs/requirements src/judgelab/connectors tests/conftest.py tests/connectors
 $ git status
 ```
 

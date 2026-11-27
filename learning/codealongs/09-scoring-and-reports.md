@@ -14,14 +14,14 @@ You need the code from chapter 8: the `judge.py` module with `Judge`, `JudgeEval
 $ uv run pytest -q
 ```
 
-This chapter covers the use case [UC-005 Generate report](../../docs/usecases/UC-005-generate-report/README.md), whose goal in the v0.1 plan is "JSON evidence and summary". It has two slices, and you are going to build both: [T010](../../docs/usecases/UC-005-generate-report/T010-aggregate-calculations.md) (aggregate calculations, the scoring) and [T011](../../docs/usecases/UC-005-generate-report/T011-json-report-writer.md) (the JSON report writer). Between them, they deliver all seven of the use case's acceptance criteria, AC-005-01 to AC-005-07.
+This chapter covers the use case [UC-005 Generate report](../../docs/usecases/UC-005-generate-report/README.md), whose goal in the v0.1 plan is "JSON evidence and summary". It has two slices, and you are going to build both: [T-005-01](../../docs/usecases/UC-005-generate-report/T-005-01-aggregate-calculations.md) (aggregate calculations, the scoring) and [T-005-02](../../docs/usecases/UC-005-generate-report/T-005-02-json-report-writer.md) (the JSON report writer). Between them, they deliver all seven of the use case's acceptance criteria, AC-005-01 to AC-005-07.
 
 Notice what this use case does *not* include: running the target and the judge one after the other. That is orchestration, and it belongs to the next use case, UC-006 Run complete evaluation, which is the subject of chapter 10. In this chapter, the scoring and the report work on results that already exist, so you will build those results by hand.
 
 Following [CONTRIBUTING.md](../../CONTRIBUTING.md), create a topic branch from an up-to-date `main`:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c feat/p1-scoring-report-T010
+$ git switch main && git pull --ff-only && git switch -c feat/p1-scoring-report-T-005-01
 ```
 
 As always, I strongly recommend that you type the code yourself.
@@ -49,9 +49,9 @@ _docs/usecases/UC-005-generate-report/README.md_: The acceptance criteria
 - [ ] **AC-005-07**: Reports are written as UTF-8 JSON into an output directory (created if needed) with a unique, time-stamped file name.
 ```
 
-The first three are about scoring, and the other four are about the report. Now say which slice delivers which. Open the task file for T010, fill in its Objective, and replace the placeholder under `## Delivers` with the scoring criteria:
+The first three are about scoring, and the other four are about the report. Now say which slice delivers which. Open the task file for T-005-01, fill in its Objective, and replace the placeholder under `## Delivers` with the scoring criteria:
 
-_docs/usecases/UC-005-generate-report/T010-aggregate-calculations.md_: Objective and Delivers
+_docs/usecases/UC-005-generate-report/T-005-01-aggregate-calculations.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -65,9 +65,9 @@ Summarise a run's outcomes transparently, never hiding errors.
 - AC-005-03
 ```
 
-Then do the same in the task file for T011, which delivers the report criteria:
+Then do the same in the task file for T-005-02, which delivers the report criteria:
 
-_docs/usecases/UC-005-generate-report/T011-json-report-writer.md_: Objective and Delivers
+_docs/usecases/UC-005-generate-report/T-005-02-json-report-writer.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -89,8 +89,40 @@ _docs/usecases/UC-005-generate-report/README.md_: The Slices table
 ```markdown
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T010](T010-aggregate-calculations.md) | Aggregate calculations | AC-005-01, AC-005-02, AC-005-03 | Todo |
-| [T011](T011-json-report-writer.md) | JSON report writer | AC-005-04, AC-005-05, AC-005-06, AC-005-07 | Todo |
+| [T-005-01](T-005-01-aggregate-calculations.md) | Aggregate calculations | AC-005-01, AC-005-02, AC-005-03 | Todo |
+| [T-005-02](T-005-02-json-report-writer.md) | JSON report writer | AC-005-04, AC-005-05, AC-005-06, AC-005-07 | Todo |
+```
+
+The last step links the requirements to the criteria that prove them. Each requirement file has a `## Verified by` section, and three requirements are proven by this chapter's criteria: the scoring criteria verify REQ-009 (transparent aggregate metrics), three of the report criteria verify REQ-010 (per-case evidence and metadata as JSON), and AC-005-06 verifies REQ-013 (keeping secrets out of reports). Replace the `-` placeholder under `## Verified by` in `REQ-009.md` with the scoring criteria:
+
+_docs/requirements/REQ-009.md_: Verified by
+
+```markdown
+- AC-005-01
+- AC-005-02
+- AC-005-03
+```
+
+Do the same in `REQ-010.md`:
+
+_docs/requirements/REQ-010.md_: Verified by
+
+```markdown
+- AC-005-04
+- AC-005-05
+- AC-005-07
+```
+
+REQ-013 already lists the UC-001 criteria that keep the key out of connectors and their errors, so add AC-005-06 to the end of its list:
+
+_docs/requirements/REQ-013.md_: Verified by
+
+```markdown
+- AC-001-01
+- AC-001-02
+- AC-001-08
+- AC-001-14
+- AC-005-06
 ```
 
 If you run `uv run pytest` now, the progress table at the bottom has a new `UC-005: Generate report` group with all seven criteria marked `not tested`. Your job in this chapter is to turn them into `PASS`.
@@ -196,7 +228,7 @@ Let's go through it one piece at a time.
 
 Look closely at the two divisions. `pass_rate` is `passed / evaluated`, where `evaluated` is `passed + failed`. Errors are not in the denominator, which is exactly what your [v0.1 plan](../../docs/releases/v0.1/README.md) asks for. And when nothing was evaluated, it returns `None` instead of dividing by zero. `None` means "there is no pass rate", which is the truth. Returning `0.0` would be a lie, because it would say the model failed everything when in fact we have no idea. `coverage`, on the other hand, returns `0.0` for an empty run, because "none of zero cases reached a verdict" really is zero coverage, and a reader needs to see the pass rate and the coverage side by side to judge how much to trust the rate.
 
-Finally, `summarise()`. This is the "single-pass counting" entry from your DSA ledger (T010). The function walks over the results exactly once, keeping a running count per outcome in a dictionary that starts with a zero for every member of `Outcome`. That makes it O(n) in time and O(1) in extra space, since there are always three counters no matter how many results there are. It also means the function works on *any* iterable, including a one-shot generator, and that's not a minor detail, as you are about to see.
+Finally, `summarise()`. This is the "single-pass counting" entry from your DSA ledger (T-005-01). The function walks over the results exactly once, keeping a running count per outcome in a dictionary that starts with a zero for every member of `Outcome`. That makes it O(n) in time and O(1) in extra space, since there are always three counters no matter how many results there are. It also means the function works on *any* iterable, including a one-shot generator, and that's not a minor detail, as you are about to see.
 
 ## 9.4 Trying the Scoring
 
@@ -751,7 +783,7 @@ Your timing will be different, but you should see 49 criteria passing across fiv
 
 ## 9.11 Committing Your Work
 
-Once all the tests pass, you can mark the work as done. In the [UC-005 README](../../docs/usecases/UC-005-generate-report/README.md), tick all seven acceptance criteria (`- [ ]` becomes `- [x]`) and set the Status of both rows in the Slices table to `Done`. In both [T010](../../docs/usecases/UC-005-generate-report/T010-aggregate-calculations.md) and [T011](../../docs/usecases/UC-005-generate-report/T011-json-report-writer.md), set **Status** to `Done`, fill in the **Branch** (`feat/p1-scoring-report-T010`) and set **AI-Assist** to `L4`. Then check that the docs are still consistent:
+Once all the tests pass, you can mark the work as done. In the [UC-005 README](../../docs/usecases/UC-005-generate-report/README.md), tick all seven acceptance criteria (`- [ ]` becomes `- [x]`) and set the Status of both rows in the Slices table to `Done`. In both [T-005-01](../../docs/usecases/UC-005-generate-report/T-005-01-aggregate-calculations.md) and [T-005-02](../../docs/usecases/UC-005-generate-report/T-005-02-json-report-writer.md), set **Status** to `Done`, fill in the **Branch** (`feat/p1-scoring-report-T-005-01`) and set **AI-Assist** to `L4`. Then check that the docs are still consistent:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
@@ -762,7 +794,7 @@ Then stage and commit, following the commit conventions in [CONTRIBUTING.md](../
 ```bash
 $ git add src/judgelab/scoring.py src/judgelab/report.py \
     tests/test_scoring.py tests/test_report.py \
-    docs/usecases/UC-005-generate-report
+    docs/usecases/UC-005-generate-report docs/requirements
 $ git commit
 ```
 

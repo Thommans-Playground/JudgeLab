@@ -2,7 +2,7 @@
 
 In this codealong you are going to connect everything and give JudgeLab a front door. By the end you will have an `evaluate()` function that sends every case to the target model and then to the judge and decides each case's outcome, and a `judgelab` command that reads a YAML configuration file naming the target model, the judge model, the benchmark and the rubric, runs the whole evaluation, prints its progress and a summary, and writes the JSON report from chapter 9. You will also have tests that run that command from end to end, report and all, without a single network call and without an API key.
 
-There are two design ideas in this chapter. The first is about honesty: `evaluate()` decides, for every case, whether a verdict really exists, and never lets a failure in the plumbing turn into a `FAIL` for the model. The second is a small one with a big payoff: the command line doesn't decide *how* connectors are built, it gets told. That one decision is what lets the tests swap the real connectors for fakes, and it is the "test doubles and dependency inversion" entry in your DSA ledger for T012.
+There are two design ideas in this chapter. The first is about honesty: `evaluate()` decides, for every case, whether a verdict really exists, and never lets a failure in the plumbing turn into a `FAIL` for the model. The second is a small one with a big payoff: the command line doesn't decide *how* connectors are built, it gets told. That one decision is what lets the tests swap the real connectors for fakes, and it is the "test doubles and dependency inversion" entry in your DSA ledger for T-006-01.
 
 > **AI-Assist level:** this is a guided codealong, so record your work as **L4**.
 
@@ -11,12 +11,12 @@ There are two design ideas in this chapter. The first is about honesty: `evaluat
 You need everything from chapter 9: the `scoring.py` and `report.py` modules, with a green test suite, along with `run_target()` in `runner.py` from chapter 7 and the `Judge` from chapter 8. Make sure the chapter 9 pull request is merged, then start a new topic branch from an up-to-date `main`:
 
 ```bash
-$ git switch main && git pull --ff-only && git switch -c feat/p1-cli-T012
+$ git switch main && git pull --ff-only && git switch -c feat/p1-cli-T-006-01
 ```
 
-This chapter starts the last use case of v0.1, [UC-006 Run complete evaluation](../../docs/usecases/UC-006-run-complete-evaluation/README.md). It is the use case the whole release is for: a developer runs one command and gets an evaluated benchmark. It has two slices. This chapter builds the first one, [T012](../../docs/usecases/UC-006-run-complete-evaluation/T012-cli-and-orchestration.md) (CLI and orchestration), which delivers seven acceptance criteria, AC-006-01 to AC-006-07. The second slice, T013, is the live evaluation in chapter 11.
+This chapter starts the last use case of v0.1, [UC-006 Run complete evaluation](../../docs/usecases/UC-006-run-complete-evaluation/README.md). It is the use case the whole release is for: a developer runs one command and gets an evaluated benchmark. It has two slices. This chapter builds the first one, [T-006-01](../../docs/usecases/UC-006-run-complete-evaluation/T-006-01-cli-and-orchestration.md) (CLI and orchestration), which delivers seven acceptance criteria, AC-006-01 to AC-006-07. The second slice, T-006-02, is the live evaluation in chapter 11.
 
-T012 has two halves, and you are going to build them in this order. First the orchestration, `evaluate()`, which runs the target and the judge and decides each outcome (AC-006-01 to AC-006-04). Then the command line and its configuration file, which put that orchestration behind a single command (AC-006-05 to AC-006-07).
+T-006-01 has two halves, and you are going to build them in this order. First the orchestration, `evaluate()`, which runs the target and the judge and decides each outcome (AC-006-01 to AC-006-04). Then the command line and its configuration file, which put that orchestration behind a single command (AC-006-05 to AC-006-07).
 
 As always, I strongly recommend that you type the code yourself.
 
@@ -31,7 +31,7 @@ AC-006-01
 
 Open `docs/usecases/UC-006-run-complete-evaluation/README.md` and add these seven lines under the comment in its Acceptance criteria section:
 
-_docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteria for T012
+_docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteria for T-006-01
 
 ```markdown
 - [ ] **AC-006-01**: Every case goes to the target, then its answer goes to the judge; the judge's verdict becomes the case's PASS or FAIL outcome.
@@ -45,9 +45,9 @@ _docs/usecases/UC-006-run-complete-evaluation/README.md_: The acceptance criteri
 
 Read AC-006-06 again, because it describes most of the work in the second half of this chapter. A command line spends far more of its life rejecting bad input than running evaluations, and each rejection should be a short sentence you can act on, not a forty-line traceback.
 
-Now open the task file for T012, fill in its Objective, and replace the placeholder under `## Delivers` with all seven criteria:
+Now open the task file for T-006-01, fill in its Objective, and replace the placeholder under `## Delivers` with all seven criteria:
 
-_docs/usecases/UC-006-run-complete-evaluation/T012-cli-and-orchestration.md_: Objective and Delivers
+_docs/usecases/UC-006-run-complete-evaluation/T-006-01-cli-and-orchestration.md_: Objective and Delivers
 
 ```markdown
 ## Objective
@@ -65,15 +65,55 @@ Orchestrate a whole evaluation and expose it through a command line.
 - AC-006-07
 ```
 
-Finally, copy the same list into T012's row of the Slices table in the use case README. T013's row stays as it is until chapter 11:
+Finally, copy the same list into T-006-01's row of the Slices table in the use case README. T-006-02's row stays as it is until chapter 11:
 
 _docs/usecases/UC-006-run-complete-evaluation/README.md_: The Slices table
 
 ```markdown
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T012](T012-cli-and-orchestration.md) | CLI and orchestration | AC-006-01, AC-006-02, AC-006-03, AC-006-04, AC-006-05, AC-006-06, AC-006-07 | Todo |
-| [T013](T013-live-end-to-end-benchmark.md) | Live end-to-end benchmark | | Todo |
+| [T-006-01](T-006-01-cli-and-orchestration.md) | CLI and orchestration | AC-006-01, AC-006-02, AC-006-03, AC-006-04, AC-006-05, AC-006-06, AC-006-07 | Todo |
+| [T-006-02](T-006-02-live-end-to-end-benchmark.md) | Live end-to-end benchmark | | Todo |
+```
+
+Then link the requirements to the criteria that prove them. Four requirements gain criteria in this chapter. The orchestration criteria AC-006-02 and AC-006-03 verify REQ-008 (errors are not negative verdicts), the refusal criterion AC-006-04 extends REQ-006 (judging answers), and the command line criteria verify REQ-011 (end-to-end execution through a CLI). AC-006-06 also verifies REQ-013, because a pasted key in the config is rejected without being echoed. Add the new IDs under `## Verified by` in each file, replacing the `-` placeholder in `REQ-011.md`. Here are the four lists once you're done:
+
+_docs/requirements/REQ-006.md_: Verified by
+
+```markdown
+- AC-004-01
+- AC-004-04
+- AC-004-06
+- AC-004-07
+- AC-006-04
+```
+
+_docs/requirements/REQ-008.md_: Verified by
+
+```markdown
+- AC-004-03
+- AC-006-02
+- AC-006-03
+```
+
+_docs/requirements/REQ-011.md_: Verified by
+
+```markdown
+- AC-006-01
+- AC-006-05
+- AC-006-06
+- AC-006-07
+```
+
+_docs/requirements/REQ-013.md_: Verified by
+
+```markdown
+- AC-001-01
+- AC-001-02
+- AC-001-08
+- AC-001-14
+- AC-005-06
+- AC-006-06
 ```
 
 Run `uv run pytest` and a new `UC-006: Run complete evaluation` group appears at the bottom of the progress table, with all seven criteria marked `not tested`.
@@ -1023,19 +1063,19 @@ That's 56 criteria across six use cases and 162 tests, and not one of them touch
 
 ## 10.16 Committing Your Work
 
-Once the tests pass, mark the slice as done. In the [UC-006 README](../../docs/usecases/UC-006-run-complete-evaluation/README.md), tick AC-006-01 to AC-006-07 and set the Status of T012's row in the Slices table to `Done`. In [T012](../../docs/usecases/UC-006-run-complete-evaluation/T012-cli-and-orchestration.md), set **Status** to `Done`, fill in **Branch** (`feat/p1-cli-T012`) and set **AI-Assist** to `L4`. Then check the docs:
+Once the tests pass, mark the slice as done. In the [UC-006 README](../../docs/usecases/UC-006-run-complete-evaluation/README.md), tick AC-006-01 to AC-006-07 and set the Status of T-006-01's row in the Slices table to `Done`. In [T-006-01](../../docs/usecases/UC-006-run-complete-evaluation/T-006-01-cli-and-orchestration.md), set **Status** to `Done`, fill in **Branch** (`feat/p1-cli-T-006-01`) and set **AI-Assist** to `L4`. Then check the docs:
 
 ```bash
 $ python3 .claude/skills/vbench-docs/scripts/docids.py check
 ```
 
-Then commit. The orchestration, the new dependency, the lock file, the config, the command line and their tests are the one slice T012, so they go in one commit. `sandbox/fake_run.py` is a playground script, so leave it out.
+Then commit. The orchestration, the new dependency, the lock file, the config, the command line and their tests are the one slice T-006-01, so they go in one commit. `sandbox/fake_run.py` is a playground script, so leave it out.
 
 ```bash
 $ git add src/judgelab/runner.py tests/test_evaluate.py \
     pyproject.toml uv.lock .gitignore configs/evaluation.yaml \
     src/judgelab/config.py src/judgelab/cli.py tests/test_cli.py \
-    docs/usecases/UC-006-run-complete-evaluation
+    docs/usecases/UC-006-run-complete-evaluation docs/requirements
 $ git commit
 ```
 
