@@ -11,11 +11,15 @@
 
 ## Objective
 
+Send each benchmark question to the target model and capture what happened.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-003-01
+- AC-003-02
+- AC-003-03
+- AC-003-04
+- AC-003-05
 
 ## Approach
 

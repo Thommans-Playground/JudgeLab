@@ -11,11 +11,13 @@
 
 ## Objective
 
+Load a benchmark of question and expected-answer cases from a JSON file.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-002-01
+- AC-002-02
+- AC-002-03
 
 ## Approach
 

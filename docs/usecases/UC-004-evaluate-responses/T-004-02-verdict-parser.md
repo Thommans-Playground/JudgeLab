@@ -11,11 +11,12 @@
 
 ## Objective
 
+Turn the judge's reply into a validated verdict, or an error.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-004-02
+- AC-004-03
 
 ## Approach
 

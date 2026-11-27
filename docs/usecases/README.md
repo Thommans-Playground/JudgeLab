@@ -1,6 +1,6 @@
 # Use Cases
 
-One folder per use case (`UC-###-<slug>/`): its `README.md` holds the flows and acceptance criteria, and its task files are the use case's **slices**, thin end-to-end pieces that each make some criteria pass. Create both with the `vbench-docs` script (`new UC`, `new T --usecase UC-###`).
+One folder per use case (`UC-###-<slug>/`): its `README.md` holds the flows, its `UC-###.feature` holds the acceptance criteria as Gherkin scenarios tagged `@AC-UUU-NN`, and its task files are the use case's **slices**, thin end-to-end pieces that each make some criteria pass. Create both with the `vbench-docs` script (`new UC`, `new T --usecase UC-###`).
 
 ## Actors
 

@@ -11,11 +11,15 @@
 
 ## Objective
 
+Reject malformed benchmarks with errors that say exactly what to fix.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-002-04
+- AC-002-05
+- AC-002-06
+- AC-002-07
+- AC-002-08
 
 ## Approach
 

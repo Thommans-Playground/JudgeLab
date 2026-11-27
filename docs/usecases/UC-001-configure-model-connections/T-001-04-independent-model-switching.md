@@ -11,11 +11,15 @@
 
 ## Objective
 
+Choose and configure the connector for target and judge from configuration alone.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-001-19
+- AC-001-20
+- AC-001-21
+- AC-001-22
+- AC-004-05
 
 ## Approach
 

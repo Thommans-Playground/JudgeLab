@@ -11,11 +11,13 @@
 
 ## Objective
 
+Summarise a run's outcomes transparently, never hiding errors.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-005-01
+- AC-005-02
+- AC-005-03
 
 ## Approach
 

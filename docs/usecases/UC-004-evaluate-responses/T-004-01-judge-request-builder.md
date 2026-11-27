@@ -11,11 +11,14 @@
 
 ## Objective
 
+Ask a judge model to evaluate an answer against the question, the expected answer and a rubric.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-004-01
+- AC-004-04
+- AC-004-06
+- AC-004-07
 
 ## Approach
 

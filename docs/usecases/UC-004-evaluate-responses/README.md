@@ -3,50 +3,50 @@
 | Field | Value |
 |---|---|
 | Primary actor | Developer |
-| Requirements | REQ-006, REQ-007, REQ-008 |
+| Requirements | REQ-003, REQ-006, REQ-007, REQ-008 |
 | Introduced in | v0.1 |
 | Status | Draft |
 
 ## Goal
 
-Structured judge verdicts.
+Every answer from the target is judged against its question, its expected answer and a rubric, so that each case ends with a trustworthy verdict (PASS or FAIL) or an explicit error. A judge whose reply cannot be trusted tells us nothing about the target, so it must never turn into a FAIL.
 
-Drafted in the [v0.1 release plan](../../releases/v0.1/README.md); move details here as they are refined.
+> **Draft for review.** The flow and the scenarios were drafted from the [v0.1 release plan](../../releases/v0.1/README.md), whose AC-004-01 to 05 they keep.
 
-**Trigger:** a target response is available.
+**Trigger:** the target model has answered a test case (UC-003).
 
 ## Preconditions
 
-- A valid test case, target response, rubric and judge connector.
+- A valid test case with its question and expected answer (UC-002).
+- The target's answer, or its refusal.
+- A judge connection (UC-001) and a rubric, chosen by id.
 
 ## Main success scenario
 
-1. Assemble the judge request.
-2. Invoke the evaluator.
-3. Parse its structured output.
-4. Validate the verdict.
-5. Record the result.
+1. The system builds the judge's prompt from the question, the expected answer and the actual answer, each in its own tag.
+2. The system sends the prompt to the judge model, with the rubric and the required output format as instructions.
+3. The judge replies with a JSON object holding a verdict and a justification.
+4. The system validates the reply: the verdict is PASS or FAIL and the justification is not empty.
+5. The system records the evaluation: verdict, justification, rubric id, and the judge's requested and served model.
 
 ## Extensions / alternate flows
 
-- Invalid judge output.
-- Authentication failure.
-- Timeout.
-- Provider error.
+- **2a.** The judge can't be reached, rejects the key, is out of credit or fails on the server: no verdict is produced, and the case is ERROR. An auth or quota failure means every remaining judgement would fail too, so judging stops (UC-006).
+- **3a.** The judge refuses to evaluate, or its reply is cut off by the length limit: no verdict, ERROR.
+- **4a.** The reply is not valid JSON, is not an object, has an unsupported verdict or has no justification: no verdict, ERROR, never FAIL.
 
 ## Postconditions
 
-- A validated judge evaluation or an explicit error record exists.
+- Either a validated evaluation exists, with the judge's identity, or an explicit judge error explains why there is none.
+
+## Business rules
+
+- A judgement we can't read or trust is an ERROR, never a FAIL.
+- The answer being judged is data, never instructions: it is kept inside its own tag, and the rubric says so.
 
 ## Acceptance criteria
 
-<!-- Observable behaviour, one line each: - [ ] **AC-UUU-NN**: ... (UUU = this use case's number). Tests are marked with these IDs. -->
-
-- [ ] **AC-004-01**: Include question, expected answer, actual answer, and rubric in the judge request.
-- [ ] **AC-004-02**: Accept only supported verdict values and a nonempty justification.
-- [ ] **AC-004-03**: Invalid output becomes `ERROR`, never `FAIL`.
-- [ ] **AC-004-04**: Record evaluator provider/model identity.
-- [ ] **AC-004-05**: Switching the judge profile does not change benchmark data or the use-case logic.
+Defined as Gherkin scenarios in [UC-004.feature](UC-004.feature): one Scenario per criterion, tagged with its ID. Tests are marked with the same IDs, so pytest's progress table shows which ones pass.
 
 ## Slices
 
@@ -54,5 +54,5 @@ Each slice is a task file in this folder that makes some of the criteria pass.
 
 | Task | Slice | Delivers | Status |
 |---|---|---|---|
-| [T-004-01](T-004-01-judge-request-builder.md) | Judge request builder | | Todo |
-| [T-004-02](T-004-02-verdict-parser.md) | Verdict parser | | Todo |
+| [T-004-01](T-004-01-judge-request-builder.md) | Judge request builder | AC-004-01, AC-004-04, AC-004-06, AC-004-07 | Todo |
+| [T-004-02](T-004-02-verdict-parser.md) | Verdict parser | AC-004-02, AC-004-03 | Todo |

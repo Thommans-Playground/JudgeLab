@@ -11,11 +11,16 @@
 
 ## Objective
 
+Describe one model connection as validated data that never holds a secret.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-001-12
+- AC-001-13
+- AC-001-14
+- AC-001-15
+- AC-001-16
+- AC-001-17
 
 ## Approach
 

@@ -9,6 +9,8 @@
 
 ## Goal
 
+## Trigger
+
 ## Preconditions
 
 -
@@ -25,12 +27,20 @@
 
 -
 
+## Business rules
+
+-
+
 ## Acceptance criteria
 
+Defined as Gherkin scenarios in [{{ID}}.feature]({{ID}}.feature), one tagged Scenario per criterion.
+
 <!--
-Observable behaviour, one line each: - [ ] **AC-UUU-NN**: ... (UUU = {{NUM}})
-Tests are marked with these IDs (@pytest.mark.acceptance("AC-UUU-NN")), and pytest's
-progress table groups them by use case. Get the next ID with: docids.py next AC --usecase {{ID}}
+Derive criteria from the main flow, each extension, the postconditions and the business rules.
+Get the next ID with: docids.py next AC --usecase {{ID}}
+Tests are marked with the same IDs (@pytest.mark.acceptance("AC-{{NUM}}-NN")), and pytest's
+progress table groups them by use case. Add each new ID to the Verified by section of the
+requirement(s) it proves.
 -->
 
 ## Slices

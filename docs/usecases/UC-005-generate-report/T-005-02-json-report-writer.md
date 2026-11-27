@@ -11,11 +11,14 @@
 
 ## Objective
 
+Persist every case's evidence and the run's metadata as a reviewable JSON report.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-005-04
+- AC-005-05
+- AC-005-06
+- AC-005-07
 
 ## Approach
 

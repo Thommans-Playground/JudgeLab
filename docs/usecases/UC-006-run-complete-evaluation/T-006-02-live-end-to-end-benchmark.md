@@ -11,11 +11,14 @@
 
 ## Objective
 
+Validate v0.1 against real models end to end, and review the results as a human.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-006-08
+- AC-006-09
+- AC-006-10
+- AC-006-11
 
 ## Approach
 

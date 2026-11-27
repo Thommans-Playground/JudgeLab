@@ -5,7 +5,7 @@ Living documents describe the system **as it is now** and evolve across releases
 | Path | Contents |
 |---|---|
 | [requirements/](requirements/) | Requirements catalogue and one file per requirement |
-| [usecases/](usecases/) | Actors, the use-case catalogue, and one folder per use case holding its flows, acceptance criteria and tasks (its slices) |
+| [usecases/](usecases/) | Actors, the use-case catalogue, and one folder per use case holding its flows (`README.md`), its acceptance criteria as Gherkin scenarios (`UC-###.feature`) and its tasks (its slices) |
 | [ontology/](ontology/) | Problem-space glossary, relationships, and one file per concept |
 | [domain/](domain/) | DDD model built on the ontology: bounded contexts, aggregates, entities, value objects, events |
 | [design.md](design.md) | Current architecture and components |
@@ -14,7 +14,7 @@ Living documents describe the system **as it is now** and evolve across releases
 | [traceability.md](traceability.md) | Requirement ↔ use case ↔ task ↔ test, across releases |
 | [releases/](releases/) | Per-release plan and release report |
 
-**IDs:** `REQ-###` requirements · `UC-###` use cases · `ADR-###` decisions · `TC-###` test cases · `T-UUU-NN` tasks (task NN of use case UC-UUU, e.g. `T-001-03`; each is a slice of that use case, lives in its folder and has a Release field) · `AC-UUU-NN` acceptance criteria (defined in use case UC-UUU, e.g. `AC-004-01`; requirements list the criteria that verify them under `Verified by`). Item files are `<ID>.md` or `<ID>-<slug>.md`; use cases are folders `UC-###-<slug>/`.
+**IDs:** `REQ-###` requirements · `UC-###` use cases · `ADR-###` decisions · `TC-###` test cases · `T-UUU-NN` tasks (task NN of use case UC-UUU, e.g. `T-001-03`; each is a slice of that use case, lives in its folder and has a Release field) · `AC-UUU-NN` acceptance criteria (a tagged Scenario in use case UC-UUU's `.feature` file, e.g. `@AC-004-01`; requirements list the criteria that verify them under `Verified by`, and a criterion whose meaning changes is retired and superseded, never edited). Item files are `<ID>.md` or `<ID>-<slug>.md`; use cases are folders `UC-###-<slug>/`.
 
 ## Keeping IDs and links consistent
 

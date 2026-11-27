@@ -85,7 +85,9 @@ ID_RE = re.compile(
 )
 KIND_OF_PREFIX = {c["prefix"]: k for k, c in KINDS.items()}
 AC_RE = re.compile(rf"\bAC-(\d{{{WIDTH}}})-(\d{{2,}})\b")  # AC-004-01: criterion 01 of UC-004
-AC_DEFINITION = re.compile(rf"\*\*(AC-\d{{{WIDTH}}}-\d{{2,}})\*\*")
+AC_BOLD = re.compile(rf"\*\*(AC-\d{{{WIDTH}}}-\d{{2,}})\*\*")  # the old README style, now an error
+AC_TAG = re.compile(rf"@(AC-\d{{{WIDTH}}}-\d{{2,}})\b")
+SCENARIO = re.compile(r"^\s*(Scenario|Scenario Outline|Scenario Template|Example):\s*(.*)$")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 TEMPLATES = Path(__file__).resolve().parent.parent / "assets" / "templates"
 
@@ -139,6 +141,9 @@ class Docs:
             sys.exit(f"error: no docs/ directory under {root}")
         self.files = sorted(p for p in self.docs.rglob("*.md"))
         self.text = {p: p.read_text(encoding="utf-8") for p in self.files}
+        # Gherkin: one UC-###.feature per use case folder; each Scenario is a criterion.
+        self.features = sorted(self.docs.glob("usecases/*/*.feature"))
+        self.feature_text = {p: p.read_text(encoding="utf-8") for p in self.features}
         self.defs: dict[str, list[Path]] = defaultdict(list)
         self._collect_definitions()
 
@@ -175,14 +180,46 @@ class Docs:
             sys.exit(f"error: no use case {uc_id}; create it with `new UC --title ...`")
         return paths[0].parent
 
-    def criteria(self) -> dict[str, list[Path]]:
-        """Acceptance criteria defined (as **AC-###-##**) in use case READMEs."""
-        found: dict[str, list[Path]] = defaultdict(list)
-        for paths in (self.defs[i] for i in self.defs if kind_of(i) == "UC"):
-            for path in paths:
-                for m in AC_DEFINITION.finditer(self.text[path]):
-                    found[m.group(1)].append(path)
+    def scenarios(self, path: Path) -> list[dict]:
+        """The scenarios of a feature file, each with its tags and line number."""
+        found, tags = [], []
+        for n, line in enumerate(self.feature_text[path].splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("@"):
+                tags += stripped.split()
+            elif m := SCENARIO.match(line):
+                found.append({"line": n, "title": m.group(2).strip(), "tags": tags})
+                tags = []
+            elif stripped and not stripped.startswith("#"):
+                tags = []  # tags belong only to the Feature or Scenario directly below them
         return found
+
+    def criteria(self) -> dict[str, list[dict]]:
+        """{AC id: [scenario, ...]} for every @AC-... tag on a Scenario."""
+        found: dict[str, list[dict]] = defaultdict(list)
+        for path in self.features:
+            for scenario in self.scenarios(path):
+                for tag in scenario["tags"]:
+                    if m := AC_TAG.fullmatch(tag):
+                        found[m.group(1)].append(
+                            {**scenario, "path": path, "retired": "@retired" in scenario["tags"]}
+                        )
+        return found
+
+    def verified_by(self) -> dict[str, list[str]]:
+        """{REQ id: [AC ids]} from each requirement's '## Verified by' section."""
+        result = {}
+        for i, paths in self.defs.items():
+            if kind_of(i) != "REQ":
+                continue
+            text = self.text[paths[0]]
+            section = (
+                text.split("## Verified by", 1)[1].split("\n## ", 1)[0]
+                if "## Verified by" in text
+                else ""
+            )
+            result[i] = [m.group(0) for m in AC_RE.finditer(section)]
+        return result
 
     def mentions(self):
         """Yield (id, path, line_no) for every ID mentioned in docs/."""
@@ -213,12 +250,8 @@ def cmd_next(d: Docs, a):
         if not a.usecase:
             sys.exit("error: next AC needs --usecase UC-###")
         number = a.usecase.removeprefix("UC-")
-        used = [
-            int(m.group(2))
-            for p in d.files
-            for m in AC_RE.finditer(d.text[p])
-            if m.group(1) == number
-        ]
+        texts = list(d.text.values()) + list(d.feature_text.values())
+        used = [int(m.group(2)) for t in texts for m in AC_RE.finditer(t) if m.group(1) == number]
         print(f"AC-{number}-{max(used, default=0) + 1:02d}")
         return
     print(d.next_id(a.kind, a.usecase))
@@ -360,6 +393,17 @@ def cmd_new(d: Docs, a):
         .replace("{{NUM}}", new_id.removeprefix("UC-"))
     )
     target.write_text(body, encoding="utf-8")
+    if kind == "UC":
+        feature = target.parent / f"{new_id}.feature"
+        feature.write_text(
+            (TEMPLATES / "uc.feature")
+            .read_text(encoding="utf-8")
+            .replace("{{ID}}", new_id)
+            .replace("{{TITLE}}", a.title)
+            .replace("{{NUM}}", new_id.removeprefix("UC-")),
+            encoding="utf-8",
+        )
+        print(f"Created {d.rel(feature)}")
     index = (
         f"the Slices table of {d.rel(target.parent / 'README.md')} and the release plan"
         if kind == "T"
@@ -423,20 +467,62 @@ def cmd_check(d: Docs, a) -> int:
                 if not p.parent.name.startswith(f"UC-{scope_of(i)}"):
                     errors.append(f"{d.rel(p)}: {i} belongs in UC-{scope_of(i)}, not this use case")
 
-    # 4b. Acceptance criteria: defined once, in their own use case, and every mention resolves
+    # 4b. Acceptance criteria live in Gherkin: one tagged Scenario per criterion
     criteria = d.criteria()
-    for ac, paths in criteria.items():
-        if len(paths) > 1:
-            errors.append(f"duplicate criterion {ac}: " + ", ".join(d.rel(p) for p in paths))
+    for path in d.features:
+        folder = path.parent.name
+        uc = folder[:6] if folder.startswith("UC-") else None
+        if path.name != f"{uc}.feature":
+            errors.append(f"{d.rel(path)}: a use case's feature file must be named {uc}.feature")
+        feature = next(
+            (ln for ln in d.feature_text[path].splitlines() if ln.startswith("Feature:")), ""
+        )
+        if not feature.startswith(f"Feature: {uc}"):
+            errors.append(f"{d.rel(path)}: the Feature line should start with 'Feature: {uc}'")
+        for scenario in d.scenarios(path):
+            ids = [t for t in scenario["tags"] if AC_TAG.fullmatch(t)]
+            if len(ids) != 1:
+                errors.append(
+                    f"{d.rel(path)}:{scenario['line']}: each Scenario needs exactly one "
+                    f"@AC-... tag (found {len(ids)})"
+                )
+    for ac, scenarios in criteria.items():
+        if len(scenarios) > 1:
+            where = ", ".join(f"{d.rel(s['path'])}:{s['line']}" for s in scenarios)
+            errors.append(f"duplicate criterion {ac}: {where}")
         owner = f"UC-{ac.split('-')[1]}"
-        for path in paths:
-            if not path.parent.name.startswith(owner):
-                errors.append(f"{d.rel(path)}: {ac} belongs in {owner}, not this use case")
+        for scenario in scenarios:
+            if not scenario["path"].parent.name.startswith(owner):
+                errors.append(
+                    f"{d.rel(scenario['path'])}: {ac} belongs in {owner}, not this use case"
+                )
     for path, text in d.text.items():
+        for m in AC_BOLD.finditer(text):
+            errors.append(
+                f"{d.rel(path)}: {m.group(1)} is written as a definition here; "
+                f"criteria are defined as tagged Scenarios in the use case's .feature file"
+            )
         for n, line in enumerate(text.splitlines(), 1):
             for m in AC_RE.finditer(line):
                 if m.group(0) not in criteria:
                     errors.append(f"{d.rel(path)}:{n}: {m.group(0)} is referenced but not defined")
+
+    # 4c. Coverage: requirements and criteria prove each other (retired criteria prove nothing)
+    active = {ac for ac, sc in criteria.items() if not any(s["retired"] for s in sc)}
+    verified_by = d.verified_by()
+    listed = {ac for acs in verified_by.values() for ac in acs}
+    for req, acs in verified_by.items():
+        status = field(d.text[d.defs[req][0]], "Status")
+        if not acs and status != "Deprecated":
+            # A new requirement may wait for its criteria; one that is agreed may not.
+            (warnings if status == "Draft" else errors).append(
+                f"{req}: 'Verified by' lists no acceptance criteria"
+            )
+        for ac in acs:
+            if ac in criteria and ac not in active:
+                errors.append(f"{req}: 'Verified by' lists retired criterion {ac}")
+    for ac in sorted(active - listed):
+        errors.append(f"{ac}: not listed under 'Verified by' in any requirement")
 
     # 5. Relative links resolve
     for p, text in d.text.items():

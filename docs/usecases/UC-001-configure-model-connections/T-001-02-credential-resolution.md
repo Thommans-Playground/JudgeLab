@@ -11,11 +11,12 @@
 
 ## Objective
 
+Read a secret from the environment variable a profile names, in one place only.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-001-01
+- AC-001-18
 
 ## Approach
 

@@ -112,7 +112,7 @@ flowchart TD
 **Alternative flows:** Invalid judge output, authentication failure, timeout, provider error.  
 **Postcondition:** A validated judge evaluation or an explicit error record exists.
 
-**Acceptance criteria:**
+**Acceptance criteria** (as first planned; the maintained version, written as Gherkin scenarios, is [UC-004.feature](../../usecases/UC-004-evaluate-responses/UC-004.feature)):
 
 - AC-004-01: Include question, expected answer, actual answer, and rubric in the judge request.
 - AC-004-02: Accept only supported verdict values and a nonempty justification.
@@ -263,6 +263,7 @@ For v0.1, only run trusted local configuration; do not expose arbitrary URL subm
 | T-005-02 | UC-005 | JSON report writer | Schema and metadata tests |
 | T-006-01 | UC-006 | CLI and orchestration | End-to-end fake connector test |
 | T-006-02 | UC-006 | Live end-to-end benchmark | Five-case report and manual review |
+| T-001-05 | UC-001 | Anthropic (Claude) connector | Fake HTTP + contract tests + live smoke test |
 
 ### Incremental delivery
 

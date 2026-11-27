@@ -11,11 +11,17 @@
 
 ## Objective
 
+Orchestrate a whole evaluation and expose it through a command line.
+
 ## Delivers
 
-<!-- The acceptance criteria of the use case that this slice makes pass, e.g. AC-UUU-NN -->
-
--
+- AC-006-01
+- AC-006-02
+- AC-006-03
+- AC-006-04
+- AC-006-05
+- AC-006-06
+- AC-006-07
 
 ## Approach
 
