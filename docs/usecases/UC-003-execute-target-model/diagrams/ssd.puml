@@ -1,0 +1,34 @@
+@startuml uc003-ssd
+!include ../../../diagrams/style.iuml
+title UC-003 Execute target model: system sequence diagram
+
+actor Developer
+participant "JudgeLab" as System
+actor "Target model" as Target
+
+note over Developer, System
+  Triggered inside a run (UC-006), with a loaded
+  benchmark (UC-002) and a target connection (UC-001).
+end note
+
+loop for each test case, in benchmark order
+  alt the run has not been stopped
+    System -> Target : question
+    alt the target replies (an answer, a refusal or a cut-off answer)
+      Target --> System : model response
+      System -> System : record result(case, model response)
+    else 2a: a connector error (unavailable, rate limit, ...)
+      Target --> System : error
+      System -> System : record result(case, connector error)
+    else 2b: an auth or quota error
+      Target --> System : error
+      System -> System : record result(case, connector error)\nand stop the run
+    end
+  else the run was stopped by an earlier case
+    System -> System : record result(case, "not sent: run stopped after ...")
+  end
+  System --> Developer : case executed (progress)
+end
+
+System --> Developer : one result per case, in benchmark order (judged in UC-004)
+@enduml

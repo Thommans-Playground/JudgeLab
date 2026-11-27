@@ -57,6 +57,11 @@ A developer runs one command and gets an evaluated benchmark: every case answere
 
 Defined as Gherkin scenarios in [UC-006.feature](UC-006.feature): one Scenario per criterion, tagged with its ID. Tests are marked with the same IDs, so pytest's progress table shows which ones pass. AC-006-08 runs only with `pytest -m live`, and AC-006-09 to 11 are checked by hand, with the release report as evidence.
 
+## Analysis and design
+
+- [Analysis](analysis.md): system sequence diagram, analysis classes (boundary, control, entity) and the analysis sequence, in problem terms.
+- [Design](design.md): design classes and sequences in code terms, the patterns used, and how to check the code against them (as-built).
+
 ## Slices
 
 Each slice is a task file in this folder that makes some of the criteria pass.

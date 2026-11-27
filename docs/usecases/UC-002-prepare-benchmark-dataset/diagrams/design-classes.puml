@@ -1,0 +1,56 @@
+@startuml uc002-design-classes
+!include ../../../diagrams/style.iuml
+set namespaceSeparator none
+hide empty members
+title UC-002 Prepare benchmark dataset: design classes
+
+package "judgelab.benchmark" {
+  class Benchmark <<dataclass, frozen>> {
+    +id : str
+    +name : str
+    +cases : tuple[TestCase, ...]
+  }
+  class TestCase <<dataclass, frozen>> {
+    +id : str
+    +question : str
+    +expected_answer : str
+  }
+  class BenchmarkError <<exception>> {
+    +path : Path
+    +problems : list[str]
+    +__init__(path: Path, problems: list[str])
+  }
+  class "benchmark functions" as BF <<function>> {
+    +load_benchmark(path: str | Path) : Benchmark
+    -_check_fields(obj: dict, fields: set[str], where: str, problems: list[str]) : bool
+  }
+  class "schema constants" as SC <<constant>> {
+    BENCHMARK_FIELDS = id, name, cases
+    CASE_FIELDS = id, question, expected_answer
+  }
+}
+
+package "builtins" {
+  class ValueError <<exception>>
+}
+
+package "judgelab.cli" {
+  class "cli.run_command()" as Run <<function>>
+}
+
+Benchmark *-- "1..*" TestCase : cases
+BF ..> Benchmark : creates
+BF ..> TestCase : creates
+BF ..> BenchmarkError : raises
+BF ..> SC : checks against
+BenchmarkError --|> ValueError
+Run ..> BF : load_benchmark(config.dataset)
+Run ..> BenchmarkError : catches, prints "error:", exits 1
+
+note right of Benchmark
+  The invariants are kept by load_benchmark,
+  the factory. The dataclass itself checks
+  nothing: Benchmark(...) built by hand
+  could break them (see design notes).
+end note
+@enduml

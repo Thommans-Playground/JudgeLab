@@ -1,0 +1,50 @@
+@startuml uc006-design-sequence-composition
+!include ../../../diagrams/style.iuml
+title UC-006 Run complete evaluation: design sequence (composition root)
+
+participant "caller" as Caller
+participant "cli.main()" as Main
+participant "cli.run_command()" as Run
+participant "connector_factory" as Factory
+participant "target:ModelConnector" as Target
+participant "judge_connector:ModelConnector" as JudgeConn
+participant ":Judge" as Judge
+participant "runner.evaluate()" as Eval
+
+alt production: the judgelab console script
+  Caller -> Main : main()
+  note right of Main
+    connector_factory defaults to
+    create_connector (registry CONNECTORS)
+  end note
+else test: tests/test_cli.py
+  Caller -> Main : main(["run", "--config", path],\nconnector_factory=fake_factory)
+  note right of Main
+    fake_factory returns FakeConnector:
+    no network, no keys
+  end note
+end
+Main -> Run : run_command(config, output_dir, connector_factory)
+activate Run
+Run -> Factory : connector_factory(config.target)
+Factory -> Target ** : OpenAIConnector(model, api_key_env, base_url,\ntimeout_s, max_retries, **options), or FakeConnector
+Factory --> Run : target
+Run -> Factory : connector_factory(config.judge)
+Factory -> JudgeConn ** : AnthropicConnector(...), or FakeConnector
+Factory --> Run : judge_connector
+Run -> Judge ** : Judge(judge_connector, rubric)
+Run -> Eval : evaluate(benchmark, target, judge, on_result=show_progress)
+activate Eval
+Eval -> Target : generate(case.question)
+Eval -> Judge : evaluate(case, actual_answer)
+Judge -> JudgeConn : generate(prompt, instructions=...)
+Eval --> Run : list[CaseResult]
+deactivate Eval
+deactivate Run
+
+note over Run
+  Dependency injection: run_command builds every object and
+  hands each one its collaborators. runner and Judge see only
+  the ModelConnector port, never a concrete adapter.
+end note
+@enduml

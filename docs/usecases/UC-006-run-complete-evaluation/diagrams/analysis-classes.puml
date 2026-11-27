@@ -1,0 +1,70 @@
+@startuml uc006-analysis-classes
+!include ../../../diagrams/style.iuml
+hide empty members
+hide circle
+title UC-006 Run complete evaluation: analysis classes (BCE)
+
+class "Command Line" as CLI <<boundary>> {
+  run command
+  show progress and totals
+  exit code
+}
+class "Config File" as CF <<boundary>> {
+  read config
+}
+class "Model Interface" as MI <<boundary>> {
+  send prompt
+}
+class "Report Store" as RS <<boundary>> {
+  write report
+}
+class "Run Evaluation" as Run <<control>> {
+  run(config, output directory)
+}
+class "Evaluation Config" as EC <<entity>> {
+  dataset
+  rubric id
+  output directory
+}
+class "Connection Profile" as CP <<entity>> {
+  provider, model, base URL
+  key variable name
+}
+class "Benchmark" as B <<entity>> {
+  name
+  test cases
+}
+class "Rubric" as R <<entity>> {
+  id
+  instructions
+}
+class "Evaluation Run" as ER <<entity>> {
+  id
+  start and finish times
+}
+class "Case Result" as CR <<entity>> {
+  outcome
+  error stage
+}
+class "Run Summary" as RSum <<entity>> {
+  counts, pass rate, coverage
+}
+
+CLI --> Run : starts
+Run --> CF : reads through
+CF ..> EC : yields
+EC --> "2" CP : target, judge
+Run --> B : loads
+Run --> R : looks up
+Run --> MI : target and judge, via profiles
+Run --> ER : creates
+ER --> "1..*" CR : produces
+Run --> RSum : creates
+Run --> RS : writes through
+
+note bottom of Run
+  Business rule: setup problems are found
+  before the first model call. An ERROR is
+  never a FAIL. Exit 0 = the run completed.
+end note
+@enduml

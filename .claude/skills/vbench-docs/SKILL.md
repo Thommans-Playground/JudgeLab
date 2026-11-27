@@ -35,6 +35,14 @@ Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `TC-001` (rows in `verific
 
 `check` verifies that the feature file is named and titled after its use case, that every Scenario has exactly one criterion tag, that each criterion is defined once and in its own use case, that no markdown file defines criteria (the old `**AC-…**` style), that every `AC-…` mention resolves, and that each task lives in the use case its ID names. It also checks **coverage**: every active criterion is listed by at least one requirement, no requirement lists a retired criterion, and every requirement lists at least one criterion (a warning while it is Draft, an error after).
 
+**Analysis and design (OOAD).** Each use case is realised in `analysis.md` and `design.md` beside its README, with PlantUML sources in `diagrams/`:
+- **Analysis**, in problem terms: a system sequence diagram (`ssd.puml`), analysis classes with `<<boundary>>`, `<<control>>` and `<<entity>>` stereotypes, and an analysis sequence.
+- **Design**, in code terms: design classes, a design sequence for the main flow and `design-sequence-<extension>.puml` for key extensions, the patterns used, and each class's role in the hexagon (docs/design.md, ADR-001).
+- `new UC` creates skeletons. UC-004 is the worked example.
+- Ontology concepts come first (noun/verb analysis of the use cases), then the bounded contexts in `docs/domain/`. Analysis classes name their ontology concept; design elements name their analysis class.
+
+**Diagrams.** Every `.puml` includes `docs/diagrams/style.iuml` and has a rendered `.svg` beside it. `scripts/render_diagrams.py` renders missing or stale ones (it needs PlantUML), and `--check` reports them without Java. `check` errors on a malformed `.puml` or a missing include, and warns on a missing or stale SVG. Each SVG records the hash of the source it was rendered from. `scripts/asbuilt.py` generates as-built diagrams for comparison with the design (ADR-002): `sequence <pytest node>` traces one test, and `classes <module>…` introspects modules. As-built output goes in `diagrams/as-built/`.
+
 **Requirements point at criteria.** A requirement's `## Verified by` section lists the IDs (never the text) of the use-case criteria that prove it; one requirement can be verified by criteria in several use cases (e.g. a security requirement). When you add a criterion, add its ID to the requirement(s) it verifies. Tests are marked with criterion IDs (`@pytest.mark.acceptance("AC-004-03")`), so pytest's progress table shows which use cases work.
 
 Ontology concepts aren't numbered; they're named by their canonical term. Use `new concept --title TestCase` (creates `docs/ontology/test-case.md` from `docs/ontology/_template.md`), then add the term to the glossary in `docs/ontology/README.md`; `check` fails until you do. When filling a concept:

@@ -404,6 +404,23 @@ def cmd_new(d: Docs, a):
             encoding="utf-8",
         )
         print(f"Created {d.rel(feature)}")
+        # OOAD realisation: analysis and design pages, and their PlantUML diagrams
+        sources = [(f"uc-{part}.md", f"{part}.md") for part in ("analysis", "design")]
+        sources += [
+            (f"diagrams/{p.name}", f"diagrams/{p.name}")
+            for p in sorted((TEMPLATES / "diagrams").glob("*.puml"))
+        ]
+        for source, dest in sources:
+            out = target.parent / dest
+            out.parent.mkdir(exist_ok=True)
+            out.write_text(
+                (TEMPLATES / source)
+                .read_text(encoding="utf-8")
+                .replace("{{ID}}", new_id)
+                .replace("{{TITLE}}", a.title),
+                encoding="utf-8",
+            )
+            print(f"Created {d.rel(out)}")
     index = (
         f"the Slices table of {d.rel(target.parent / 'README.md')} and the release plan"
         if kind == "T"
@@ -605,6 +622,26 @@ def cmd_check(d: Docs, a) -> int:
     for i in d.defs:
         if kind_of(i) in TRACED_KINDS and i not in traced:
             warnings.append(f"{i} is not in docs/{TRACEABILITY}")
+
+    # 9. PlantUML diagrams: well formed, includes resolve, SVG rendered from the current source
+    from render_diagrams import status as svg_status  # same folder as this script
+
+    for puml in sorted(d.docs.rglob("*.puml")):
+        text = puml.read_text(encoding="utf-8")
+        where = d.rel(puml)
+        starts = len(re.findall(r"^\s*@startuml\b", text, re.M))
+        ends = len(re.findall(r"^\s*@enduml\b", text, re.M))
+        if starts != 1 or ends != 1:
+            errors.append(f"{where}: needs exactly one @startuml and one @enduml")
+        for target in re.findall(r"^\s*!include\s+(\S+)", text, re.M):
+            if not (puml.parent / target).exists():
+                errors.append(f"{where}: !include {target} not found")
+        state = svg_status(puml)
+        if state != "ok":
+            warnings.append(f"{where}: SVG {state}; run scripts/render_diagrams.py")
+    for svg in sorted(d.docs.rglob("*.svg")):
+        if not svg.with_suffix(".puml").exists():
+            warnings.append(f"{d.rel(svg)}: no .puml source beside it")
 
     for e in errors:
         print(f"ERROR   {e}")

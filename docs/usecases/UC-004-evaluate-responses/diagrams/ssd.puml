@@ -1,0 +1,26 @@
+@startuml uc004-ssd
+!include ../../../diagrams/style.iuml
+title UC-004 Evaluate responses: system sequence diagram
+
+actor Developer
+participant "JudgeLab" as System
+actor "Judge model" as Judge
+
+note over Developer, System
+  Triggered inside a run (UC-006),
+  once the target has answered a case (UC-003).
+end note
+
+loop for each answered test case
+  System -> Judge : judge request(rubric + output format, question, expected answer, actual answer)
+  alt the judge replies with a valid verdict
+    Judge --> System : verdict, justification
+    System -> System : record evaluation(verdict, justification, rubric id, judge identity)
+  else no trustworthy verdict (failure, refusal, cut off, unreadable reply)
+    Judge --> System : error or unusable reply
+    System -> System : record ERROR(stage = judge, reason)
+  end
+end
+
+System --> Developer : every case has a verdict or an explicit error (reported in UC-005)
+@enduml

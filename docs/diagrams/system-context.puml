@@ -1,0 +1,22 @@
+@startuml system-context
+!include style.iuml
+title JudgeLab v0.1: system context
+
+actor Developer
+rectangle "JudgeLab\n(judgelab CLI)" as JL
+cloud "Target model\n(OpenAI-compatible or Anthropic API)" as Target
+cloud "Judge model\n(OpenAI-compatible or Anthropic API)" as Judge
+file "Evaluation config\n(YAML)" as Config
+file "Benchmark\n(JSON)" as Bench
+file "Report\n(JSON)" as Report
+collections "Environment variables\n(API keys)" as Env
+
+Developer --> JL : judgelab run --config
+JL --> Config : reads
+JL --> Bench : reads
+JL --> Env : reads key by name
+JL --> Target : asks each question
+JL --> Judge : asks for a verdict
+JL --> Report : writes
+Developer ..> Report : reviews
+@enduml

@@ -1,0 +1,44 @@
+@startuml uc003-design-sequence-stop
+!include ../../../diagrams/style.iuml
+title UC-003 Execute target model: design sequence (extensions 2a, 2b, 2c: call failures)
+
+participant "runner.run_target()" as Run
+participant "target:ModelConnector" as Conn
+participant "on_result callback" as OnT
+
+[-> Run : run_target(benchmark, target, on_result)
+activate Run
+note over Run : case c1 answered as in the main scenario
+
+Run -> Conn : generate("2+2?") for case c2
+activate Conn
+alt 2a: ConnectorUnavailableError, ConnectorRateLimitError, ...
+  Conn --> Run : raises ConnectorUnavailableError("HTTP 500")
+  Run -> Run : TargetResult(c2, None, error)\nnot in STOP_THE_RUN: carry on
+  Run -> OnT : on_result(result for c2)
+else 2b: ConnectorAuthError or ConnectorQuotaError
+  Conn --> Run : raises ConnectorAuthError("HTTP 401")
+  Run -> Run : TargetResult(c2, None, error)\nisinstance(error, STOP_THE_RUN):\nstopped_by = ("c2", error)
+  Run -> OnT : on_result(result for c2)
+else 2c: any other exception (a bug)
+  Conn --> Run : raises ZeroDivisionError
+  [<-- Run : ZeroDivisionError propagates unchanged,\nno results returned
+end
+deactivate Conn
+
+opt 2b: stopped_by is set
+  loop for each remaining case (c3)
+    Run -> Run : TargetResult(c3, None, ConnectorError(\n"not sent: run stopped after\nConnectorAuthError on case c2"))
+    note right of Run : generate() is never called
+    Run -> OnT : on_result(result for c3)
+  end
+end
+[<-- Run : results, one per case
+deactivate Run
+
+note over Run, OnT
+  Business rules: one call per case, no retries here
+  (retrying is the connector's job); a connector error is
+  data about its case; only ConnectorError is caught.
+end note
+@enduml

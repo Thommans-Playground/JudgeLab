@@ -1,0 +1,26 @@
+@startuml uc005-ssd
+!include ../../../diagrams/style.iuml
+title UC-005 Generate report: system sequence diagram
+
+actor Developer
+participant "JudgeLab" as System
+actor "Output directory" as Store
+
+note over Developer, System
+  Triggered inside a run (UC-006), once every
+  case has an outcome: PASS, FAIL or ERROR.
+end note
+
+System -> System : summarise run(results)
+alt at least one case reached a verdict
+  System -> System : pass rate = passed / evaluated, coverage = evaluated / total
+else 1a: no case reached a verdict
+  System -> System : pass rate = null, coverage = 0.0
+end
+System -> System : build report(run metadata, summary, case entries)
+opt 5a: the directory does not exist
+  System -> Store : create directory
+end
+System -> Store : write report(run-<start>-<run id prefix>.json, UTF-8 JSON)
+System --> Developer : report path (printed by UC-006)
+@enduml

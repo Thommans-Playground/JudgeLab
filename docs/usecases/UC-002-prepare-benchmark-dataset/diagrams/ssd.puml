@@ -1,0 +1,26 @@
+@startuml uc002-ssd
+!include ../../../diagrams/style.iuml
+title UC-002 Prepare benchmark dataset: system sequence diagram
+
+actor Developer
+participant "JudgeLab" as System
+
+note over Developer, System
+  Triggered at the start of a run (UC-006),
+  before any model is called.
+end note
+
+Developer -> System : load benchmark(path)
+alt the file reads, parses and passes every check
+  System --> Developer : benchmark(id, name, test cases in file order)
+else 1a, 2a, 2b: missing file, invalid JSON or top level not an object
+  System --> Developer : error(path, the one problem)
+else 3a, 3b, 4a to 4d: the content breaks one or more rules
+  System --> Developer : error(path, every problem, in file order)
+end
+
+note over Developer, System
+  Business rule: no model is called for a
+  benchmark that fails to load.
+end note
+@enduml

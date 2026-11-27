@@ -54,6 +54,11 @@ Every run ends with a JSON report that a reviewer can trust without rerunning an
 
 Defined as Gherkin scenarios in [UC-005.feature](UC-005.feature): one Scenario per criterion, tagged with its ID. Tests are marked with the same IDs, so pytest's progress table shows which ones pass.
 
+## Analysis and design
+
+- [Analysis](analysis.md): system sequence diagram, analysis classes (boundary, control, entity) and the analysis sequence, in problem terms.
+- [Design](design.md): design classes and sequences in code terms, the patterns used, and how to check the code against them (as-built).
+
 ## Slices
 
 Each slice is a task file in this folder that makes some of the criteria pass.

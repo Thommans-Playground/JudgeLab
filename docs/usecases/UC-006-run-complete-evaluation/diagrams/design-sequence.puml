@@ -1,0 +1,54 @@
+@startuml uc006-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-006 Run complete evaluation: design sequence (main success scenario)
+
+actor Developer
+participant "cli.main()" as Main
+participant "cli.run_command()" as Run
+participant "config.load_config()" as Config
+participant "connector_factory" as Factory
+participant "runner.evaluate()" as Eval
+participant "show_progress()" as Progress
+participant "judgelab.report" as Report
+
+Developer -> Main : judgelab run --config evaluation.yaml
+Main -> Main : argparse: parse_args(argv)
+Main -> Run : run_command(args.config, args.output_dir, connector_factory)
+activate Run
+Run -> Config : load_config(config_path)
+Config --> Run : EvaluationConfig(target, judge, dataset, rubric, output_dir)
+Run -> Run : benchmark = load_benchmark(config.dataset)\nrubric = get_rubric(config.rubric)
+Run -> Factory : connector_factory(config.target)
+Factory --> Run : target : ModelConnector
+Run -> Factory : connector_factory(config.judge)
+Factory --> Run : judge_connector : ModelConnector
+Run --> Developer : "Running 'General knowledge (sample)': 5 cases",\n"  target: ...", "  judge:  ... (rubric semantic_correctness)"
+Run -> Report : utc_now()
+Report --> Run : started
+Run -> Eval : evaluate(benchmark, target, Judge(judge_connector, rubric),\non_result=show_progress)
+activate Eval
+Eval -> Eval : run_target(benchmark, target): every question, in order (UC-003)
+loop each TargetResult, in order
+  Eval -> Eval : _judge(answered, judge, judge_stopped_by) (UC-004)
+  Eval -> Progress : on_result(CaseResult): the CaseEvaluated event
+  Progress --> Developer : "[1/5] gk-001: PASS"
+end
+Eval --> Run : results : list[CaseResult]
+deactivate Eval
+Run -> Report : utc_now()
+Report --> Run : finished
+Run -> Run : summary = summarise(results)\nrun = RunInfo(benchmark, rubric.id, target,\njudge_connector, started, finished)
+Run -> Report : write_report(build_report(run, results, summary),\noutput_dir or config.output_dir) (UC-005)
+Report --> Run : path
+Run --> Developer : print_summary(summary): "Passed: 1  Failed: 4  Errors: 0  (of 5)",\n"Pass rate: 20.0% of 5 evaluated  Coverage: 100.0%"
+Run --> Developer : "Report: reports/run-...json"
+Run --> Main : 0
+deactivate Run
+Main --> Developer : exit code 0
+
+note over Eval
+  All target calls finish before the first
+  judge call, so progress lines appear only
+  after the target stage is over.
+end note
+@enduml

@@ -1,0 +1,38 @@
+@startuml uc005-design-sequence-no-verdicts
+!include ../../../diagrams/style.iuml
+title UC-005 Generate report: design sequence (extension 1a: no case reached a verdict)
+
+participant "cli.run_command()" as CLI
+participant "scoring.summarise()" as Summarise
+participant "summary:Summary" as Summary
+participant "report.build_report()" as Build
+participant "cli.print_summary()" as Print
+
+note over CLI
+  Every result is Outcome.ERROR, e.g. the target
+  rejected the key: error_stage="target".
+end note
+CLI -> Summarise : summarise(results)
+Summarise --> CLI : Summary(total=5, passed=0, failed=0, errors=5)
+CLI -> Build : build_report(run, results, summary)
+activate Build
+Build -> Summary : evaluated
+Summary --> Build : 0
+Build -> Summary : pass_rate
+Summary --> Build : None (evaluated is 0)
+Build -> Summary : coverage
+Summary --> Build : 0.0 (0 / 5)
+Build -> Build : _case(result) for each: actual_answer, verdict,\ntarget_call, judge_call = None;\nerror = {"stage": "target", "message": ...}
+Build --> CLI : report with "pass_rate": None,\nwhich json.dumps writes as null
+deactivate Build
+CLI -> CLI : write_report(...) as usual
+CLI -> Print : print_summary(summary)
+Print -> Summary : pass_rate
+Summary --> Print : None
+Print --> CLI : prints "Passed: 0  Failed: 0  Errors: 5  (of 5)"\nand "Pass rate: n/a (no case reached a verdict)"
+
+note over Summary
+  Business rule: an ERROR is never a FAIL.
+  A null pass rate, not 0, says "nothing was judged" (AC-005-02).
+end note
+@enduml

@@ -1,0 +1,89 @@
+@startuml uc006-design-classes
+!include ../../../diagrams/style.iuml
+set namespaceSeparator none
+hide empty members
+title UC-006 Run complete evaluation: design classes
+
+package "judgelab.cli" {
+  class "cli functions" as CLIF <<function>> {
+    +main(argv: list[str] | None, *, connector_factory: ConnectorFactory = create_connector) : int
+    +run_command(config_path: Path, output_dir: Path | None, connector_factory: ConnectorFactory) : int
+    +print_summary(summary: Summary) : None
+  }
+  class ConnectorFactory <<type alias>> {
+    Callable[[ConnectionProfile], ModelConnector]
+  }
+}
+
+package "judgelab.config" {
+  class EvaluationConfig <<dataclass, frozen>> {
+    +target : ConnectionProfile
+    +judge : ConnectionProfile
+    +dataset : Path
+    +rubric : str
+    +output_dir : Path
+  }
+  class "config.load_config" as LoadConfig <<function>> {
+    +load_config(path: str | Path) : EvaluationConfig
+  }
+}
+
+package "judgelab.connectors" {
+  class ConnectionProfile <<dataclass, frozen>>
+  abstract class ModelConnector <<port>> {
+    +provider : str
+    +model : str
+    +{abstract} generate(prompt: str, instructions: str | None) : ModelResponse
+  }
+  class "connectors.create_connector" as Create <<function>> {
+    +create_connector(profile: ConnectionProfile) : ModelConnector
+  }
+}
+
+package "judgelab.judge" {
+  class Judge {
+    +evaluate(case: TestCase, actual_answer: str) : JudgeEvaluation
+  }
+}
+
+package "judgelab.runner" {
+  class "runner.evaluate" as Evaluate <<function>> {
+    +evaluate(benchmark, target, judge, *, on_target=None, on_result=None) : list[CaseResult]
+  }
+}
+
+package "judgelab.scoring" {
+  class CaseResult <<dataclass, frozen>>
+  class "scoring.summarise" as Summarise <<function>>
+}
+
+package "judgelab.report" {
+  class RunInfo <<dataclass, frozen>>
+  class "report functions" as RF <<function>> {
+    +utc_now() : datetime
+    +build_report(run, results, summary) : dict
+    +write_report(report, directory) : Path
+  }
+}
+
+CLIF ..> LoadConfig : calls
+LoadConfig ..> EvaluationConfig : creates
+EvaluationConfig --> "2" ConnectionProfile
+CLIF --> ConnectorFactory : injected
+ConnectorFactory ..> Create : default
+Create ..> ModelConnector : creates
+CLIF ..> Judge : creates Judge(judge_connector, rubric)
+CLIF ..> Evaluate : calls, on_result=show_progress
+Evaluate ..> CaseResult : yields to on_result
+Judge --> "1" ModelConnector : connector
+CLIF ..> Summarise : calls
+CLIF ..> RunInfo : creates
+CLIF ..> RF : calls
+
+note bottom of CLIF
+  run_command also calls benchmark.load_benchmark(config.dataset)
+  and judge.get_rubric(config.rubric). It catches ConfigError,
+  ProfileError, BenchmarkError, JudgeError and ConnectorError
+  during setup only, prints "error: ..." and returns 1.
+end note
+@enduml

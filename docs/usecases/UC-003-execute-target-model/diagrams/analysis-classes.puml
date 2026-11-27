@@ -1,0 +1,58 @@
+@startuml uc003-analysis-classes
+!include ../../../diagrams/style.iuml
+hide empty members
+hide circle
+title UC-003 Execute target model: analysis classes (BCE)
+
+class "Target Model Interface" as TMI <<boundary>> {
+  send question
+}
+class "Progress Listener" as PLis <<boundary>> {
+  case executed(target result)
+}
+class "Execute Target" as Exec <<control>> {
+  execute(benchmark, target)
+  stop reason
+}
+class "Benchmark" as B <<entity>> {
+  test cases, in order
+}
+class "Test Case" as TC <<entity>> {
+  id
+  question
+}
+class "Target Result" as TR <<entity>> {
+  test case
+  model response or connector error
+}
+class "Model Response" as MR <<entity>> {
+  text or refusal
+  truncated
+  requested and served model
+}
+class "Connector Error" as CE <<entity>> {
+  kind
+  message
+}
+
+Exec --> B : reads
+B *-- "1..*" TC
+Exec --> TMI : sends through
+Exec --> TR : creates, one per case
+Exec --> PLis : tells
+TR --> "1" TC : for
+TR --> "0..1" MR : holds
+TR --> "0..1" CE : holds
+TMI ..> MR : returns
+TMI ..> CE : reports
+
+note bottom of TR
+  Exactly one of model response
+  and connector error is present.
+end note
+note right of Exec
+  Business rules: one call per case;
+  an auth or quota error stops the run,
+  and later cases are recorded "not sent".
+end note
+@enduml

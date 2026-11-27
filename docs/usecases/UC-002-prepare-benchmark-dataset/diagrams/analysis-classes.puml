@@ -1,0 +1,53 @@
+@startuml uc002-analysis-classes
+!include ../../../diagrams/style.iuml
+hide empty members
+hide circle
+title UC-002 Prepare benchmark dataset: analysis classes (BCE)
+
+class "Benchmark File Reader" as BFR <<boundary>> {
+  read text(path)
+}
+class "Prepare Benchmark" as Prep <<control>> {
+  load(path)
+}
+class "Problem List" as PL <<entity>> {
+  problems, in file order
+}
+class "Benchmark Error" as BE <<entity>> {
+  path
+  problems
+}
+
+package "Benchmark aggregate" {
+  class "Benchmark" as B <<entity>> {
+    id
+    name
+    test cases, in file order
+  }
+  class "Test Case" as TC <<entity>> {
+    id
+    question
+    expected answer
+  }
+}
+
+Prep --> BFR : reads through
+Prep --> PL : adds each problem to
+Prep --> TC : creates
+Prep --> B : creates, when no problems
+Prep --> BE : raises, when any problem
+BE --> PL : reports
+B *-- "1..*" TC : contains
+
+note bottom of B
+  Aggregate root. Invariants:
+  id and name are non-empty strings;
+  at least one test case;
+  case ids are unique within the benchmark;
+  no field the schema does not know.
+end note
+note right of Prep
+  Business rule: checking does not stop
+  at the first problem (AC-002-08).
+end note
+@enduml

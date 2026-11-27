@@ -1,0 +1,48 @@
+@startuml uc006-design-sequence-startup-error
+!include ../../../diagrams/style.iuml
+title UC-006 Run complete evaluation: design sequence (extensions 1a and 1c: the run cannot start)
+
+actor Developer
+participant "cli.main()" as Main
+participant "cli.run_command()" as Run
+participant "config.load_config()" as Config
+participant "benchmark.load_benchmark()" as Bench
+participant "judge.get_rubric()" as Rubric
+participant "connector_factory" as Factory
+
+Developer -> Main : judgelab run --config evaluation.yaml
+opt 1c: --config is missing
+  Main --> Developer : argparse prints usage, raises SystemExit(2)
+end
+Main -> Run : run_command(config_path, output_dir, connector_factory)
+activate Run
+note over Run
+  Everything below is inside one try block.
+  Each branch is reached only if the steps
+  before it succeeded.
+end note
+alt config problem
+  Run -> Config : load_config(config_path)
+  Config --> Run : raises ConfigError("config file not found: ...", "... is not valid YAML\n(line 1, column 15)", "unknown section(s) extras", "unknown setting(s) modle",\n"must name an environment variable", ...); a ProfileError is re-raised as ConfigError
+else dataset missing or invalid
+  Run -> Bench : load_benchmark(config.dataset)
+  Bench --> Run : raises BenchmarkError(path, problems)
+else unknown rubric
+  Run -> Rubric : get_rubric(config.rubric)
+  Rubric --> Run : raises JudgeError("unknown rubric 'strict'; known: ...")
+else connection cannot be created
+  Run -> Factory : connector_factory(config.target)
+  Factory --> Run : raises ConnectorAuthError("environment variable TARGET_KEY is not set"),\nor ProfileError(unknown provider, unsupported option)
+end
+Run -> Run : except (ConfigError, ProfileError, BenchmarkError,\nJudgeError, ConnectorError) as e
+Run --> Developer : stderr: "error: {e}"
+Run --> Main : 1
+deactivate Run
+Main --> Developer : exit code 1
+
+note right of Run
+  Business rule: setup problems are found before the first model call.
+  evaluate(), utc_now() and write_report() are never reached:
+  no model is called and no report is written (AC-006-06).
+end note
+@enduml

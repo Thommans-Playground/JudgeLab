@@ -1,0 +1,38 @@
+@startuml uc001-ssd
+!include ../../../diagrams/style.iuml
+title UC-001 Configure model connections: system sequence diagram
+
+actor Developer
+participant "JudgeLab" as System
+actor "Model provider" as Provider
+
+note over Developer, System
+  Triggered by a run (UC-006), or by a test
+  that builds a connector directly.
+end note
+
+Developer -> System : configure connections(target profile, judge profile)
+loop for each profile (target, judge)
+  System -> System : validate profile(provider, model, api_key_env,\nbase_url, timeout_s, max_retries, options)
+  System -> System : choose connector(provider)
+  System -> System : resolve credential(api_key_env)
+end
+alt every profile is valid and every key is set
+  System --> Developer : a connector for the target and one for the judge
+else 2a, 3a, 3b: a profile is wrong
+  System --> Developer : profile error "connection 'target': ..." listing every problem
+else 4a: the key variable is missing or blank
+  System --> Developer : auth error naming the variable, never its value
+end
+
+== later, for each prompt (UC-003, UC-004) ==
+
+System -> Provider : model request(prompt, instructions, model)
+alt the model answers or refuses
+  Provider --> System : answer or refusal, served model, usage, request id
+  System -> System : record response(text or refusal, requested and served model,\nfinish reason, truncated, token counts, request id)
+else 5a, 6b: the call fails or the reply cannot be trusted
+  Provider --> System : HTTP error, timeout or unusable reply
+  System -> System : raise connector error(kind, HTTP status, request id)
+end
+@enduml

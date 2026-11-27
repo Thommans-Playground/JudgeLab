@@ -1,0 +1,32 @@
+@startuml uc002-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-002 Prepare benchmark dataset: analysis sequence (main success scenario)
+
+control "Prepare Benchmark" as Prep
+boundary "Benchmark File Reader" as BFR
+entity "Problem List" as PL
+entity "Test Case" as TC
+entity "Benchmark" as B
+
+[-> Prep : load(path)
+Prep -> BFR : read text(path)
+BFR --> Prep : file content
+Prep -> Prep : parse content as JSON
+Prep -> Prep : check benchmark id, name,\nand that cases is a non-empty list
+loop for each case, in file order
+  Prep -> Prep : check it is an object with three\nnon-empty text fields and no others
+  Prep -> TC : create(id, question, expected answer)
+  Prep -> Prep : check the id is not used by an earlier case
+end
+Prep -> PL : any problems?
+PL --> Prep : none
+Prep -> B : create(id, name, test cases in file order)
+[<-- Prep : benchmark
+
+note right of PL
+  Extensions 3a, 3b, 4a to 4d: each broken rule
+  adds a problem with its location, and checking
+  goes on. At the end, any problem means a
+  Benchmark Error listing them all, and no Benchmark.
+end note
+@enduml

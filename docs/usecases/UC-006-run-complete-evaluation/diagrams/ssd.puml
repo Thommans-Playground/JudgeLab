@@ -1,0 +1,35 @@
+@startuml uc006-ssd
+!include ../../../diagrams/style.iuml
+title UC-006 Run complete evaluation: system sequence diagram
+
+actor Developer
+participant "JudgeLab" as System
+actor "Target model" as Target
+actor "Judge model" as Judge
+
+Developer -> System : run(config file, output directory?)
+alt 1a: the setup is invalid (config, benchmark, rubric, connection, key)
+  System --> Developer : "error: ..." on stderr, exit code 1
+  note right of System
+    No model called, no report written,
+    no traceback, no pasted key echoed.
+  end note
+else the setup is valid
+  System --> Developer : benchmark name and size, target, judge and rubric
+  loop for each test case, in order
+    System -> Target : question (UC-003)
+    Target --> System : answer, refusal or error
+    opt 3a: the answer can be trusted (not failed, not cut off)
+      System -> Judge : judge request (UC-004), a refusal marked [refused]
+      Judge --> System : verdict, or error or unusable reply
+    end
+    System --> Developer : progress line "[i/n] id: OUTCOME"
+  end
+  System -> System : write report (UC-005)
+  System --> Developer : totals, pass rate with coverage, report path, exit code 0
+end
+
+note over Developer, System
+  1c: no --config: usage message, exit code 2.
+end note
+@enduml

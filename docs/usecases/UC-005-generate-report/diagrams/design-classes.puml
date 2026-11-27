@@ -1,0 +1,110 @@
+@startuml uc005-design-classes
+!include ../../../diagrams/style.iuml
+set namespaceSeparator none
+hide empty members
+title UC-005 Generate report: design classes
+
+package "judgelab.scoring" {
+  enum Outcome {
+    PASS
+    FAIL
+    ERROR
+  }
+  class CaseResult <<dataclass, frozen>> {
+    +case : TestCase
+    +outcome : Outcome
+    +target : ModelResponse | None
+    +judgement : JudgeEvaluation | None
+    +error_stage : str | None
+    +error : str | None
+  }
+  class Summary <<dataclass, frozen>> {
+    +total : int
+    +passed : int
+    +failed : int
+    +errors : int
+    +/evaluated : int
+    +/pass_rate : float | None
+    +/coverage : float
+  }
+  class "scoring.summarise" as Summarise <<function>> {
+    +summarise(results: Iterable[CaseResult]) : Summary
+  }
+}
+
+package "judgelab.report" {
+  class RunInfo <<dataclass, frozen>> {
+    +benchmark : Benchmark
+    +rubric_id : str
+    +target : ModelConnector
+    +judge : ModelConnector
+    +started_at : datetime
+    +finished_at : datetime
+    +run_id : str = uuid4().hex
+  }
+  class "report functions" as RF <<function>> {
+    +REPORT_VERSION = "1"
+    +build_report(run: RunInfo, results: list[CaseResult], summary: Summary) : dict
+    +write_report(report: dict, directory: str | Path) : Path
+    +utc_now() : datetime
+    -_connection(connector: ModelConnector) : dict
+    -_call(response: ModelResponse) : dict
+    -_case(result: CaseResult) : dict
+  }
+}
+
+package "judgelab.connectors" {
+  abstract class ModelConnector <<port>> {
+    +provider : str
+    +model : str
+    +base_url : str | None
+  }
+  class ModelResponse <<dataclass, frozen>> {
+    +text : str | None
+    +refusal : str | None
+    +requested_model : str
+    +served_model : str
+    +finish_reason : str
+    +prompt_tokens : int | None
+    +completion_tokens : int | None
+    +request_id : str | None
+    +latency_ms : float
+  }
+}
+
+package "judgelab.judge" {
+  class JudgeEvaluation <<dataclass, frozen>> {
+    +verdict : Verdict
+    +justification : str
+    +rubric_id : str
+    +response : ModelResponse
+  }
+}
+
+CaseResult --> "1" Outcome
+CaseResult --> "0..1" ModelResponse : target
+CaseResult --> "0..1" JudgeEvaluation : judgement
+JudgeEvaluation --> "1" ModelResponse : judge call
+Summarise ..> CaseResult : counts, one pass
+Summarise ..> Summary : creates
+RunInfo --> "2" ModelConnector : target, judge
+RF ..> RunInfo : reads
+RF ..> CaseResult : reads
+RF ..> Summary : reads
+RF ..> ModelResponse : _call reads
+
+note right of Summary
+  / marks a derived value:
+  a @property computed
+  from the four counts.
+end note
+note right of RunInfo
+  EvaluationRun is implicit in v0.1:
+  RunInfo + list[CaseResult].
+end note
+note bottom of RF
+  _connection copies provider, model and base_url
+  only: the connector holds no key name to leak,
+  and the key never leaves its SDK client.
+end note
+@enduml

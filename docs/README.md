@@ -5,10 +5,11 @@ Living documents describe the system **as it is now** and evolve across releases
 | Path | Contents |
 |---|---|
 | [requirements/](requirements/) | Requirements catalogue and one file per requirement |
-| [usecases/](usecases/) | Actors, the use-case catalogue, and one folder per use case holding its flows (`README.md`), its acceptance criteria as Gherkin scenarios (`UC-###.feature`) and its tasks (its slices) |
+| [usecases/](usecases/) | Actors, the use-case catalogue, and one folder per use case holding its flows (`README.md`), its acceptance criteria as Gherkin scenarios (`UC-###.feature`), its OOAD analysis and design (`analysis.md`, `design.md`, PlantUML in `diagrams/`) and its tasks (its slices) |
 | [ontology/](ontology/) | Problem-space glossary, relationships, and one file per concept |
 | [domain/](domain/) | DDD model built on the ontology: bounded contexts, aggregates, entities, value objects, events |
-| [design.md](design.md) | Current architecture and components |
+| [design.md](design.md) | How the design is derived (requirements → ontology → DDD → OOAD), the hexagonal architecture, components and patterns |
+| [diagrams/](diagrams/) | System-level PlantUML diagrams and the shared `style.iuml` |
 | [decisions/](decisions/) | Architecture decision records (ADRs) |
 | [verification.md](verification.md) | Test strategy and test cases |
 | [traceability.md](traceability.md) | Requirement ↔ use case ↔ task ↔ test, across releases |
@@ -27,3 +28,19 @@ python3 .claude/skills/vbench-docs/scripts/docids.py check                      
 ```
 
 IDs are permanent: never renumber or reuse one; retire items by status instead. CI runs `check` on every pull request that touches `docs/`.
+
+## Diagrams
+
+UML diagrams are PlantUML sources (`.puml`) with the rendered `.svg` committed beside them, so GitHub shows them ([ADR-002](decisions/ADR-002.md)). Preview while editing with the VS Code PlantUML extension. Render with PlantUML installed (`brew install plantuml`, or `PLANTUML_JAR=/path/to/plantuml.jar`):
+
+```bash
+python3 .claude/skills/vbench-docs/scripts/render_diagrams.py          # render missing or stale SVGs
+python3 .claude/skills/vbench-docs/scripts/render_diagrams.py --check  # no Java needed; check warns too
+```
+
+To compare a design with the code, generate as-built diagrams from a traced test or from the modules:
+
+```bash
+uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence "tests/test_judge.py::<test>" -o <uc>/diagrams/as-built/sequence.puml
+uv run python .claude/skills/vbench-docs/scripts/asbuilt.py classes judgelab.judge -o <uc>/diagrams/as-built/classes.puml
+```

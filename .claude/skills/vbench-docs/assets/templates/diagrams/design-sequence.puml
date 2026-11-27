@@ -1,0 +1,7 @@
+@startuml
+!include ../../../diagrams/style.iuml
+title {{ID}} {{TITLE}}: design-sequence
+
+' TODO: see docs/usecases/UC-004-evaluate-responses/diagrams/design-sequence.puml for a worked example
+
+@enduml

@@ -1,0 +1,14 @@
+' Shared look for every JudgeLab diagram. Include it right after @startuml:
+'   !include ../../../diagrams/style.iuml   (from docs/usecases/UC-###-<slug>/diagrams/)
+'   !include style.iuml                     (from docs/diagrams/)
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam roundCorner 6
+skinparam ArrowColor #444444
+skinparam ClassAttributeIconSize 0
+skinparam SequenceMessageAlign left
+skinparam SequenceLifeLineBorderColor #888888
+skinparam NoteBackgroundColor #FFF8DC
+skinparam NoteBorderColor #C9B458
+' Class diagrams add their own: hide empty members
