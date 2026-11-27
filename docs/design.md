@@ -22,9 +22,7 @@ The work isn't done top-down once for the whole system. Steps 2 and 3 are cheap 
 
 ## Context
 
-![System context](diagrams/system-context.svg)
-
-Source: [diagrams/system-context.puml](diagrams/system-context.puml)
+Diagram: [System context](diagrams/system-context.puml)
 
 The developer runs one command. JudgeLab reads a YAML config and a JSON benchmark, and reads each API key from the environment variable the config names. It asks the target model each question and has the judge model evaluate every answer, then writes a JSON report.
 
@@ -32,9 +30,7 @@ The developer runs one command. JudgeLab reads a YAML config and a JSON benchmar
 
 Hexagonal (ports and adapters), as decided in [ADR-001](decisions/ADR-001.md):
 
-![Ports and adapters](diagrams/hexagon.svg)
-
-Source: [diagrams/hexagon.puml](diagrams/hexagon.puml)
+Diagram: [Ports and adapters](diagrams/hexagon.puml)
 
 - **Core:** the domain rules. What a valid benchmark is, how a judge's reply becomes a verdict, when a case is ERROR, and how a run is scored. No SDK, file or YAML code.
 - **Driven port:** `ModelConnector`. The core asks for an answer and gets JudgeLab's own `ModelResponse` or `ConnectorError` back.

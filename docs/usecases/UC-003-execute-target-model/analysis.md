@@ -13,9 +13,7 @@
 
 The system is a black box. The diagram shows only what crosses its boundary: each question going out to the target, an answer or an error coming back, and progress going to the developer. It is the main success scenario and its extensions, drawn.
 
-![UC-003 system sequence diagram](diagrams/ssd.svg)
-
-Source: [diagrams/ssd.puml](diagrams/ssd.puml)
+Diagram: [UC-003 system sequence diagram](diagrams/ssd.puml)
 
 **System operations** found here:
 
@@ -36,9 +34,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic, the steps of the main flow. One per use case is typical.
 - **Entity:** information the problem cares about, which outlives one step.
 
-![UC-003 analysis classes](diagrams/analysis-classes.svg)
-
-Source: [diagrams/analysis-classes.puml](diagrams/analysis-classes.puml)
+Diagram: [UC-003 analysis classes](diagrams/analysis-classes.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -57,9 +53,7 @@ Each Target Result is a **CaseExecuted** event: a case was sent to the target (a
 
 How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundaries talk to the outside.
 
-![UC-003 analysis sequence](diagrams/analysis-sequence.svg)
-
-Source: [diagrams/analysis-sequence.puml](diagrams/analysis-sequence.puml)
+Diagram: [UC-003 analysis sequence](diagrams/analysis-sequence.puml)
 
 ## 4. Rules the design must keep
 

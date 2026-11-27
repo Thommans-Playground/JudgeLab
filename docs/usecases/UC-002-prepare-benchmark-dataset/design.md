@@ -26,23 +26,17 @@ The Problem List is a plain list of strings. Each problem is already a full sent
 
 ## 2. Design classes
 
-![UC-002 design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [UC-002 design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
 **Main success scenario.** A valid file becomes a `Benchmark`:
 
-![UC-002 design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [UC-002 design sequence](diagrams/design-sequence.puml)
 
 **Extensions 1a to 4d.** A file that can't be read stops at once with one problem. A file that parses is checked to the end, every problem goes into `problems`, and one `BenchmarkError` lists them all. The CLI prints it and exits 1:
 
-![UC-002 design sequence, validation](diagrams/design-sequence-validation.svg)
-
-Source: [diagrams/design-sequence-validation.puml](diagrams/design-sequence-validation.puml)
+Diagram: [UC-002 design sequence, validation](diagrams/design-sequence-validation.puml)
 
 ## 4. Patterns and principles
 

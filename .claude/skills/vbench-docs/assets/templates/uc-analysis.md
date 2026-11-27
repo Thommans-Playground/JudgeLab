@@ -17,9 +17,7 @@ starting with "!include ../../../diagrams/style.iuml". Render with scripts/rende
 
 <!-- The system as a black box: actor(s), "JudgeLab", secondary actors. Messages are system operations. -->
 
-![{{ID}} system sequence diagram](diagrams/ssd.svg)
-
-Source: [diagrams/ssd.puml](diagrams/ssd.puml)
+Diagram: [{{ID}} system sequence diagram](diagrams/ssd.puml)
 
 | Operation | Responsibility | Postcondition |
 |---|---|---|
@@ -29,9 +27,7 @@ Source: [diagrams/ssd.puml](diagrams/ssd.puml)
 
 <!-- Nouns from the use case, split by role: <<boundary>> (meets the outside), <<control>> (the flow), <<entity>> (information). -->
 
-![{{ID}} analysis classes](diagrams/analysis-classes.svg)
-
-Source: [diagrams/analysis-classes.puml](diagrams/analysis-classes.puml)
+Diagram: [{{ID}} analysis classes](diagrams/analysis-classes.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -41,9 +37,7 @@ Source: [diagrams/analysis-classes.puml](diagrams/analysis-classes.puml)
 
 <!-- How boundary, control and entity objects deliver the main success scenario. -->
 
-![{{ID}} analysis sequence](diagrams/analysis-sequence.svg)
-
-Source: [diagrams/analysis-sequence.puml](diagrams/analysis-sequence.puml)
+Diagram: [{{ID}} analysis sequence](diagrams/analysis-sequence.puml)
 
 ## 4. Rules the design must keep
 

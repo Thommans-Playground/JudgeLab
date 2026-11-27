@@ -21,15 +21,11 @@ against an as-built diagram (ADR-002).
 
 ## 2. Design classes
 
-![{{ID}} design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [{{ID}} design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
-![{{ID}} design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [{{ID}} design sequence](diagrams/design-sequence.puml)
 
 ## 4. Patterns and principles
 

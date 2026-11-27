@@ -13,9 +13,7 @@
 
 The system is a black box. The diagram shows only what crosses its boundary: a path going in, and a benchmark or an error listing every problem coming back. It is the main success scenario and its extensions, drawn.
 
-![UC-002 system sequence diagram](diagrams/ssd.svg)
-
-Source: [diagrams/ssd.puml](diagrams/ssd.puml)
+Diagram: [UC-002 system sequence diagram](diagrams/ssd.puml)
 
 **System operations** found here:
 
@@ -34,9 +32,7 @@ Found by reading the use case's nouns and splitting them by role:
 
 The Benchmark is an **aggregate**: it and its test cases are created together, checked together and only ever used as a whole. The Benchmark is its root, and its invariants are the rules a file must pass.
 
-![UC-002 analysis classes](diagrams/analysis-classes.svg)
-
-Source: [diagrams/analysis-classes.puml](diagrams/analysis-classes.puml)
+Diagram: [UC-002 analysis classes](diagrams/analysis-classes.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -64,9 +60,7 @@ A Test Case's identity is its id *within its Benchmark*. Two benchmarks may both
 
 How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundary talks to the outside.
 
-![UC-002 analysis sequence](diagrams/analysis-sequence.svg)
-
-Source: [diagrams/analysis-sequence.puml](diagrams/analysis-sequence.puml)
+Diagram: [UC-002 analysis sequence](diagrams/analysis-sequence.puml)
 
 ## 4. Rules the design must keep
 

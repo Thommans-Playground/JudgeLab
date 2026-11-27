@@ -13,9 +13,7 @@
 
 The system is a black box. The diagram shows only what crosses its boundary. It has two halves: first the developer's configuration goes in and a connector for each profile (or an error) comes out; later, each prompt goes out to the model provider and a response or a connector error comes back. It is the main success scenario and its extensions, drawn.
 
-![UC-001 system sequence diagram](diagrams/ssd.svg)
-
-Source: [diagrams/ssd.puml](diagrams/ssd.puml)
+Diagram: [UC-001 system sequence diagram](diagrams/ssd.puml)
 
 **System operations** found here:
 
@@ -37,9 +35,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic. This use case has two distinct moments, so it gets two: configuring a connection (steps 1 to 4) and calling the model (steps 5 and 6).
 - **Entity:** information the problem cares about, which outlives one step.
 
-![UC-001 analysis classes](diagrams/analysis-classes.svg)
-
-Source: [diagrams/analysis-classes.puml](diagrams/analysis-classes.puml)
+Diagram: [UC-001 analysis classes](diagrams/analysis-classes.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -60,9 +56,7 @@ The Credential entity holds a name, not a value. The key itself passes through C
 
 How the analysis objects work together to deliver the main success scenario. The two control objects drive the work, entities hold the information, and only the boundaries talk to the outside.
 
-![UC-001 analysis sequence](diagrams/analysis-sequence.svg)
-
-Source: [diagrams/analysis-sequence.puml](diagrams/analysis-sequence.puml)
+Diagram: [UC-001 analysis sequence](diagrams/analysis-sequence.puml)
 
 ## 4. Rules the design must keep
 

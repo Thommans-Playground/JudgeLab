@@ -26,23 +26,17 @@ The stop reason has no class. It is a local `stopped_by: tuple[str, ConnectorErr
 
 ## 2. Design classes
 
-![UC-003 design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [UC-003 design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
 **Main success scenario.** Each case answered, each result emitted as a CaseExecuted event through the `on_target` callback:
 
-![UC-003 design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [UC-003 design sequence](diagrams/design-sequence.puml)
 
 **Extensions 2a, 2b and 2c.** A connector error is recorded and the run goes on; an auth or quota error (`STOP_THE_RUN`) also stops it, so later cases are recorded as "not sent" without a call; any other exception escapes:
 
-![UC-003 design sequence, call failures and stopping](diagrams/design-sequence-stop.svg)
-
-Source: [diagrams/design-sequence-stop.puml](diagrams/design-sequence-stop.puml)
+Diagram: [UC-003 design sequence, call failures and stopping](diagrams/design-sequence-stop.puml)
 
 ## 4. Patterns and principles
 

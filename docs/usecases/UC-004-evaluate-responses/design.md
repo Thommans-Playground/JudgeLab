@@ -26,23 +26,17 @@ The Judge Request has no class of its own. It's two strings, the instructions an
 
 ## 2. Design classes
 
-![UC-004 design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [UC-004 design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
 **Main success scenario.** One answer, judged PASS:
 
-![UC-004 design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [UC-004 design sequence](diagrams/design-sequence.puml)
 
 **Extensions 2a, 3a and 4a.** No trustworthy verdict. Every path ends in a `JudgeError`, which the runner records as ERROR with `error_stage="judge"`:
 
-![UC-004 design sequence, error paths](diagrams/design-sequence-error.svg)
-
-Source: [diagrams/design-sequence-error.puml](diagrams/design-sequence-error.puml)
+Diagram: [UC-004 design sequence, error paths](diagrams/design-sequence-error.puml)
 
 ## 4. Patterns and principles
 

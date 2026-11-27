@@ -28,35 +28,25 @@ Provider and Credential have no class of their own. A provider is a registry key
 
 ## 2. Design classes
 
-![UC-001 design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [UC-001 design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
 **Main success scenario, steps 5 and 6.** One prompt through the OpenAI-compatible connector, answered or refused (extension 6a):
 
-![UC-001 design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [UC-001 design sequence](diagrams/design-sequence.puml)
 
 **Steps 1 to 4, and extensions 2a, 3a, 3b and 4a.** A YAML profile becomes a `ConnectionProfile`, is validated, and `create_connector` picks the class from the registry; the adapter resolves its key through `read_secret`. Every error happens before anything is sent:
 
-![UC-001 design sequence, profile to connector](diagrams/design-sequence-profile.svg)
-
-Source: [diagrams/design-sequence-profile.puml](diagrams/design-sequence-profile.puml)
+Diagram: [UC-001 design sequence, profile to connector](diagrams/design-sequence-profile.puml)
 
 **Extensions 5a and 6b.** An SDK exception becomes a `ConnectorError` subclass through `translate_error`, and an untrustworthy reply becomes a `ConnectorResponseError`:
 
-![UC-001 design sequence, error translation](diagrams/design-sequence-error-translation.svg)
-
-Source: [diagrams/design-sequence-error-translation.puml](diagrams/design-sequence-error-translation.puml)
+Diagram: [UC-001 design sequence, error translation](diagrams/design-sequence-error-translation.puml)
 
 **Steps 5 and 6 through the Claude connector.** Same port, different provider shape: instructions go in the `system` field, `max_tokens` is required, a refusal is a stop reason, and only `text` blocks count as the answer:
 
-![UC-001 design sequence, Claude connector](diagrams/design-sequence-claude.svg)
-
-Source: [diagrams/design-sequence-claude.puml](diagrams/design-sequence-claude.puml)
+Diagram: [UC-001 design sequence, Claude connector](diagrams/design-sequence-claude.puml)
 
 ## 4. Patterns and principles
 

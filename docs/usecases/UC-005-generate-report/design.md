@@ -28,23 +28,17 @@ The **Report** is a plain `dict`, not a class. Its shape is the contract with th
 
 ## 2. Design classes
 
-![UC-005 design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [UC-005 design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
 **Main success scenario.** The CLI holds the results and the run's metadata, and asks for a summary, a report and a file:
 
-![UC-005 design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [UC-005 design sequence](diagrams/design-sequence.puml)
 
 **Extension 1a.** No case reached a verdict. `pass_rate` is `None` (JSON `null`), `coverage` is `0.0`, and the CLI prints "Pass rate: n/a":
 
-![UC-005 design sequence, no verdicts](diagrams/design-sequence-no-verdicts.svg)
-
-Source: [diagrams/design-sequence-no-verdicts.puml](diagrams/design-sequence-no-verdicts.puml)
+Diagram: [UC-005 design sequence, no verdicts](diagrams/design-sequence-no-verdicts.puml)
 
 ## 4. Patterns and principles
 

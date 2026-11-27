@@ -623,9 +623,7 @@ def cmd_check(d: Docs, a) -> int:
         if kind_of(i) in TRACED_KINDS and i not in traced:
             warnings.append(f"{i} is not in docs/{TRACEABILITY}")
 
-    # 9. PlantUML diagrams: well formed, includes resolve, SVG rendered from the current source
-    from render_diagrams import status as svg_status  # same folder as this script
-
+    # 9. PlantUML diagrams: well formed, and their includes resolve
     for puml in sorted(d.docs.rglob("*.puml")):
         text = puml.read_text(encoding="utf-8")
         where = d.rel(puml)
@@ -636,12 +634,6 @@ def cmd_check(d: Docs, a) -> int:
         for target in re.findall(r"^\s*!include\s+(\S+)", text, re.M):
             if not (puml.parent / target).exists():
                 errors.append(f"{where}: !include {target} not found")
-        state = svg_status(puml)
-        if state != "ok":
-            warnings.append(f"{where}: SVG {state}; run scripts/render_diagrams.py")
-    for svg in sorted(d.docs.rglob("*.svg")):
-        if not svg.with_suffix(".puml").exists():
-            warnings.append(f"{d.rel(svg)}: no .puml source beside it")
 
     for e in errors:
         print(f"ERROR   {e}")

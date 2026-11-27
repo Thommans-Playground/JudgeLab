@@ -31,12 +31,7 @@ IDs are permanent: never renumber or reuse one; retire items by status instead. 
 
 ## Diagrams
 
-UML diagrams are PlantUML sources (`.puml`) with the rendered `.svg` committed beside them, so GitHub shows them ([ADR-002](decisions/ADR-002.md)). Preview while editing with the VS Code PlantUML extension. Render with PlantUML installed (`brew install plantuml`, or `PLANTUML_JAR=/path/to/plantuml.jar`):
-
-```bash
-python3 .claude/skills/vbench-docs/scripts/render_diagrams.py          # render missing or stale SVGs
-python3 .claude/skills/vbench-docs/scripts/render_diagrams.py --check  # no Java needed; check warns too
-```
+UML diagrams are PlantUML sources (`.puml`), linked from the pages that explain them ([ADR-002](decisions/ADR-002.md)). Read them with a PlantUML preview, e.g. the VS Code PlantUML extension (Alt+D). `docids.py check` verifies that each one is well formed and that its `!include` resolves. To export SVGs (optional, needs PlantUML installed), run `python3 .claude/skills/vbench-docs/scripts/render_diagrams.py`.
 
 To compare a design with the code, generate as-built diagrams from a traced test or from the modules:
 

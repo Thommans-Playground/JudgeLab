@@ -32,29 +32,21 @@ The **CaseEvaluated** domain event is the `on_result: Callable[[CaseResult], Non
 
 ## 2. Design classes
 
-![UC-006 design classes](diagrams/design-classes.svg)
-
-Source: [diagrams/design-classes.puml](diagrams/design-classes.puml)
+Diagram: [UC-006 design classes](diagrams/design-classes.puml)
 
 ## 3. Design sequences
 
 **Main success scenario.** One command, five cases, one report, exit code 0. Each CaseEvaluated event drives a progress line:
 
-![UC-006 design sequence](diagrams/design-sequence.svg)
-
-Source: [diagrams/design-sequence.puml](diagrams/design-sequence.puml)
+Diagram: [UC-006 design sequence](diagrams/design-sequence.puml)
 
 **Extensions 1a and 1c.** The run cannot start. Every setup error is caught in one place, printed as `error: ...` and turned into exit code 1, before any model is called or any report is written:
 
-![UC-006 design sequence, startup error](diagrams/design-sequence-startup-error.svg)
-
-Source: [diagrams/design-sequence-startup-error.puml](diagrams/design-sequence-startup-error.puml)
+Diagram: [UC-006 design sequence, startup error](diagrams/design-sequence-startup-error.puml)
 
 **Composition root.** How `main` wires the connector factory, the profiles and the `Judge`, and how a test swaps in fakes through the same parameter:
 
-![UC-006 design sequence, composition root](diagrams/design-sequence-composition.svg)
-
-Source: [diagrams/design-sequence-composition.puml](diagrams/design-sequence-composition.puml)
+Diagram: [UC-006 design sequence, composition root](diagrams/design-sequence-composition.puml)
 
 Extensions 3a, 3b and 4a happen inside `runner.evaluate` and are drawn in [UC-003](../UC-003-execute-target-model/design.md) and [UC-004](../UC-004-evaluate-responses/design.md). Extension 7a is drawn in [UC-005](../UC-005-generate-report/design.md). Extension 1b is the expression `output_dir or config.output_dir`.
 
