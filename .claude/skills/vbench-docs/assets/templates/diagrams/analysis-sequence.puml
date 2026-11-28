@@ -1,7 +1,7 @@
-@startuml
+@startuml {{ID}}-analysis-sequence
 !include ../../../diagrams/style.iuml
-title {{ID}} {{TITLE}}: analysis-sequence
+title {{ID}} {{TITLE}}: analysis sequence diagram
 
-' TODO: see docs/usecases/UC-004-evaluate-responses/diagrams/analysis-sequence.puml for a worked example
+' TODO: see docs/usecases/UC-004-evaluate-responses/diagrams/UC-004-analysis-sequence.puml for a worked example
 
 @enduml

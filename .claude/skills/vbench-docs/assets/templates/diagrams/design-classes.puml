@@ -1,7 +1,0 @@
-@startuml
-!include ../../../diagrams/style.iuml
-title {{ID}} {{TITLE}}: design-classes
-
-' TODO: see docs/usecases/UC-004-evaluate-responses/diagrams/design-classes.puml for a worked example
-
-@enduml

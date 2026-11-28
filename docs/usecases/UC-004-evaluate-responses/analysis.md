@@ -9,21 +9,7 @@
 | Bounded context | [Evaluation](../../domain/evaluation/README.md), using [Model Access](../../domain/model-access/README.md) and [Benchmark](../../domain/benchmark/README.md) |
 | Ontology | [TestCase](../../ontology/test-case.md), [Rubric](../../ontology/rubric.md), [JudgeModel](../../ontology/judge-model.md), [Verdict](../../ontology/verdict.md), [JudgeEvaluation](../../ontology/judge-evaluation.md), [Outcome](../../ontology/outcome.md) |
 
-## 1. System sequence diagram
-
-The system is a black box. The diagram shows only what crosses its boundary: the judge request going out, and a verdict or an error coming back. It is the main success scenario and its extensions, drawn.
-
-Diagram: [UC-004 system sequence diagram](diagrams/ssd.puml)
-
-**System operations** found here:
-
-| Operation | Responsibility | Postcondition |
-|---|---|---|
-| judge request (out) | Ask the judge model for a verdict on one answer, under a rubric | The judge has received the case as data and the rubric as instructions |
-| record evaluation | Keep a validated verdict with its justification, rubric and judge identity | A Judge Evaluation exists for the case (AC-004-04) |
-| record ERROR | Keep the reason no verdict exists | The case is ERROR, never FAIL (AC-004-03) |
-
-## 2. Analysis classes
+## 1. Analysis class diagram
 
 Found by reading the use case's nouns and splitting them by role:
 
@@ -31,7 +17,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic, the steps of the main flow. One per use case is typical.
 - **Entity:** information the problem cares about, which outlives one step.
 
-Diagram: [UC-004 analysis classes](diagrams/analysis-classes.puml)
+Diagram: [UC-004-analysis-class](diagrams/UC-004-analysis-class.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -44,13 +30,21 @@ Diagram: [UC-004 analysis classes](diagrams/analysis-classes.puml)
 | Judge Evaluation | Entity | "records the evaluation" | JudgeEvaluation |
 | Verdict | Entity | "the verdict is PASS or FAIL" | Verdict |
 
-## 3. Analysis sequence
+## 2. Analysis sequence diagram
 
-How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundary talks to the outside.
+How the analysis objects deliver the use case: the main success scenario, with each extension as an `alt` branch. The control object drives the work, entities hold the information, and only the boundary talks to the judge model, which is outside the system.
 
-Diagram: [UC-004 analysis sequence](diagrams/analysis-sequence.puml)
+Diagram: [UC-004-analysis-sequence](diagrams/UC-004-analysis-sequence.puml)
 
-## 4. Rules the design must keep
+**System operations** (what crosses the system boundary):
+
+| Operation | Responsibility | Postcondition |
+|---|---|---|
+| judge request (out) | Ask the judge model for a verdict on one answer, under a rubric | The judge has received the case as data and the rubric as instructions |
+| record evaluation | Keep a validated verdict with its justification, rubric and judge identity | A Judge Evaluation exists for the case (AC-004-04) |
+| record ERROR | Keep the reason no verdict exists | The case is ERROR, never FAIL (AC-004-03) |
+
+## 3. Rules the design must keep
 
 These come from the use case's business rules and its scenarios. The design is checked against them.
 

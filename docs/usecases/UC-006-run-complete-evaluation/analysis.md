@@ -9,25 +9,7 @@
 | Bounded context | Spans all four: [Model Access](../../domain/model-access/README.md), [Benchmark](../../domain/benchmark/README.md), [Evaluation](../../domain/evaluation/README.md) and [Reporting](../../domain/reporting/README.md), coordinated by the application layer (the command line and the config file) |
 | Ontology | [EvaluationRun](../../ontology/evaluation-run.md), [Benchmark](../../ontology/benchmark.md), [Rubric](../../ontology/rubric.md), [ConnectionProfile](../../ontology/connection-profile.md), [CaseResult](../../ontology/case-result.md), [Outcome](../../ontology/outcome.md), [RunSummary](../../ontology/run-summary.md), [Report](../../ontology/report.md) |
 
-## 1. System sequence diagram
-
-The system is a black box. The diagram shows only what crosses its boundary: the developer's command and what is printed back, the calls to the target and the judge, and the report going out. It is the main success scenario and its extensions, drawn. UC-001 to UC-005 are the steps inside; this use case is the one the developer starts.
-
-Diagram: [UC-006 system sequence diagram](diagrams/ssd.puml)
-
-**System operations** found here:
-
-| Operation | Responsibility | Postcondition |
-|---|---|---|
-| run(config file, output directory?) | Check the whole setup, then evaluate every case and report the run | Every case has exactly one outcome and a report exists; or nothing was called and nothing was written (AC-006-05, AC-006-06) |
-| error (out) | Explain in one line why the run cannot start | Exit code 1, no model called, no report written, no traceback, no pasted key echoed (AC-006-06) |
-| question (out) | Ask the target one case's question | The target answered, refused or failed (UC-003, AC-006-02) |
-| judge request (out) | Ask the judge for a verdict on an answer that can be trusted | A verdict, or an ERROR at the judge stage (UC-004, AC-006-01, AC-006-03, AC-006-04) |
-| progress line (out) | Show each case's outcome as it is decided | The developer sees `[i/n] id: OUTCOME`, with the stage and message for an ERROR (AC-006-05) |
-| write report (out) | Publish the run as evidence | A report exists in the chosen output directory (UC-005, AC-006-07) |
-| totals (out) | Show passed, failed, errors, pass rate with coverage, and the report's path | Exit code 0, whatever the verdicts (AC-006-05, extension 7a) |
-
-## 2. Analysis classes
+## 1. Analysis class diagram
 
 Found by reading the use case's nouns and splitting them by role:
 
@@ -35,7 +17,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic, the steps of the main flow. One per use case is typical.
 - **Entity:** information the problem cares about, which outlives one step.
 
-Diagram: [UC-006 analysis classes](diagrams/analysis-classes.puml)
+Diagram: [UC-006-analysis-class](diagrams/UC-006-analysis-class.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -56,13 +38,25 @@ The **Evaluation Run** is the aggregate this use case creates. In v0.1 it is imp
 
 A **case evaluated** event happens each time a case reaches its final outcome. The progress line is its only consumer in v0.1.
 
-## 3. Analysis sequence
+## 2. Analysis sequence diagram
 
-How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundaries talk to the outside.
+How the analysis objects deliver the use case: the main success scenario, with each extension as an `alt` or `opt` branch. The control object drives the work, entities hold the information, and only the boundaries talk to the outside: the developer, the target model and the judge model. What crosses the system boundary is the developer's command and what is printed back, the calls to the target and the judge, and the report going out. UC-001 to UC-005 are the steps inside; this use case is the one the developer starts.
 
-Diagram: [UC-006 analysis sequence](diagrams/analysis-sequence.puml)
+Diagram: [UC-006-analysis-sequence](diagrams/UC-006-analysis-sequence.puml)
 
-## 4. Rules the design must keep
+**System operations** (what crosses the system boundary):
+
+| Operation | Responsibility | Postcondition |
+|---|---|---|
+| run(config file, output directory?) | Check the whole setup, then evaluate every case and report the run | Every case has exactly one outcome and a report exists; or nothing was called and nothing was written (AC-006-05, AC-006-06) |
+| error (out) | Explain in one line why the run cannot start | Exit code 1, no model called, no report written, no traceback, no pasted key echoed (AC-006-06) |
+| question (out) | Ask the target one case's question | The target answered, refused or failed (UC-003, AC-006-02) |
+| judge request (out) | Ask the judge for a verdict on an answer that can be trusted | A verdict, or an ERROR at the judge stage (UC-004, AC-006-01, AC-006-03, AC-006-04) |
+| progress line (out) | Show each case's outcome as it is decided | The developer sees `[i/n] id: OUTCOME`, with the stage and message for an ERROR (AC-006-05) |
+| write report (out) | Publish the run as evidence | A report exists in the chosen output directory (UC-005, AC-006-07) |
+| totals (out) | Show passed, failed, errors, pass rate with coverage, and the report's path | Exit code 0, whatever the verdicts (AC-006-05, extension 7a) |
+
+## 3. Rules the design must keep
 
 These come from the use case's business rules and its scenarios. The design is checked against them.
 

@@ -19,13 +19,15 @@ against an as-built diagram (ADR-002).
 |---|---|---|
 | | | |
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [{{ID}} design classes](diagrams/design-classes.puml)
+Diagram: [{{ID}}-design-class](diagrams/{{ID}}-design-class.puml)
 
-## 3. Design sequences
+## 3. Design sequence diagram
 
-Diagram: [{{ID}} design sequence](diagrams/design-sequence.puml)
+<!-- The main success scenario with real calls; each extension as an alt branch. -->
+
+Diagram: [{{ID}}-design-sequence](diagrams/{{ID}}-design-sequence.puml)
 
 ## 4. Patterns and principles
 
@@ -46,7 +48,7 @@ Diagram: [{{ID}} design sequence](diagrams/design-sequence.puml)
 ## 7. Checking the design against the code (as-built)
 
 ```bash
-uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence "<test node id>" -o <this folder>/diagrams/as-built/sequence.puml
+uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence "<test node id>" -o <this folder>/diagrams/as-built/{{ID}}-asbuilt-sequence.puml
 ```
 
 A difference is either design drift (update this page and say why) or a code defect (fix the code).

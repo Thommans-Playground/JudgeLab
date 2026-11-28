@@ -1,0 +1,47 @@
+@startuml UC-005-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-005 Generate report: analysis sequence diagram
+
+actor Developer
+control "Generate Report" as Gen
+entity "Evaluation Run" as ER
+entity "Case Result" as CR
+entity "Run Summary" as RSum
+entity "Report" as Rep
+boundary "Report Store" as RS
+actor "Output directory" as Store
+
+note over Gen
+  Starts inside a run (UC-006), once every
+  case has an outcome: PASS, FAIL or ERROR.
+end note
+
+[-> Gen : generate(evaluation run)
+Gen -> ER : get case results
+loop each case result, once
+  Gen -> CR : get outcome
+  Gen -> Gen : count it (PASS, FAIL or ERROR)
+end
+Gen -> RSum : create(total, passed, failed, errors)
+RSum -> RSum : evaluated = passed + failed
+alt at least one case reached a verdict
+  RSum -> RSum : pass rate = passed / evaluated,\ncoverage = evaluated / total
+else 1a: no case reached a verdict
+  RSum -> RSum : pass rate = null, coverage = 0.0
+end
+Gen -> ER : get id, benchmark, rubric,\nconnections, times
+Gen -> Rep : build(run metadata, summary,\none entry per case result)
+Gen -> RS : write(report)
+opt 5a: the directory does not exist
+  RS -> Store : create directory
+end
+RS -> Store : write report(run-<start>-<run id prefix>.json,\nUTF-8 JSON)
+RS --> Gen : report path
+Gen --> Developer : report path (printed by UC-006)
+
+note right of Rep
+  Extensions 4a to 4c: a stage that did not
+  happen is null in its case entry, and the
+  error names its stage (target or judge).
+end note
+@enduml

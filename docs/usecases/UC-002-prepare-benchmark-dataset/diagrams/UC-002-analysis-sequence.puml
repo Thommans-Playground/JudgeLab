@@ -1,0 +1,76 @@
+@startuml UC-002-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-002 Prepare benchmark dataset: analysis sequence diagram
+
+actor Developer
+boundary "Command Line" as CLI
+control "Prepare Benchmark" as Prep
+boundary "Benchmark File Reader" as BFR
+database "Benchmark file" as File
+entity "Problem List" as PL
+entity "Test Case" as TC
+entity "Benchmark" as B
+entity "Benchmark Error" as BE
+
+note over CLI, Prep
+  Triggered at the start of a run (UC-006),
+  before any model is called.
+end note
+
+Developer -> CLI : run evaluation (UC-006)
+CLI -> Prep : load benchmark(path)
+Prep -> BFR : read text(path)
+BFR -> File : read
+alt 1a: the file is missing
+  File --> BFR : not found
+  BFR --> Prep : file not found
+  Prep -> BE : create(path, the one problem)
+  Prep --> CLI : error(path, the one problem)
+else the file reads
+  File --> BFR : content
+  BFR --> Prep : file content
+  Prep -> Prep : parse content as JSON
+  alt 2a, 2b: invalid JSON, or the top level is not an object
+    Prep -> BE : create(path, the one problem)
+    Prep --> CLI : error(path, the one problem)
+  else the content parses to an object
+    Prep -> Prep : check benchmark id, name,\nand that cases is a non-empty list
+    opt 3a, 3b: id or name blank, cases missing or empty
+      Prep -> PL : add problem, with its location
+    end
+    loop for each case, in file order
+      Prep -> Prep : check it is an object with three\nnon-empty text fields and no others
+      alt 4a, 4b, 4c: not an object, a field missing or blank, or an unknown field
+        Prep -> PL : add problem, with its location
+      else the case is usable
+        Prep -> TC : create(id, question, expected answer)
+        Prep -> Prep : check the id is not used by an earlier case
+        opt 4d: the id duplicates an earlier case's id
+          Prep -> PL : add problem, with its location
+        end
+      end
+    end
+    Prep -> PL : any problems?
+    alt main success scenario: no problems
+      PL --> Prep : none
+      Prep -> B : create(id, name, test cases in file order)
+      Prep --> CLI : benchmark(id, name, test cases in file order)
+    else 3a, 3b, 4a to 4d: the content breaks one or more rules
+      PL --> Prep : problems, in file order
+      Prep -> BE : create(path, every problem)
+      Prep --> CLI : error(path, every problem, in file order)
+    end
+  end
+end
+
+note right of PL
+  Each broken rule adds a problem with its
+  location, and checking goes on. At the end,
+  any problem means a Benchmark Error listing
+  them all, and no Benchmark (AC-002-08).
+end note
+note over CLI, Prep
+  Business rule: no model is called for a
+  benchmark that fails to load.
+end note
+@enduml

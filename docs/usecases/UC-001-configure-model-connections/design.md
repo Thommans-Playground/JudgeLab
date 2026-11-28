@@ -26,27 +26,17 @@
 
 Provider and Credential have no class of their own. A provider is a registry key, and a credential is the name of a variable. Classes would add names without adding rules; the rules (a known provider, a variable name and not a key) are checked where the strings are used.
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [UC-001 design classes](diagrams/design-classes.puml)
+The notes on `OpenAIConnector` and `AnthropicConnector` hold each provider's mapping: same port, different provider shape. For Claude, instructions go in the `system` field, `max_tokens` is required, a refusal is a stop reason, and only `text` blocks count as the answer.
 
-## 3. Design sequences
+Diagram: [UC-001-design-class](diagrams/UC-001-design-class.puml)
 
-**Main success scenario, steps 5 and 6.** One prompt through the OpenAI-compatible connector, answered or refused (extension 6a):
+## 3. Design sequence diagram
 
-Diagram: [UC-001 design sequence](diagrams/design-sequence.puml)
+The whole use case in one diagram, for one profile (`judge`). Steps 1 to 4: a YAML profile becomes a `ConnectionProfile`, is validated, and `create_connector` picks the class from the registry; the adapter resolves its key through `read_secret`. Every error there happens before anything is sent. Steps 5 and 6: one prompt through the adapter, answered or refused (extension 6a). The adapter is drawn as one generic `ModelConnector` participant, either `OpenAIConnector` or `AnthropicConnector`. Extensions 2a, 3a, 3b and 4a, and 5a and 6b, are branches: an SDK exception becomes a `ConnectorError` subclass through `translate_error`, and an untrustworthy reply becomes a `ConnectorResponseError`.
 
-**Steps 1 to 4, and extensions 2a, 3a, 3b and 4a.** A YAML profile becomes a `ConnectionProfile`, is validated, and `create_connector` picks the class from the registry; the adapter resolves its key through `read_secret`. Every error happens before anything is sent:
-
-Diagram: [UC-001 design sequence, profile to connector](diagrams/design-sequence-profile.puml)
-
-**Extensions 5a and 6b.** An SDK exception becomes a `ConnectorError` subclass through `translate_error`, and an untrustworthy reply becomes a `ConnectorResponseError`:
-
-Diagram: [UC-001 design sequence, error translation](diagrams/design-sequence-error-translation.puml)
-
-**Steps 5 and 6 through the Claude connector.** Same port, different provider shape: instructions go in the `system` field, `max_tokens` is required, a refusal is a stop reason, and only `text` blocks count as the answer:
-
-Diagram: [UC-001 design sequence, Claude connector](diagrams/design-sequence-claude.puml)
+Diagram: [UC-001-design-sequence](diagrams/UC-001-design-sequence.puml)
 
 ## 4. Patterns and principles
 
@@ -93,16 +83,12 @@ Diagram: [UC-001 design sequence, Claude connector](diagrams/design-sequence-cla
 
 ## 7. Checking the design against the code (as-built)
 
-Generate the as-built sequences from tests that exercise this design, and compare them with section 3. The first covers steps 1 to 4 (registry, adapter, `read_secret`) for both providers; the second covers steps 5 and 6:
+Generate the as-built sequence from a test that exercises this design, and compare it with the design sequence diagram. This test covers steps 1 to 4 (registry, adapter, `read_secret`) for both providers; `tests/connectors/test_openai_connector.py::test_returns_answer_and_metadata` covers steps 5 and 6:
 
 ```bash
 uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
   "tests/connectors/test_registry.py::test_target_and_judge_switch_independently" \
-  -o docs/usecases/UC-001-configure-model-connections/diagrams/as-built/sequence-profile.puml
-
-uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
-  "tests/connectors/test_openai_connector.py::test_returns_answer_and_metadata" \
-  -o docs/usecases/UC-001-configure-model-connections/diagrams/as-built/sequence.puml
+  -o docs/usecases/UC-001-configure-model-connections/diagrams/as-built/UC-001-asbuilt-sequence.puml
 ```
 
 A difference is either design drift (update this page and say why) or a code bug (fix the code). See [ADR-002](../../decisions/ADR-002.md).

@@ -1,0 +1,63 @@
+@startuml UC-006-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-006 Run complete evaluation: analysis sequence diagram
+
+actor Developer
+boundary "Command Line" as CLI
+control "Run Evaluation" as Run
+boundary "Config File" as CF
+entity "Evaluation Run" as ER
+entity "Case Result" as CR
+boundary "Model Interface" as MI
+actor "Target model" as TM
+actor "Judge model" as JM
+boundary "Report Store" as RS
+
+Developer -> CLI : run(config file, output directory?)
+opt 1c: no --config
+  CLI --> Developer : usage message, exit code 2
+end
+CLI -> Run : run(config file, output directory?)
+Run -> CF : read config
+CF --> Run : evaluation config (profiles, dataset, rubric id, output)
+Run -> Run : load benchmark, look up rubric,\nopen target and judge connections (UC-001, UC-002)
+alt 1a: the setup is invalid (config, benchmark, rubric, connection, key)
+  Run -> CLI : error
+  CLI --> Developer : "error: ..." on stderr, exit code 1
+  note right of CLI
+    No model called, no report written,
+    no traceback, no pasted key echoed.
+  end note
+else the setup is valid
+  Run -> CLI : show benchmark, target, judge and rubric
+  CLI --> Developer : benchmark name and size, target, judge and rubric
+  Run -> ER : start(now)
+  loop each test case, in order
+    Run -> MI : ask the target the question (UC-003)
+    MI -> TM : question
+    TM --> MI : answer, refusal or error
+    MI --> Run : answer, refusal or error
+    opt 3a: the answer can be trusted (not failed, not cut off)
+      Run -> MI : ask the judge for a verdict (UC-004),\na refusal marked [refused]
+      MI -> JM : judge request
+      JM --> MI : verdict, or error or unusable reply
+      MI --> Run : verdict, or error
+    end
+    Run -> CR : create(case, outcome = verdict, evidence)
+    Run -> CLI : show progress line (case evaluated)
+    CLI --> Developer : progress line "[i/n] id: OUTCOME"
+  end
+  Run -> ER : finish(now)
+  Run -> Run : summarise and build the report (UC-005)
+  Run -> RS : write report
+  RS --> Run : report path
+  Run -> CLI : show totals, pass rate with coverage, report path
+  CLI --> Developer : totals, pass rate with coverage,\nreport path, exit code 0
+end
+
+note right of MI
+  Extensions 3a, 4a: a failed or cut-off answer is not judged;
+  a judge failure is ERROR at the judge stage, never FAIL.
+  An auth or quota failure stops the rest of that stage.
+end note
+@enduml

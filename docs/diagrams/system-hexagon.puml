@@ -1,0 +1,53 @@
+@startuml system-hexagon
+!include style.iuml
+title JudgeLab v0.1: ports and adapters (ADR-001)
+
+package "Driving side" {
+  component "CLI\n(cli.main, run_command)\ncomposition root" as CLI
+  component "Config loader\n(config.load_config)" as CFG
+}
+
+package "Core" {
+  component "Benchmark\n(Benchmark, TestCase)" as BM
+  component "Runner\n(run_target, evaluate)" as RUN
+  component "Judge\n(Judge, Rubric, Verdict)" as JDG
+  component "Scoring\n(Outcome, CaseResult, Summary)" as SC
+  component "Report builder\n(RunInfo, build_report)" as RB
+  interface "ModelConnector\n(driven port)" as PORT
+}
+
+package "Driven side" {
+  component "OpenAIConnector" as OA
+  component "AnthropicConnector" as AN
+  component "FakeConnector\n(tests)" as FK
+  component "create_connector\n(registry)" as REG
+}
+
+package "Edge I/O without a port (v0.1)" {
+  component "load_benchmark\n(JSON file)" as LB
+  component "write_report\n(JSON file)" as WR
+  component "read_secret\n(environment)" as RS
+  component "utc_now\n(clock)" as CLK
+}
+
+CLI --> CFG
+CLI --> REG : connector_factory
+CLI --> LB
+CLI --> RUN
+CLI --> SC
+CLI --> RB
+CLI --> WR
+CLI --> CLK
+LB --> BM
+RUN --> JDG
+RUN --> SC
+RUN --> PORT
+JDG --> PORT
+OA ..> PORT : implements
+AN ..> PORT : implements
+FK ..> PORT : implements
+REG --> OA : creates
+REG --> AN : creates
+OA --> RS
+AN --> RS
+@enduml

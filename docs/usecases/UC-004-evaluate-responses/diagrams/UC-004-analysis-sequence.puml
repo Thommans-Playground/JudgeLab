@@ -1,0 +1,46 @@
+@startuml UC-004-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-004 Evaluate responses: analysis sequence diagram
+
+control "Evaluate Response" as Eval
+entity "Test Case" as TC
+entity "Rubric" as R
+entity "Judge Request" as JR
+boundary "Judge Model Interface" as JMI
+actor "Judge model" as JM
+entity "Judge Evaluation" as JE
+
+note over Eval
+  Starts inside a run (UC-006), once the
+  target has answered a case (UC-003).
+end note
+
+[-> Eval : evaluate(test case, actual answer)
+Eval -> TC : get question, expected answer
+Eval -> R : get instructions
+Eval -> JR : build(instructions + output format,\nquestion, expected, actual in tags)
+Eval -> JMI : send(judge request)
+JMI -> JM : judge request
+alt main success scenario
+  JM --> JMI : verdict, justification
+  JMI --> Eval : reply
+  Eval -> Eval : validate reply\n(verdict is PASS or FAIL,\njustification not empty)
+  Eval -> JE : create(verdict, justification,\nrubric id, judge identity)
+  [<-- Eval : judge evaluation
+else 2a: judge unreachable, key rejected, out of credit
+  JMI --> Eval : failure
+  [<-- Eval : ERROR (stage judge, reason)
+else 3a: judge refuses, or its reply is cut off
+  JMI --> Eval : refusal or cut-off reply
+  [<-- Eval : ERROR (stage judge, reason)
+else 4a: reply unreadable, no verdict, no justification
+  JMI --> Eval : reply
+  Eval -> Eval : validate reply fails
+  [<-- Eval : ERROR (stage judge, reason)
+end
+
+note right of JE
+  Business rule: a judgement that cannot be
+  trusted is an ERROR, never a FAIL (AC-004-03).
+end note
+@enduml

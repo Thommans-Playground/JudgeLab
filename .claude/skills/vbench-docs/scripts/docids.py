@@ -407,7 +407,7 @@ def cmd_new(d: Docs, a):
         # OOAD realisation: analysis and design pages, and their PlantUML diagrams
         sources = [(f"uc-{part}.md", f"{part}.md") for part in ("analysis", "design")]
         sources += [
-            (f"diagrams/{p.name}", f"diagrams/{p.name}")
+            (f"diagrams/{p.name}", f"diagrams/{new_id}-{p.name}")
             for p in sorted((TEMPLATES / "diagrams").glob("*.puml"))
         ]
         for source, dest in sources:
@@ -623,10 +623,31 @@ def cmd_check(d: Docs, a) -> int:
         if kind_of(i) in TRACED_KINDS and i not in traced:
             warnings.append(f"{i} is not in docs/{TRACEABILITY}")
 
-    # 9. PlantUML diagrams: well formed, and their includes resolve
+    # 9. PlantUML diagrams: well formed, includes resolve, standard names. A use case has
+    #    exactly four: UC-UUU-{analysis,design}-{class,sequence}.puml (+ generated as-built ones).
+    kinds = [f"{v}-{k}" for v in ("analysis", "design") for k in ("class", "sequence")]
+    for folder in sorted(d.docs.glob("usecases/UC-*/diagrams")):
+        uc = folder.parent.name[:6]
+        names = {p.stem for p in folder.glob("*.puml")}
+        for stem in sorted(names - {f"{uc}-{k}" for k in kinds}):
+            errors.append(
+                f"{d.rel(folder)}/{stem}.puml: use-case diagrams are named "
+                f"{uc}-<analysis|design>-<class|sequence>.puml"
+            )
+        for kind in kinds:
+            if f"{uc}-{kind}" not in names:
+                errors.append(f"{d.rel(folder)}: missing {uc}-{kind}.puml")
+        for p in sorted((folder / "as-built").glob("*.puml")):
+            if p.stem not in (f"{uc}-asbuilt-class", f"{uc}-asbuilt-sequence"):
+                errors.append(
+                    f"{d.rel(p)}: as-built diagrams are named {uc}-asbuilt-<class|sequence>.puml"
+                )
     for puml in sorted(d.docs.rglob("*.puml")):
         text = puml.read_text(encoding="utf-8")
         where = d.rel(puml)
+        name = re.search(r"^\s*@startuml[ \t]+(\S+)", text, re.M)
+        if not name or name.group(1) != puml.stem:
+            errors.append(f"{where}: @startuml must be followed by the file name, {puml.stem}")
         starts = len(re.findall(r"^\s*@startuml\b", text, re.M))
         ends = len(re.findall(r"^\s*@enduml\b", text, re.M))
         if starts != 1 or ends != 1:

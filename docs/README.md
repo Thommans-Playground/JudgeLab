@@ -31,11 +31,11 @@ IDs are permanent: never renumber or reuse one; retire items by status instead. 
 
 ## Diagrams
 
-UML diagrams are PlantUML sources (`.puml`), linked from the pages that explain them ([ADR-002](decisions/ADR-002.md)). Read them with a PlantUML preview, e.g. the VS Code PlantUML extension (Alt+D). `docids.py check` verifies that each one is well formed and that its `!include` resolves. To export SVGs (optional, needs PlantUML installed), run `python3 .claude/skills/vbench-docs/scripts/render_diagrams.py`.
+UML diagrams are PlantUML sources (`.puml`), linked from the pages that explain them ([ADR-002](decisions/ADR-002.md)). Read them with a PlantUML preview, e.g. the VS Code PlantUML extension (Alt+D). Each use case has exactly four, named after it: `UC-UUU-analysis-class.puml`, `UC-UUU-analysis-sequence.puml`, `UC-UUU-design-class.puml` and `UC-UUU-design-sequence.puml`; system-level ones in `diagrams/` are `system-<view>.puml`. `docids.py check` enforces the names and verifies that each diagram is well formed and its `!include` resolves. To export SVGs (optional, needs PlantUML installed), run `python3 .claude/skills/vbench-docs/scripts/render_diagrams.py`.
 
 To compare a design with the code, generate as-built diagrams from a traced test or from the modules:
 
 ```bash
-uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence "tests/test_judge.py::<test>" -o <uc>/diagrams/as-built/sequence.puml
-uv run python .claude/skills/vbench-docs/scripts/asbuilt.py classes judgelab.judge -o <uc>/diagrams/as-built/classes.puml
+uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence "tests/test_judge.py::<test>" -o <uc>/diagrams/as-built/UC-UUU-asbuilt-sequence.puml
+uv run python .claude/skills/vbench-docs/scripts/asbuilt.py classes judgelab.judge -o <uc>/diagrams/as-built/UC-UUU-asbuilt-class.puml
 ```

@@ -1,0 +1,56 @@
+@startuml UC-003-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-003 Execute target model: analysis sequence diagram
+
+actor Developer
+boundary "Progress Listener" as PLis
+control "Execute Target" as Exec
+entity "Benchmark" as B
+entity "Target Result" as TR
+boundary "Target Model Interface" as TMI
+actor "Target model" as TM
+
+note over Exec
+  Triggered inside a run (UC-006), with a loaded
+  benchmark (UC-002) and a target connection (UC-001).
+end note
+
+[-> Exec : execute(benchmark, target)
+Exec -> B : get test cases, in order
+B --> Exec : test cases
+loop for each test case, in benchmark order
+  alt the run has not been stopped
+    Exec -> TMI : send(question), once
+    TMI -> TM : question
+    alt main success scenario: the target replies (3a: also a refusal or a cut-off answer)
+      TM --> TMI : model response
+      TMI --> Exec : model response
+      Exec -> TR : create(test case, model response)
+    else 2a: a connector error (unavailable, rate limit, ...)
+      TM --> TMI : error
+      TMI --> Exec : connector error
+      Exec -> TR : create(test case, connector error)
+      Exec -> Exec : carry on with the next case
+    else 2b: an auth or quota error
+      TM --> TMI : error
+      TMI --> Exec : connector error
+      Exec -> TR : create(test case, connector error)
+      Exec -> Exec : stop the run (set the stop reason)
+    else 2c: anything else fails (a bug in the target code)
+      TMI --> Exec : unexpected failure
+      [<-- Exec : the bug escapes unchanged;\nno results are returned
+    end
+  else the run was stopped by an earlier case
+    Exec -> TR : create(test case, error "not sent: run\nstopped after ... on case ...")
+  end
+  Exec -> PLis : case executed(target result)
+  PLis -> Developer : progress
+end
+[<-- Exec : target results, one per case,\nin benchmark order (judged in UC-004)
+
+note right of TR
+  Exactly one of model response and connector
+  error is present. A refusal or cut-off answer
+  is still a model response (3a).
+end note
+@enduml

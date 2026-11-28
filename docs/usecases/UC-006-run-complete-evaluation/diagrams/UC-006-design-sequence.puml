@@ -1,0 +1,111 @@
+@startuml UC-006-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-006 Run complete evaluation: design sequence diagram
+
+actor "Developer or test" as Dev
+participant "cli.main()" as Main
+participant "cli.run_command()" as Run
+participant "config.load_config()" as Config
+participant "connector_factory" as Factory
+participant "target:ModelConnector" as Target
+participant "judge_connector:ModelConnector" as JudgeConn
+participant ":Judge" as Judge
+participant "runner.evaluate()" as Eval
+participant "show_progress()" as Progress
+participant "judgelab.report" as Report
+
+group composition root: how main is called
+  alt production: the judgelab console script
+    Dev -> Main : judgelab run --config evaluation.yaml\n(main())
+    note right of Main
+      connector_factory defaults to
+      create_connector (registry CONNECTORS)
+    end note
+  else test: tests/test_cli.py
+    Dev -> Main : main(["run", "--config", path],\nconnector_factory=fake_factory)
+    note right of Main
+      fake_factory returns FakeConnector:
+      no network, no keys
+    end note
+  end
+end
+Main -> Main : argparse: parse_args(argv)
+opt 1c: --config is missing
+  Main --> Dev : argparse prints usage, raises SystemExit(2)
+end
+Main -> Run : run_command(args.config, args.output_dir, connector_factory)
+activate Run
+
+group setup: one try block; each step is reached only if the steps before it succeeded
+  Run -> Config : load_config(config_path)
+  Config --> Run : EvaluationConfig(target, judge, dataset, rubric, output_dir)
+  Run -> Run : benchmark = load_benchmark(config.dataset)\nrubric = get_rubric(config.rubric)
+  Run -> Factory : connector_factory(config.target)
+  Factory -> Target ** : OpenAIConnector(model, api_key_env, base_url,\ntimeout_s, max_retries, **options), or FakeConnector
+  Factory --> Run : target : ModelConnector
+  Run -> Factory : connector_factory(config.judge)
+  Factory -> JudgeConn ** : AnthropicConnector(...), or FakeConnector
+  Factory --> Run : judge_connector : ModelConnector
+end
+
+alt 1a: the run cannot start (a setup step raised)
+  note over Run, Factory
+    load_config raises ConfigError("config file not found: ...",
+    "... is not valid YAML (line 1, column 15)", "unknown section(s) extras",
+    "unknown setting(s) modle", "must name an environment variable", ...);
+    a ProfileError is re-raised as ConfigError.
+    load_benchmark raises BenchmarkError(path, problems).
+    get_rubric raises JudgeError("unknown rubric 'strict'; known: ...").
+    connector_factory raises ConnectorAuthError("environment variable
+    TARGET_KEY is not set"), or ProfileError(unknown provider,
+    unsupported option).
+  end note
+  Run -> Run : except (ConfigError, ProfileError, BenchmarkError,\nJudgeError, ConnectorError) as e
+  Run --> Dev : stderr: "error: {e}"
+  Run --> Main : 1
+  Main --> Dev : exit code 1
+  note right of Run
+    Business rule: setup problems are found before the first model call.
+    evaluate(), utc_now() and write_report() are never reached:
+    no model is called and no report is written (AC-006-06).
+  end note
+else main success scenario: setup succeeded
+  Run --> Dev : "Running 'General knowledge (sample)': 5 cases",\n"  target: ...", "  judge:  ... (rubric semantic_correctness)"
+  Run -> Report : utc_now()
+  Report --> Run : started
+  Run -> Judge ** : Judge(judge_connector, rubric)
+  Run -> Eval : evaluate(benchmark, target, judge, on_result=show_progress)
+  activate Eval
+  Eval -> Target : run_target(benchmark, target): generate(case.question)\nfor every question, in order (UC-003)
+  loop each TargetResult, in order
+    Eval -> Eval : _judge(answered, judge, judge_stopped_by) (UC-004)
+    Eval -> Judge : evaluate(case, actual_answer)
+    Judge -> JudgeConn : generate(prompt, instructions=...)
+    Eval -> Progress : on_result(CaseResult): the CaseEvaluated event
+    Progress --> Dev : "[1/5] gk-001: PASS"
+  end
+  Eval --> Run : results : list[CaseResult]
+  deactivate Eval
+  Run -> Report : utc_now()
+  Report --> Run : finished
+  Run -> Run : summary = summarise(results)\nrun = RunInfo(benchmark, rubric.id, target,\njudge_connector, started, finished)
+  Run -> Report : write_report(build_report(run, results, summary),\noutput_dir or config.output_dir) (UC-005)
+  Report --> Run : path
+  Run --> Dev : print_summary(summary): "Passed: 1  Failed: 4  Errors: 0  (of 5)",\n"Pass rate: 20.0% of 5 evaluated  Coverage: 100.0%"
+  Run --> Dev : "Report: reports/run-...json"
+  Run --> Main : 0
+  Main --> Dev : exit code 0
+end
+deactivate Run
+
+note over Eval
+  All target calls finish before the first
+  judge call, so progress lines appear only
+  after the target stage is over.
+end note
+note over Judge
+  Dependency injection: run_command builds every object and
+  hands each one its collaborators. runner and Judge see only
+  the ModelConnector port, never a concrete adapter.
+end note
+@enduml

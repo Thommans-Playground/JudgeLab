@@ -24,19 +24,15 @@
 
 The Judge Request has no class of its own. It's two strings, the instructions and the prompt, that exist only for one call. Giving it a class would add a name without adding a rule.
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [UC-004 design classes](diagrams/design-classes.puml)
+Diagram: [UC-004-design-class](diagrams/UC-004-design-class.puml)
 
-## 3. Design sequences
+## 3. Design sequence diagram
 
-**Main success scenario.** One answer, judged PASS:
+The main success scenario, one answer judged PASS, with extensions 2a, 3a and 4a as `alt` branches. Every extension ends in a `JudgeError`, which the runner records as ERROR with `error_stage="judge"`.
 
-Diagram: [UC-004 design sequence](diagrams/design-sequence.puml)
-
-**Extensions 2a, 3a and 4a.** No trustworthy verdict. Every path ends in a `JudgeError`, which the runner records as ERROR with `error_stage="judge"`:
-
-Diagram: [UC-004 design sequence, error paths](diagrams/design-sequence-error.puml)
+Diagram: [UC-004-design-sequence](diagrams/UC-004-design-sequence.puml)
 
 ## 4. Patterns and principles
 
@@ -65,11 +61,11 @@ Diagram: [UC-004 design sequence, error paths](diagrams/design-sequence-error.pu
 
 ## 7. Checking the design against the code (as-built)
 
-Generate the as-built sequence from a test that exercises this design, and compare it with section 3:
+Generate the as-built sequence from a test that exercises this design, and compare it with the design sequence diagram:
 
 ```bash
 uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
-  "tests/test_judge.py::<test name>" -o docs/usecases/UC-004-evaluate-responses/diagrams/as-built/sequence.puml
+  "tests/test_judge.py::<test name>" -o docs/usecases/UC-004-evaluate-responses/diagrams/as-built/UC-004-asbuilt-sequence.puml
 ```
 
 A difference is either design drift (update this page and say why) or a code bug (fix the code). See [ADR-002](../../decisions/ADR-002.md).

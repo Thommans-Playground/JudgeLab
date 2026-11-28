@@ -59,8 +59,8 @@ Defined as Gherkin scenarios in [UC-006.feature](UC-006.feature): one Scenario p
 
 ## Analysis and design
 
-- [Analysis](analysis.md): system sequence diagram, analysis classes (boundary, control, entity) and the analysis sequence, in problem terms.
-- [Design](design.md): design classes and sequences in code terms, the patterns used, and how to check the code against them (as-built).
+- [Analysis](analysis.md): analysis class and sequence diagrams (boundary, control, entity), in problem terms.
+- [Design](design.md): design class and sequence diagrams in code terms, the patterns used, and how to check the code against them (as-built).
 
 ## Slices
 

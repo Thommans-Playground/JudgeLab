@@ -1,0 +1,50 @@
+@startuml UC-004-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-004 Evaluate responses: design sequence diagram
+
+participant "runner._judge()" as Runner
+participant ":Judge" as Judge
+participant "judge.build_judge_prompt()" as Build
+participant "connector:ModelConnector" as Conn
+participant "judge.parse_verdict()" as Parse
+
+Runner -> Judge : evaluate(case, actual_answer)
+activate Judge
+Judge -> Build : build_judge_prompt(case, actual_answer)
+Build --> Judge : prompt (question, expected_answer,\nactual_answer in tags)
+Judge -> Conn : generate(prompt, instructions=self.instructions)
+note right of Conn
+  The adapter sends instructions its own way:
+  OpenAI "system" message, Claude "system" field,
+  Fake records them (AC-004-06).
+end note
+alt main success scenario
+  Conn --> Judge : ModelResponse(text, served_model, ...)
+  Judge -> Parse : parse_verdict(response.text)
+  Parse --> Judge : (Verdict.PASS, justification)
+  Judge --> Runner : JudgeEvaluation(verdict, justification,\nrubric.id, response)
+  Runner -> Runner : CaseResult(case, Outcome(verdict), target, judgement)
+else 2a: the call fails
+  Conn --> Judge : raises ConnectorError (auth, quota, unavailable, ...)
+  Judge --> Runner : raises JudgeError("judge call failed: ...") from it
+else 3a: refusal or cut off
+  Conn --> Judge : ModelResponse(text=None) or (truncated=True)
+  Judge --> Runner : raises JudgeError("judge model refused to evaluate"\nor "judge reply was cut off by its length limit")
+else 4a: unreadable reply
+  Conn --> Judge : ModelResponse(text="I think it's fine")
+  Judge -> Parse : parse_verdict(text)
+  Parse --> Judge : raises JudgeError("judge reply is not valid JSON")
+  Judge --> Runner : JudgeError propagates
+end
+deactivate Judge
+
+opt a JudgeError was raised (2a, 3a, 4a)
+  Runner -> Runner : CaseResult(case, Outcome.ERROR, target,\nerror_stage="judge", error=str(e))
+  opt its cause was ConnectorAuthError or ConnectorQuotaError
+    Runner -> Runner : judge_stopped_by is set: later cases are\nERROR "not judged: judging stopped after ..."
+  end
+end
+note over Runner
+  Never FAIL without a verdict (AC-004-03).
+end note
+@enduml

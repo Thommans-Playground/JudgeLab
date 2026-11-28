@@ -24,19 +24,15 @@
 
 The stop reason has no class. It is a local `stopped_by: tuple[str, ConnectorError] | None` in `run_target`, which lives for one call. Which errors stop the run is data: the tuple `STOP_THE_RUN = (ConnectorAuthError, ConnectorQuotaError)`, shared with `evaluate`'s stop-judging rule.
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [UC-003 design classes](diagrams/design-classes.puml)
+Diagram: [UC-003-design-class](diagrams/UC-003-design-class.puml)
 
-## 3. Design sequences
+## 3. Design sequence diagram
 
-**Main success scenario.** Each case answered, each result emitted as a CaseExecuted event through the `on_target` callback:
+The main success scenario, each case answered and each result emitted as a CaseExecuted event through the `on_target` callback, with extensions 2a, 2b and 2c as `alt` branches. A connector error is recorded and the run goes on; an auth or quota error (`STOP_THE_RUN`) also sets `stopped_by`, so later cases are recorded as "not sent" without a call; any other exception escapes.
 
-Diagram: [UC-003 design sequence](diagrams/design-sequence.puml)
-
-**Extensions 2a, 2b and 2c.** A connector error is recorded and the run goes on; an auth or quota error (`STOP_THE_RUN`) also stops it, so later cases are recorded as "not sent" without a call; any other exception escapes:
-
-Diagram: [UC-003 design sequence, call failures and stopping](diagrams/design-sequence-stop.puml)
+Diagram: [UC-003-design-sequence](diagrams/UC-003-design-sequence.puml)
 
 ## 4. Patterns and principles
 
@@ -76,13 +72,13 @@ Diagram: [UC-003 design sequence, call failures and stopping](diagrams/design-se
 
 ## 7. Checking the design against the code (as-built)
 
-Generate the as-built sequence from a test that exercises this design, and compare it with section 3:
+Generate the as-built sequence from a test that exercises this design, and compare it with the design sequence diagram:
 
 ```bash
 uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
-  "tests/test_runner.py::test_each_question_is_sent_once_in_order" -o docs/usecases/UC-003-execute-target-model/diagrams/as-built/sequence.puml
+  "tests/test_runner.py::test_each_question_is_sent_once_in_order" -o docs/usecases/UC-003-execute-target-model/diagrams/as-built/UC-003-asbuilt-sequence.puml
 ```
 
-For the stop extension, trace `tests/test_runner.py::test_auth_and_quota_errors_stop_the_run`.
+For the stop branches, trace `tests/test_runner.py::test_auth_and_quota_errors_stop_the_run`.
 
 A difference is either design drift (update this page and say why) or a code bug (fix the code). See [ADR-002](../../decisions/ADR-002.md).

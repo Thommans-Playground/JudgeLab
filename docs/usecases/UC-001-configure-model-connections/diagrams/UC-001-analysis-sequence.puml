@@ -1,0 +1,81 @@
+@startuml UC-001-analysis-sequence
+!include ../../../diagrams/style.iuml
+title UC-001 Configure model connections: analysis sequence diagram
+
+actor Developer
+boundary "Configuration Interface" as CI
+control "Configure Connection" as Conf
+entity "Connection Profile" as CP
+boundary "Environment Interface" as EI
+control "Call Model" as Call
+boundary "Provider Interface" as PI
+actor "Model provider" as MP
+entity "Model Response" as MR
+entity "Connector Error" as CE
+
+note over Developer, CI
+  Triggered by a run (UC-006), or by a test
+  that builds a connector directly.
+end note
+
+Developer -> CI : configure connections(target profile, judge profile)
+loop for each profile (target, judge)
+  CI -> Conf : settings for "target" (then "judge")
+  Conf -> CP : create(name, provider, model, key variable,\nbase URL, timeout, retries, options)
+  CP -> CP : validate profile: every setting,\ncollect every problem
+  opt 2a: a setting is missing, blank, unknown or out of range
+    CP --> Conf : every problem, at once
+    Conf --> Developer : profile error "connection 'target': ..." listing every problem
+  end
+  Conf -> Conf : choose connector(provider), with the profile's options
+  opt 3a, 3b: unknown provider, or an option the connector does not accept
+    Conf --> Developer : profile error listing the known providers,\nor naming the provider and the unsupported option
+  end
+  Conf -> EI : resolve credential: read variable(key variable name)
+  alt the key is set
+    EI --> Conf : key, trimmed
+    Conf -> Call : configure(model, key, base URL,\ntimeout, retries, options)
+  else 4a: the key variable is missing, empty or only whitespace
+    EI --> Conf : nothing
+    Conf --> Developer : auth error naming the variable, never its value
+  end
+end
+Conf --> Developer : a connector for the target and one for the judge
+note right of Conf
+  Every error happens before
+  anything is sent.
+end note
+
+== later, for each prompt (UC-003, UC-004) ==
+
+[-> Call : call(prompt, instructions)
+Call -> PI : one request, instructions\nin the provider's own way
+PI -> MP : model request(prompt, instructions, model)
+alt the model answers
+  MP --> PI : answer, served model, usage, request id
+  PI --> Call : answer, served model,\nfinish reason, usage, request id
+  Call -> MR : record response(text, requested and served model,\nfinish reason, truncated, token counts, request id)
+  [<-- Call : model response
+else 6a: the model refuses
+  MP --> PI : refusal
+  PI --> Call : refusal, served model, finish reason, usage, request id
+  Call -> MR : record response(refusal, ...)
+  [<-- Call : model response (a refusal is not an error)
+else 5a: the provider rejects the request, or cannot be reached
+  MP --> PI : HTTP error or timeout
+  PI --> Call : failure
+  Call -> CE : raise connector error(kind: auth, quota, rate limit,\nunavailable or request; HTTP status, request id)
+  [<-- Call : connector error
+else 6b: the reply cannot be trusted
+  MP --> PI : unusable reply (not a completion, no choices,\nneither an answer nor a refusal)
+  PI --> Call : reply
+  Call -> CE : raise connector error(kind: response)
+  [<-- Call : connector error
+end
+
+note right of CE
+  Business rule: a failure is always a Connector
+  Error of a known kind, with no secret (AC-001-06,
+  AC-001-08). A refusal is a Model Response (AC-001-04).
+end note
+@enduml

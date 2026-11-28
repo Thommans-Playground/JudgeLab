@@ -9,33 +9,21 @@
 | Bounded context | [Benchmark](../../domain/benchmark/README.md) |
 | Ontology | [Benchmark](../../ontology/benchmark.md), [TestCase](../../ontology/test-case.md) |
 
-## 1. System sequence diagram
-
-The system is a black box. The diagram shows only what crosses its boundary: a path going in, and a benchmark or an error listing every problem coming back. It is the main success scenario and its extensions, drawn.
-
-Diagram: [UC-002 system sequence diagram](diagrams/ssd.puml)
-
-**System operations** found here:
-
-| Operation | Responsibility | Postcondition |
-|---|---|---|
-| load benchmark(path) | Read, parse and check a benchmark file, and build the benchmark from it | A benchmark exists with at least one case, unique case ids and no blank fields, cases in file order (AC-002-01, AC-002-03) |
-| error(path, problems) | Reject a file that can't be trusted, saying every reason at once | No benchmark exists; the error names the file and lists every problem with its location, in file order (AC-002-02, AC-002-04 to AC-002-08) |
-
-## 2. Analysis classes
+## 1. Analysis class diagram
 
 Found by reading the use case's nouns and splitting them by role:
 
-- **Boundary:** where the system meets something outside it. Here, the benchmark file.
+- **Boundary:** where the system meets something outside it. Here, the developer's command line and the benchmark file.
 - **Control:** the use case's logic, the steps of the main flow. One per use case is typical.
 - **Entity:** information the problem cares about, which outlives one step.
 
 The Benchmark is an **aggregate**: it and its test cases are created together, checked together and only ever used as a whole. The Benchmark is its root, and its invariants are the rules a file must pass.
 
-Diagram: [UC-002 analysis classes](diagrams/analysis-classes.puml)
+Diagram: [UC-002-analysis-class](diagrams/UC-002-analysis-class.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
+| Command Line | Boundary | "the developer names a benchmark file" (via UC-006) | — |
 | Benchmark File Reader | Boundary | "reads the file at the given path" | — |
 | Prepare Benchmark | Control | the main success scenario, steps 1 to 5 | Benchmark (the loader) |
 | Benchmark | Entity, aggregate root | "returns the benchmark: its id, its name and its test cases" | Benchmark |
@@ -56,13 +44,20 @@ Diagram: [UC-002 analysis classes](diagrams/analysis-classes.puml)
 
 A Test Case's identity is its id *within its Benchmark*. Two benchmarks may both have a case "c1"; one benchmark may not.
 
-## 3. Analysis sequence
+## 2. Analysis sequence diagram
 
-How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundary talks to the outside.
+How the analysis objects work together to deliver the use case: the main success scenario, with each extension as an `alt` branch. The control object drives the work, entities hold the information, and only the boundary talks to the outside. The external actors appear beside the boundaries they talk to.
 
-Diagram: [UC-002 analysis sequence](diagrams/analysis-sequence.puml)
+Diagram: [UC-002-analysis-sequence](diagrams/UC-002-analysis-sequence.puml)
 
-## 4. Rules the design must keep
+**System operations** (what crosses the system boundary):
+
+| Operation | Responsibility | Postcondition |
+|---|---|---|
+| load benchmark(path) | Read, parse and check a benchmark file, and build the benchmark from it | A benchmark exists with at least one case, unique case ids and no blank fields, cases in file order (AC-002-01, AC-002-03) |
+| error(path, problems) | Reject a file that can't be trusted, saying every reason at once | No benchmark exists; the error names the file and lists every problem with its location, in file order (AC-002-02, AC-002-04 to AC-002-08) |
+
+## 3. Rules the design must keep
 
 These come from the use case's business rules and its scenarios. The design is checked against them.
 

@@ -9,24 +9,7 @@
 | Bounded context | [Evaluation](../../domain/evaluation/README.md), using [Model Access](../../domain/model-access/README.md) and [Benchmark](../../domain/benchmark/README.md) |
 | Ontology | [Benchmark](../../ontology/benchmark.md), [TestCase](../../ontology/test-case.md), [TargetModel](../../ontology/target-model.md), [ModelResponse](../../ontology/model-response.md), [Refusal](../../ontology/refusal.md), [ConnectorError](../../ontology/connector-error.md) |
 
-## 1. System sequence diagram
-
-The system is a black box. The diagram shows only what crosses its boundary: each question going out to the target, an answer or an error coming back, and progress going to the developer. It is the main success scenario and its extensions, drawn.
-
-Diagram: [UC-003 system sequence diagram](diagrams/ssd.puml)
-
-**System operations** found here:
-
-| Operation | Responsibility | Postcondition |
-|---|---|---|
-| question (out) | Ask the target model one benchmark question, once | The target has received the question exactly once (AC-003-01) |
-| record result | Keep what came back against its case: a model response or a connector error | The case has exactly one Target Result (AC-003-01, AC-003-02) |
-| stop the run | After an auth or quota error, send nothing more | Every later case has a result with no response and the error "not sent: run stopped after … on case …" (AC-003-03) |
-| case executed (progress) | Tell whoever is listening that a case has its result | The listener has heard about every case, in order (AC-003-04) |
-
-A bug in the target code (extension 2c) is not a system operation. It leaves the system unchanged and reaches the caller as it is (AC-003-05).
-
-## 2. Analysis classes
+## 1. Analysis class diagram
 
 Found by reading the use case's nouns and splitting them by role:
 
@@ -34,7 +17,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic, the steps of the main flow. One per use case is typical.
 - **Entity:** information the problem cares about, which outlives one step.
 
-Diagram: [UC-003 analysis classes](diagrams/analysis-classes.puml)
+Diagram: [UC-003-analysis-class](diagrams/UC-003-analysis-class.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -49,13 +32,24 @@ Diagram: [UC-003 analysis classes](diagrams/analysis-classes.puml)
 
 Each Target Result is a **CaseExecuted** event: a case was sent to the target (answered, refused or failed) or was not sent. The Progress Listener subscribes to it.
 
-## 3. Analysis sequence
+## 2. Analysis sequence diagram
 
-How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundaries talk to the outside.
+How the analysis objects work together to deliver the use case: the main success scenario, with each extension as an `alt` branch. The control object drives the work, entities hold the information, and only the boundaries talk to the outside. The external actors appear beside the boundaries they talk to.
 
-Diagram: [UC-003 analysis sequence](diagrams/analysis-sequence.puml)
+Diagram: [UC-003-analysis-sequence](diagrams/UC-003-analysis-sequence.puml)
 
-## 4. Rules the design must keep
+**System operations** (what crosses the system boundary):
+
+| Operation | Responsibility | Postcondition |
+|---|---|---|
+| question (out) | Ask the target model one benchmark question, once | The target has received the question exactly once (AC-003-01) |
+| record result | Keep what came back against its case: a model response or a connector error | The case has exactly one Target Result (AC-003-01, AC-003-02) |
+| stop the run | After an auth or quota error, send nothing more | Every later case has a result with no response and the error "not sent: run stopped after … on case …" (AC-003-03) |
+| case executed (progress) | Tell whoever is listening that a case has its result | The listener has heard about every case, in order (AC-003-04) |
+
+A bug in the target code (extension 2c) is not a system operation. It leaves the system unchanged and reaches the caller as it is (AC-003-05).
+
+## 3. Rules the design must keep
 
 These come from the use case's business rules and its scenarios. The design is checked against them.
 

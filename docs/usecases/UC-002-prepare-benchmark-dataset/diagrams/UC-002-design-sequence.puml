@@ -1,0 +1,85 @@
+@startuml UC-002-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-002 Prepare benchmark dataset: design sequence diagram
+
+participant "cli.run_command()" as Run
+participant "benchmark.load_benchmark()" as Load
+participant "path:Path" as File
+participant "json.loads()" as Json
+participant "benchmark._check_fields()" as Check
+participant "problems:list[str]" as PL
+participant "TestCase" as TC
+participant "Benchmark" as B
+
+Run -> Load : load_benchmark(config.dataset)
+activate Load
+Load -> File : read_text(encoding="utf-8")
+alt 1a: the file is missing
+  File --> Load : raises FileNotFoundError
+  Load --> Run : raises BenchmarkError(path, ["file not found"]) from None
+else the file reads
+  File --> Load : text
+  Load -> Json : loads(text)
+  alt 2a: the file is not JSON
+    Json --> Load : raises JSONDecodeError
+    Load --> Run : raises BenchmarkError(path,\n["not valid JSON (line L, column C)"]) from None
+  else 2b: the top level is not an object
+    Json --> Load : data (not a dict)
+    Load --> Run : raises BenchmarkError(path, ["the top level must be\nan object with id, name and cases"])
+  else the file parses to a dict: check everything, then decide
+    Json --> Load : data (dict)
+    Load -> Check : _check_fields(data, BENCHMARK_FIELDS,\n"benchmark", problems)
+    alt benchmark fields are valid
+      Check --> Load : True
+    else 3a: a benchmark field is missing, blank or unknown
+      Check -> PL : append("benchmark.id must be a non-empty string")
+      Check --> Load : False
+    end
+    Load -> Load : raw_cases = data["cases"]
+    opt 3b: cases missing, empty or not a list
+      Load -> PL : append("cases must be a non-empty list")
+    end
+    loop for index, raw in enumerate(raw_cases)
+      alt 4a: raw is not a dict
+        Load -> PL : append("cases[1] must be an object")
+      else 4b, 4c: a field is missing, blank or unknown
+        Load -> Check : _check_fields(raw, CASE_FIELDS,\n"cases[index]", problems)
+        Check -> PL : append unknown fields, then\nmissing or blank fields (sorted)
+        Check --> Load : False (case skipped: continue)
+      else the case is usable
+        Load -> Check : _check_fields(raw, CASE_FIELDS,\n"cases[index]", problems)
+        Check --> Load : True
+        Load -> TC : TestCase(raw["id"], raw["question"],\nraw["expected_answer"])
+        TC --> Load : case
+        alt 4d: case.id was seen before
+          Load -> PL : append("cases[2].id 'c1' duplicates cases[0].id")
+        else case.id not in first_seen
+          Load -> Load : first_seen[case.id] = index
+        end
+      end
+    end
+    alt main success scenario: problems is empty
+      Load -> B : Benchmark(id, name, cases=tuple(cases))
+      B --> Load : benchmark
+      Load --> Run : benchmark
+    else 3a to 4d: any problem
+      Load --> Run : raises BenchmarkError(path, problems)
+    end
+  end
+end
+deactivate Load
+
+opt a BenchmarkError was raised
+  Run -> Run : print "error: invalid benchmark PATH:"\nwith one "  - problem" line each, return 1
+end
+
+note over Run
+  The benchmark is loaded before any connector
+  is created, so a bad file never reaches a model.
+end note
+note over Run, PL
+  Business rule: every problem from steps 3 and 4,
+  in file order, in one error (AC-002-08). A read
+  failure (1a, 2a, 2b) is reported on its own.
+end note
+@enduml

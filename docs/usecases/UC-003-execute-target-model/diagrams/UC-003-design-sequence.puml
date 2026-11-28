@@ -1,0 +1,66 @@
+@startuml UC-003-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-003 Execute target model: design sequence diagram
+
+participant "runner.evaluate()" as Eval
+participant "runner.run_target()" as Run
+participant "target:ModelConnector" as Conn
+participant "TargetResult" as TR
+participant "on_target callback" as OnT
+
+Eval -> Run : run_target(benchmark, target,\non_result=on_target)
+activate Run
+loop for case in benchmark.cases
+  alt stopped_by is None
+    Run -> Conn : generate(case.question)
+    activate Conn
+    alt main success scenario
+      Conn --> Run : ModelResponse(text="Paris", truncated=False, ...)
+      Run -> TR : TargetResult(case, response, None)
+      TR --> Run : result
+    else 2a: ConnectorUnavailableError, ConnectorRateLimitError, ...
+      Conn --> Run : raises ConnectorUnavailableError("HTTP 500")
+      Run -> TR : TargetResult(case, None, error)
+      TR --> Run : result
+      Run -> Run : not in STOP_THE_RUN: carry on
+    else 2b: ConnectorAuthError or ConnectorQuotaError
+      Conn --> Run : raises ConnectorAuthError("HTTP 401")
+      Run -> TR : TargetResult(case, None, error)
+      TR --> Run : result
+      Run -> Run : isinstance(error, STOP_THE_RUN):\nstopped_by = (case.id, error), e.g. ("c2", error)
+    else 2c: any other exception (a bug)
+      Conn --> Run : raises ZeroDivisionError
+      Run --> Eval : ZeroDivisionError propagates unchanged,\nno results returned
+    end
+    deactivate Conn
+  else stopped_by is set (an earlier case, e.g. c2)
+    Run -> TR : TargetResult(case, None, ConnectorError(\n"not sent: run stopped after\nConnectorAuthError on case c2"))
+    note right of Run : generate() is never called
+    TR --> Run : result
+  end
+  Run -> Run : results.append(result)
+  opt on_result is not None
+    Run -> OnT : on_result(result)
+    note right of OnT
+      CaseExecuted event (in-process,
+      synchronous), for every case: answered,
+      failed or not sent. The CLI does not
+      subscribe in v0.1; tests do.
+    end note
+  end
+end
+Run --> Eval : results (list[TargetResult], one per case,\nbenchmark order)
+deactivate Run
+Eval -> Eval : _judge(answered, ...) for each result (UC-004)
+
+note over Run, Conn
+  3a: a refusal (text=None, refusal set) or a cut-off answer
+  (truncated=True) is still a ModelResponse, recorded as one.
+  runner._judge decides what it means.
+end note
+note over Run, OnT
+  Business rules: one call per case, no retries here
+  (retrying is the connector's job); a connector error is
+  data about its case; only ConnectorError is caught.
+end note
+@enduml

@@ -13,9 +13,9 @@ Each layer is derived from the one above it, and checked by the layer opposite i
 | 1. Requirements | REQ statements, use cases, Gherkin criteria | [requirements/](requirements/), [usecases/](usecases/) | Acceptance tests (marked with AC IDs) |
 | 2. Ubiquitous language | Ontology: one meaning per word, found by noun/verb analysis of the use cases | [ontology/](ontology/) | Review: every use-case noun maps to a concept |
 | 3. Strategic DDD | Bounded contexts and the context map | [domain/](domain/) | Review: each concept has one owning context |
-| 4. Tactical DDD = OOAD analysis | Aggregates, entities, value objects, events; per use case: system sequence diagram, BCE analysis classes and analysis sequence | [domain/](domain/), `usecases/*/analysis.md` | Review against the use-case flows |
+| 4. Tactical DDD = OOAD analysis | Aggregates, entities, value objects, events; per use case: analysis class and sequence diagrams (boundary, control, entity) | [domain/](domain/), `usecases/*/analysis.md` | Review against the use-case flows |
 | 5. Architecture | Hexagon: core, ports, adapters | this page, [ADR-001](decisions/ADR-001.md) | Contract tests on every adapter |
-| 6. OOAD design | Per use case: design classes, design sequences, patterns | `usecases/*/design.md` | As-built diagrams from traced tests ([ADR-002](decisions/ADR-002.md)) |
+| 6. OOAD design | Per use case: design class and sequence diagrams, patterns | `usecases/*/design.md` | As-built diagrams from traced tests ([ADR-002](decisions/ADR-002.md)) |
 | 7. Code | `src/judgelab/` | | Unit tests |
 
 The work isn't done top-down once for the whole system. Steps 2 and 3 are cheap and cross-cutting, so they cover all use cases. Steps 4 and 6 are done per use case, just before its slices are built.
@@ -30,7 +30,7 @@ The developer runs one command. JudgeLab reads a YAML config and a JSON benchmar
 
 Hexagonal (ports and adapters), as decided in [ADR-001](decisions/ADR-001.md):
 
-Diagram: [Ports and adapters](diagrams/hexagon.puml)
+Diagram: [Ports and adapters](diagrams/system-hexagon.puml)
 
 - **Core:** the domain rules. What a valid benchmark is, how a judge's reply becomes a verdict, when a case is ERROR, and how a run is scored. No SDK, file or YAML code.
 - **Driven port:** `ModelConnector`. The core asks for an answer and gets JudgeLab's own `ModelResponse` or `ConnectorError` back.

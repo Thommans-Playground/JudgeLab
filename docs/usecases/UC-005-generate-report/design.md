@@ -26,19 +26,15 @@ The **Evaluation Run** has no class in v0.1. It is implicit: `runner.evaluate()`
 
 The **Report** is a plain `dict`, not a class. Its shape is the contract with the reader (JSON `report_version` "1"), and a dict serialises to exactly that shape with `json.dumps`. A class would only duplicate the schema.
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [UC-005 design classes](diagrams/design-classes.puml)
+Diagram: [UC-005-design-class](diagrams/UC-005-design-class.puml)
 
-## 3. Design sequences
+## 3. Design sequence diagram
 
-**Main success scenario.** The CLI holds the results and the run's metadata, and asks for a summary, a report and a file:
+The main success scenario, with extension 1a as `alt` branches. The CLI holds the results and the run's metadata, and asks for a summary, a report and a file. In extension 1a no case reached a verdict: `pass_rate` is `None` (JSON `null`), `coverage` is `0.0`, and the CLI prints "Pass rate: n/a".
 
-Diagram: [UC-005 design sequence](diagrams/design-sequence.puml)
-
-**Extension 1a.** No case reached a verdict. `pass_rate` is `None` (JSON `null`), `coverage` is `0.0`, and the CLI prints "Pass rate: n/a":
-
-Diagram: [UC-005 design sequence, no verdicts](diagrams/design-sequence-no-verdicts.puml)
+Diagram: [UC-005-design-sequence](diagrams/UC-005-design-sequence.puml)
 
 ## 4. Patterns and principles
 
@@ -75,11 +71,11 @@ Diagram: [UC-005 design sequence, no verdicts](diagrams/design-sequence-no-verdi
 
 ## 7. Checking the design against the code (as-built)
 
-Generate the as-built sequence from a test that exercises this design, and compare it with section 3:
+Generate the as-built sequence from a test that exercises this design, and compare it with the design sequence diagram:
 
 ```bash
 uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
-  "tests/test_report.py::test_written_as_json_with_a_unique_name" -o docs/usecases/UC-005-generate-report/diagrams/as-built/sequence.puml
+  "tests/test_report.py::test_written_as_json_with_a_unique_name" -o docs/usecases/UC-005-generate-report/diagrams/as-built/UC-005-asbuilt-sequence.puml
 ```
 
 The test's fixture calls `summarise` and `build_report`, and the test calls `write_report`, so the trace covers the main success scenario. For extension 1a, trace `tests/test_scoring.py::test_pass_rate_is_none_when_nothing_was_evaluated`.

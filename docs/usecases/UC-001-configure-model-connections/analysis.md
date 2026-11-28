@@ -9,25 +9,7 @@
 | Bounded context | [Model Access](../../domain/model-access/README.md) |
 | Ontology | [ConnectionProfile](../../ontology/connection-profile.md), [Provider](../../ontology/provider.md), [Credential](../../ontology/credential.md), [ModelConnector](../../ontology/model-connector.md), [ModelResponse](../../ontology/model-response.md), [Refusal](../../ontology/refusal.md), [ConnectorError](../../ontology/connector-error.md) |
 
-## 1. System sequence diagram
-
-The system is a black box. The diagram shows only what crosses its boundary. It has two halves: first the developer's configuration goes in and a connector for each profile (or an error) comes out; later, each prompt goes out to the model provider and a response or a connector error comes back. It is the main success scenario and its extensions, drawn.
-
-Diagram: [UC-001 system sequence diagram](diagrams/ssd.puml)
-
-**System operations** found here:
-
-| Operation | Responsibility | Postcondition |
-|---|---|---|
-| configure connections | Turn the target and judge settings into one connector each | Two independent connectors exist, or a profile error says which profile is wrong and why (AC-001-12, AC-001-22) |
-| validate profile | Check every setting of one profile and report every problem at once | A valid Connection Profile, or one error starting `connection '<name>':` (AC-001-13 to AC-001-17) |
-| choose connector | Pick the connector for the profile's provider, with the profile's options | The right connector kind, or an error listing the known providers or naming the unsupported option (AC-001-19 to AC-001-21) |
-| resolve credential | Read the key from the environment variable the profile names | The connector holds the key; nothing else does. Missing or blank is an auth error naming the variable (AC-001-01, AC-001-18) |
-| model request (out) | Send one prompt, with instructions in the provider's own way, exactly once | The provider received one request built only from the connector's own settings (AC-001-02, AC-001-07) |
-| record response | Keep the answer or refusal with its model identity and call metadata | A Model Response in JudgeLab's terms (AC-001-03, AC-001-04, AC-001-11) |
-| raise connector error | Turn a provider failure or an untrustworthy reply into a known kind | A Connector Error with the HTTP status and request id, and no secret (AC-001-05, AC-001-06, AC-001-08) |
-
-## 2. Analysis classes
+## 1. Analysis class diagram
 
 Found by reading the use case's nouns and splitting them by role:
 
@@ -35,7 +17,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic. This use case has two distinct moments, so it gets two: configuring a connection (steps 1 to 4) and calling the model (steps 5 and 6).
 - **Entity:** information the problem cares about, which outlives one step.
 
-Diagram: [UC-001 analysis classes](diagrams/analysis-classes.puml)
+Diagram: [UC-001-analysis-class](diagrams/UC-001-analysis-class.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -52,13 +34,25 @@ Diagram: [UC-001 analysis classes](diagrams/analysis-classes.puml)
 
 The Credential entity holds a name, not a value. The key itself passes through Configure Connection once, into the connection it configures, and is never kept in an entity.
 
-## 3. Analysis sequence
+## 2. Analysis sequence diagram
 
-How the analysis objects work together to deliver the main success scenario. The two control objects drive the work, entities hold the information, and only the boundaries talk to the outside.
+How the analysis objects deliver the use case: the main success scenario, with each extension as an `alt` or `opt` branch. It has two halves: first the developer's configuration goes in and a connector for each profile (or an error) comes out; later, each prompt goes out to the model provider and a response or a connector error comes back. The two control objects drive the work, entities hold the information, and only the boundaries talk to the outside, where the developer and the model provider stand.
 
-Diagram: [UC-001 analysis sequence](diagrams/analysis-sequence.puml)
+Diagram: [UC-001-analysis-sequence](diagrams/UC-001-analysis-sequence.puml)
 
-## 4. Rules the design must keep
+**System operations** (what crosses the system boundary):
+
+| Operation | Responsibility | Postcondition |
+|---|---|---|
+| configure connections | Turn the target and judge settings into one connector each | Two independent connectors exist, or a profile error says which profile is wrong and why (AC-001-12, AC-001-22) |
+| validate profile | Check every setting of one profile and report every problem at once | A valid Connection Profile, or one error starting `connection '<name>':` (AC-001-13 to AC-001-17) |
+| choose connector | Pick the connector for the profile's provider, with the profile's options | The right connector kind, or an error listing the known providers or naming the unsupported option (AC-001-19 to AC-001-21) |
+| resolve credential | Read the key from the environment variable the profile names | The connector holds the key; nothing else does. Missing or blank is an auth error naming the variable (AC-001-01, AC-001-18) |
+| model request (out) | Send one prompt, with instructions in the provider's own way, exactly once | The provider received one request built only from the connector's own settings (AC-001-02, AC-001-07) |
+| record response | Keep the answer or refusal with its model identity and call metadata | A Model Response in JudgeLab's terms (AC-001-03, AC-001-04, AC-001-11) |
+| raise connector error | Turn a provider failure or an untrustworthy reply into a known kind | A Connector Error with the HTTP status and request id, and no secret (AC-001-05, AC-001-06, AC-001-08) |
+
+## 3. Rules the design must keep
 
 These come from the use case's business rules and its scenarios. The design is checked against them.
 

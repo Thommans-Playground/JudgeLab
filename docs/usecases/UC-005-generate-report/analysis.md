@@ -9,22 +9,7 @@
 | Bounded context | [Reporting](../../domain/reporting/README.md), conforming to [Evaluation](../../domain/evaluation/README.md) |
 | Ontology | [EvaluationRun](../../ontology/evaluation-run.md), [CaseResult](../../ontology/case-result.md), [Outcome](../../ontology/outcome.md), [RunSummary](../../ontology/run-summary.md), [Report](../../ontology/report.md), [ConnectionProfile](../../ontology/connection-profile.md) |
 
-## 1. System sequence diagram
-
-The system is a black box. The diagram shows only what crosses its boundary: the report file going out to the output directory, and its path coming back to the developer. Everything else, counting and building, happens inside. It is the main success scenario and its extensions, drawn.
-
-Diagram: [UC-005 system sequence diagram](diagrams/ssd.puml)
-
-**System operations** found here:
-
-| Operation | Responsibility | Postcondition |
-|---|---|---|
-| summarise run | Count the outcomes in one pass and work out evaluated, pass rate and coverage | A Run Summary exists; ERROR cases are counted as errors, never as failures (AC-005-01, AC-005-02, AC-005-03) |
-| build report | Put the run's metadata, its summary and every case's evidence into one document | A Report holds what was run, with what, when, and the evidence per case (AC-005-04, AC-005-05) |
-| write report (out) | Store the report as UTF-8 JSON in the output directory, under a name no other run uses | The file exists, the directory was created if needed, and the file holds no key and no key variable name (AC-005-06, AC-005-07) |
-| report path (out) | Tell the developer where the report is | The developer can open the report (UC-006 prints the path) |
-
-## 2. Analysis classes
+## 1. Analysis class diagram
 
 Found by reading the use case's nouns and splitting them by role:
 
@@ -32,7 +17,7 @@ Found by reading the use case's nouns and splitting them by role:
 - **Control:** the use case's logic, the steps of the main flow. One per use case is typical.
 - **Entity:** information the problem cares about, which outlives one step.
 
-Diagram: [UC-005 analysis classes](diagrams/analysis-classes.puml)
+Diagram: [UC-005-analysis-class](diagrams/UC-005-analysis-class.puml)
 
 | Analysis class | Role | Comes from (use case text) | Ontology concept |
 |---|---|---|---|
@@ -47,13 +32,22 @@ Diagram: [UC-005 analysis classes](diagrams/analysis-classes.puml)
 
 The **Evaluation Run** is the aggregate the report publishes. In v0.1 it is implicit: no single object holds it, only the list of Case Results plus the run's metadata (identity, benchmark, rubric, connections and times). The design keeps it that way and lists a real aggregate as a candidate refactoring.
 
-## 3. Analysis sequence
+## 2. Analysis sequence diagram
 
-How the analysis objects work together to deliver the main success scenario. The control object drives the work, entities hold the information, and only the boundary talks to the outside.
+How the analysis objects deliver the use case: the main success scenario, with each extension as an `alt` or `opt` branch. The control object drives the work, entities hold the information, and only the boundary talks to the output directory, which is outside the system. What crosses the system boundary is the report file going out to the output directory, and its path coming back to the developer; counting and building happen inside.
 
-Diagram: [UC-005 analysis sequence](diagrams/analysis-sequence.puml)
+Diagram: [UC-005-analysis-sequence](diagrams/UC-005-analysis-sequence.puml)
 
-## 4. Rules the design must keep
+**System operations** (what crosses the system boundary):
+
+| Operation | Responsibility | Postcondition |
+|---|---|---|
+| summarise run | Count the outcomes in one pass and work out evaluated, pass rate and coverage | A Run Summary exists; ERROR cases are counted as errors, never as failures (AC-005-01, AC-005-02, AC-005-03) |
+| build report | Put the run's metadata, its summary and every case's evidence into one document | A Report holds what was run, with what, when, and the evidence per case (AC-005-04, AC-005-05) |
+| write report (out) | Store the report as UTF-8 JSON in the output directory, under a name no other run uses | The file exists, the directory was created if needed, and the file holds no key and no key variable name (AC-005-06, AC-005-07) |
+| report path (out) | Tell the developer where the report is | The developer can open the report (UC-006 prints the path) |
+
+## 3. Rules the design must keep
 
 These come from the use case's business rules and its scenarios. The design is checked against them.
 

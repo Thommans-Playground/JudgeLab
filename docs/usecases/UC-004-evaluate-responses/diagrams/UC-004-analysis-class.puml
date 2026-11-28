@@ -1,0 +1,55 @@
+@startuml UC-004-analysis-class
+!include ../../../diagrams/style.iuml
+hide empty members
+hide circle
+title UC-004 Evaluate responses: analysis class diagram (BCE)
+
+class "Judge Model Interface" as JMI <<boundary>> {
+  send judge request
+}
+class "Evaluate Response" as Eval <<control>> {
+  evaluate(test case, actual answer)
+}
+class "Test Case" as TC <<entity>> {
+  id
+  question
+  expected answer
+}
+class "Actual Answer" as AA <<entity>> {
+  text or refusal
+  truncated
+}
+class "Rubric" as R <<entity>> {
+  id
+  instructions
+}
+class "Judge Request" as JR <<entity>> {
+  instructions
+  prompt
+}
+class "Judge Evaluation" as JE <<entity>> {
+  verdict
+  justification
+  rubric id
+  judge identity
+}
+class "Verdict" as V <<entity>> {
+  PASS or FAIL
+}
+
+Eval --> TC : reads
+Eval --> AA : reads
+Eval --> R : applies
+Eval --> JR : builds
+Eval --> JMI : sends through
+Eval --> JE : creates
+JE --> V : holds
+JR ..> R : instructions from
+JR ..> TC : prompt from
+JR ..> AA : prompt from
+
+note bottom of Eval
+  Business rule: a judgement that cannot be
+  trusted is an ERROR, never a FAIL.
+end note
+@enduml

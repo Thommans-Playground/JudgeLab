@@ -1,0 +1,121 @@
+@startuml UC-001-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-001 Configure model connections: design sequence diagram
+
+participant "config.load_config()" as Config
+participant "ConnectionProfile" as CP
+participant "registry.create_connector()" as Reg
+participant "caller\n(runner.run_target or Judge.evaluate)" as Caller
+participant "adapter:ModelConnector" as Conn
+participant "credentials.read_secret()" as Secret
+participant "openai_connector or anthropic_connector\n.translate_error()" as TE
+participant "_client:openai.OpenAI\nor anthropic.Anthropic" as SDK
+participant "OpenAI-compatible API\nor Messages API" as API
+participant ":ModelResponse" as Resp
+
+note over Conn
+  adapter is OpenAIConnector or AnthropicConnector.
+  The Claude-specific mapping is in the notes on
+  AnthropicConnector in the design class diagram.
+end note
+
+== steps 1 to 4: profile to connector (for "target", then "judge") ==
+
+Config -> CP : from_dict("judge", connections["judge"])
+activate CP
+alt 2a: unknown or missing settings
+  CP --> Config : raises ProfileError("connection 'judge': unknown setting(s) ...;\nallowed: ...") or ("connection 'judge': missing ...")
+else the keys are right
+  CP -> CP : cls(name="judge", ~**data), then ~__post_init~__\ncollects every value problem
+  opt 2a: blank, not a variable name, not https, out of range
+    CP --> Config : raises ProfileError("connection 'judge': " + "; ".join(problems))
+  end
+  CP --> Config : profile: ConnectionProfile
+end
+deactivate CP
+note right of Config
+  load_config wraps any ProfileError
+  as ConfigError("path: ...").
+end note
+
+[-> Reg : create_connector(profile)
+activate Reg
+Reg -> Reg : CONNECTORS[profile.provider]
+opt 3a: unknown provider
+  [<-- Reg : raises ProfileError("connection 'judge': unknown provider 'gemini';\nknown: anthropic, openai_compatible")
+end
+Reg -> Conn : AnthropicConnector or OpenAIConnector(model=..., api_key_env=...,\nbase_url=..., timeout_s=..., max_retries=..., ~**profile.options)
+activate Conn
+opt 3b: an option the class does not accept
+  Conn --> Reg : TypeError
+  [<-- Reg : raises ProfileError("connection 'judge': unsupported option for anthropic: ...")
+end
+Conn -> Secret : read_secret(api_key_env)
+Secret -> Secret : os.environ.get(env_name, "").strip()
+alt 4a: missing, empty or only whitespace
+  Secret --> Conn : raises ConnectorAuthError("environment variable NAME is not set")
+  [<-- Reg : ConnectorAuthError propagates; nothing is sent
+else the key is set
+  Secret --> Conn : key
+end
+Conn -> Conn : Anthropic(...) or OpenAI(api_key=key, base_url=self.base_url,\ntimeout=timeout_s, max_retries=max_retries)
+Conn --> Reg : connector
+deactivate Conn
+[<-- Reg : connector: ModelConnector
+deactivate Reg
+
+== steps 5 and 6: one prompt ==
+
+Caller -> Conn : generate(prompt, instructions=...)
+activate Conn
+Conn -> Conn : messages = [user: prompt]; instructions in the\nprovider's own way (OpenAI: a "system" message first;\nClaude: the system field, with max_tokens)
+Conn -> SDK : chat.completions.create(model=self.model, messages=messages)\nor messages.create(model=self.model, max_tokens=..., messages=messages, ~**extra)
+SDK -> API : POST /chat/completions or POST /v1/messages\n(once: max_retries=0)
+alt 5a: the SDK raises openai.APIError (or anthropic.APIError)
+  API --> SDK : HTTP error, timeout or no connection
+  SDK --> Conn : raises e: APIError
+  Conn -> TE : translate_error(e)
+  activate TE
+  alt APIConnectionError (APITimeoutError included)
+    TE --> Conn : ConnectorUnavailableError("request timed out")\nor ("request connection failed")
+  else APIStatusError: detail = "HTTP status (code)"
+    TE -> TE : 401, 403: ConnectorAuthError\n402 or a QUOTA_ERROR_CODES code: ConnectorQuotaError\n429 otherwise: ConnectorRateLimitError\n500 and above, 408, 409: ConnectorUnavailableError\nany other status: ConnectorRequestError
+    TE --> Conn : that error, with status_code and request_id
+  else any other APIError
+    TE --> Conn : ConnectorResponseError("unexpected SDK error: ...")
+  end
+  deactivate TE
+  Conn --> Caller : raise translated from e
+else the API replies
+  API --> SDK : 200, JSON body
+  SDK --> Conn : completion: ChatCompletion (or message: Message)
+  Conn -> Conn : latency_ms; check it is a ChatCompletion,\nhas choices, has content or refusal (or is a Message)
+  alt 6b: the reply is not a usable completion
+    Conn --> Caller : raises ConnectorResponseError("expected a chat completion, got ...")\nor ("response has no choices") or ("response has neither content nor refusal")\nor, for Claude, ("response has no text and no refusal (stop_reason=...)")
+  else the model answered
+    Conn -> Resp : ModelResponse(text=content, refusal=None, ...)
+    Conn --> Caller : ModelResponse
+  else 6a: the model refused
+    Conn -> Resp : ModelResponse(text=None, refusal=message.refusal, ...)
+    Conn --> Caller : ModelResponse
+  end
+end
+deactivate Conn
+
+note right of Resp
+  requested_model=self.model,
+  served_model=completion.model,
+  finish_reason=choice.finish_reason,
+  truncated=(finish_reason == "length"),
+  token counts from usage (None without it),
+  request_id=completion._request_id
+  (Claude: see AnthropicConnector notes)
+end note
+
+note over Caller, TE
+  Business rule: a failure is always a ConnectorError, never an SDK exception (AC-001-06, AC-001-09).
+  Messages carry the status, the provider's short code and the request id, never the key
+  or the provider's free text (AC-001-08). AnthropicConnector has its own translate_error with
+  the same mapping, reading the code from error.details.error_code in the body.
+end note
+@enduml

@@ -1,0 +1,74 @@
+@startuml UC-005-design-sequence
+!include ../../../diagrams/style.iuml
+title UC-005 Generate report: design sequence diagram
+
+participant "cli.run_command()" as CLI
+participant "scoring.summarise()" as Summarise
+participant "summary:Summary" as Summary
+participant "run:RunInfo" as Run
+participant "report.build_report()" as Build
+participant "report.write_report()" as Write
+participant "file system" as FS
+participant "cli.print_summary()" as Print
+
+note over CLI
+  results : list[CaseResult] from runner.evaluate(),
+  started, finished from report.utc_now() (UC-006).
+end note
+CLI -> Summarise : summarise(results)
+activate Summarise
+loop each result, once
+  Summarise -> Summarise : counts[result.outcome] += 1; total += 1
+end
+Summarise --> CLI : Summary(total, passed, failed, errors)
+deactivate Summarise
+CLI -> Run ** : RunInfo(benchmark, rubric.id, target,\njudge_connector, started, finished)
+note right of Run
+  run_id defaults to uuid4().hex
+end note
+CLI -> Build : build_report(run, results, summary)
+activate Build
+Build -> Summary : evaluated, pass_rate, coverage
+alt main success scenario
+  Summary --> Build : evaluated, pass_rate (passed / evaluated), coverage
+else 1a: no case reached a verdict
+  note over CLI
+    Every result is Outcome.ERROR, e.g. the target
+    rejected the key: error_stage="target".
+    summarise returned Summary(total=5, passed=0,
+    failed=0, errors=5).
+  end note
+  Summary --> Build : evaluated 0, pass_rate None (evaluated is 0),\ncoverage 0.0 (0 / 5)
+end
+Build -> Build : _connection(run.target), _connection(run.judge)\n(provider, model, base_url only)
+loop each result
+  alt main success scenario
+    Build -> Build : _case(result), with _call(target)\nand _call(judgement.response)
+  else 1a: no case reached a verdict
+    Build -> Build : _case(result): actual_answer, verdict,\ntarget_call, judge_call = None;\nerror = {"stage": "target", "message": ...}
+  end
+end
+Build --> CLI : report : dict (report_version "1", run, benchmark,\nrubric, connections, summary, cases);\nin 1a "pass_rate": None, which json.dumps writes as null
+deactivate Build
+CLI -> Write : write_report(report, output_dir or config.output_dir)
+activate Write
+Write -> FS : directory.mkdir(parents=True, exist_ok=True)
+Write -> Write : name = run-{started:%Y%m%dT%H%M%SZ}-{run id[:8]}.json
+Write -> FS : path.write_text(json.dumps(report, indent=2,\nensure_ascii=False), encoding="utf-8")
+Write --> CLI : path : Path
+deactivate Write
+CLI -> Print : print_summary(summary)
+Print -> Summary : pass_rate
+alt main success scenario
+  Summary --> Print : pass_rate
+  Print --> CLI : prints the counts, the pass rate and the coverage (UC-006)
+else 1a: no case reached a verdict
+  Summary --> Print : None
+  Print --> CLI : prints "Passed: 0  Failed: 0  Errors: 5  (of 5)"\nand "Pass rate: n/a (no case reached a verdict)"
+end
+
+note over Summary
+  Business rule: an ERROR is never a FAIL.
+  A null pass rate, not 0, says "nothing was judged" (AC-005-02).
+end note
+@enduml

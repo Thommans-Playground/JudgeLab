@@ -35,13 +35,18 @@ Kinds and ID formats: `REQ-001`, `UC-001`, `ADR-001`, `TC-001` (rows in `verific
 
 `check` verifies that the feature file is named and titled after its use case, that every Scenario has exactly one criterion tag, that each criterion is defined once and in its own use case, that no markdown file defines criteria (the old `**AC-…**` style), that every `AC-…` mention resolves, and that each task lives in the use case its ID names. It also checks **coverage**: every active criterion is listed by at least one requirement, no requirement lists a retired criterion, and every requirement lists at least one criterion (a warning while it is Draft, an error after).
 
-**Analysis and design (OOAD).** Each use case is realised in `analysis.md` and `design.md` beside its README, with PlantUML sources in `diagrams/`:
-- **Analysis**, in problem terms: a system sequence diagram (`ssd.puml`), analysis classes with `<<boundary>>`, `<<control>>` and `<<entity>>` stereotypes, and an analysis sequence.
-- **Design**, in code terms: design classes, a design sequence for the main flow and `design-sequence-<extension>.puml` for key extensions, the patterns used, and each class's role in the hexagon (docs/design.md, ADR-001).
-- `new UC` creates skeletons. UC-004 is the worked example.
-- Ontology concepts come first (noun/verb analysis of the use cases), then the bounded contexts in `docs/domain/`. Analysis classes name their ontology concept; design elements name their analysis class.
+**Analysis and design (OOAD).** Each use case is realised in `analysis.md` and `design.md` beside its README, with exactly four PlantUML diagrams in `diagrams/`, named after the use case like every other artefact:
 
-**Diagrams.** Every `.puml` includes `docs/diagrams/style.iuml`, and pages link to the `.puml` source (they are read through a PlantUML preview, not committed as SVG). `check` errors on a malformed `.puml` or a missing include. `scripts/render_diagrams.py` exports SVGs on demand. `scripts/asbuilt.py` generates as-built diagrams for comparison with the design (ADR-002): `sequence <pytest node>` traces one test, and `classes <module>…` introspects modules. As-built output goes in `diagrams/as-built/`.
+| File | Shows |
+|---|---|
+| `UC-UUU-analysis-class.puml` | Analysis classes in problem terms, stereotyped `<<boundary>>`, `<<control>>`, `<<entity>>` |
+| `UC-UUU-analysis-sequence.puml` | How they deliver the main success scenario, external actors beside the boundaries, each extension an `alt` branch |
+| `UC-UUU-design-class.puml` | Real classes, signatures and patterns, with each class's role in the hexagon (docs/design.md, ADR-001) |
+| `UC-UUU-design-sequence.puml` | Real calls for the main flow, each extension an `alt` branch |
+
+Generated as-built diagrams go in `diagrams/as-built/` as `UC-UUU-asbuilt-sequence.puml` and `UC-UUU-asbuilt-class.puml`. The `@startuml` name is always the file name. `new UC` creates the pages and the four skeletons; UC-004 is the worked example. Ontology concepts come first (noun/verb analysis of the use cases), then the bounded contexts in `docs/domain/`. Analysis classes name their ontology concept; design elements name their analysis class.
+
+**Diagrams.** Every `.puml` includes `docs/diagrams/style.iuml`, and pages link to the `.puml` source (they are read through a PlantUML preview, not committed as SVG). `check` errors on a malformed `.puml`, a missing include, a non-standard name, or a use case missing one of its four diagrams. `scripts/render_diagrams.py` exports SVGs on demand. `scripts/asbuilt.py` generates as-built diagrams for comparison with the design (ADR-002): `sequence <pytest node>` traces one test, and `classes <module>…` introspects modules. As-built output goes in `diagrams/as-built/`.
 
 **Requirements point at criteria.** A requirement's `## Verified by` section lists the IDs (never the text) of the use-case criteria that prove it; one requirement can be verified by criteria in several use cases (e.g. a security requirement). When you add a criterion, add its ID to the requirement(s) it verifies. Tests are marked with criterion IDs (`@pytest.mark.acceptance("AC-004-03")`), so pytest's progress table shows which use cases work.
 

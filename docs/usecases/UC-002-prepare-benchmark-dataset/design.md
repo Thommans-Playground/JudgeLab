@@ -24,19 +24,15 @@ The file reader has no class and no port. In v0.1 there is one source of benchma
 
 The Problem List is a plain list of strings. Each problem is already a full sentence with its location; giving it a class would add a name without adding a rule.
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [UC-002 design classes](diagrams/design-classes.puml)
+Diagram: [UC-002-design-class](diagrams/UC-002-design-class.puml)
 
-## 3. Design sequences
+## 3. Design sequence diagram
 
-**Main success scenario.** A valid file becomes a `Benchmark`:
+The main success scenario, a valid file becoming a `Benchmark`, with extensions 1a to 4d as `alt` branches. A file that can't be read (missing, invalid JSON, top level not an object) stops at once with one problem. A file that parses is checked to the end, every field and duplicate problem goes into `problems`, and one `BenchmarkError` lists them all. The CLI prints it and exits 1.
 
-Diagram: [UC-002 design sequence](diagrams/design-sequence.puml)
-
-**Extensions 1a to 4d.** A file that can't be read stops at once with one problem. A file that parses is checked to the end, every problem goes into `problems`, and one `BenchmarkError` lists them all. The CLI prints it and exits 1:
-
-Diagram: [UC-002 design sequence, validation](diagrams/design-sequence-validation.puml)
+Diagram: [UC-002-design-sequence](diagrams/UC-002-design-sequence.puml)
 
 ## 4. Patterns and principles
 
@@ -73,13 +69,13 @@ Diagram: [UC-002 design sequence, validation](diagrams/design-sequence-validatio
 
 ## 7. Checking the design against the code (as-built)
 
-Generate the as-built sequence from a test that exercises this design, and compare it with section 3:
+Generate the as-built sequence from a test that exercises this design, and compare it with the design sequence diagram:
 
 ```bash
 uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
-  "tests/test_benchmark.py::test_loads_cases_in_order" -o docs/usecases/UC-002-prepare-benchmark-dataset/diagrams/as-built/sequence.puml
+  "tests/test_benchmark.py::test_loads_cases_in_order" -o docs/usecases/UC-002-prepare-benchmark-dataset/diagrams/as-built/UC-002-asbuilt-sequence.puml
 ```
 
-For the validation extension, trace `tests/test_benchmark.py::test_every_problem_is_reported_at_once`.
+For the validation branches, trace `tests/test_benchmark.py::test_every_problem_is_reported_at_once`.
 
 A difference is either design drift (update this page and say why) or a code bug (fix the code). See [ADR-002](../../decisions/ADR-002.md).

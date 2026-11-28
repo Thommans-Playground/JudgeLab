@@ -1,0 +1,70 @@
+@startuml UC-005-analysis-class
+!include ../../../diagrams/style.iuml
+hide empty members
+hide circle
+title UC-005 Generate report: analysis class diagram (BCE)
+
+class "Report Store" as RS <<boundary>> {
+  write report
+}
+class "Generate Report" as Gen <<control>> {
+  generate(evaluation run)
+}
+class "Evaluation Run" as ER <<entity>> {
+  id
+  benchmark
+  rubric id
+  start and finish times (UTC)
+}
+class "Case Result" as CR <<entity>> {
+  test case
+  outcome
+  target answer or refusal
+  judge evaluation
+  error stage and message
+}
+class "Connection Description" as CD <<entity>> {
+  provider
+  model
+  base URL
+}
+class "Run Summary" as RSum <<entity>> {
+  total, passed, failed, errors
+  evaluated
+  pass rate
+  coverage
+}
+class "Report" as Rep <<entity>> {
+  report version
+  run, benchmark, rubric
+  connections
+  summary
+}
+class "Case Entry" as CE <<entity>> {
+  question, expected, actual
+  outcome, verdict, justification
+  target call, judge call
+  error
+}
+
+ER "1" --> "1..*" CR : produces
+ER --> "2" CD : target and judge
+Gen --> ER : reads
+Gen --> RSum : creates
+Gen --> Rep : builds
+Gen --> RS : writes through
+Rep --> "1" RSum : holds
+Rep --> "1..*" CE : holds
+Rep --> "2" CD : holds
+CE ..> CR : copied from
+
+note bottom of RSum
+  Business rule: an ERROR is never a FAIL.
+  pass rate = passed / (passed + failed), null when 0;
+  coverage = (passed + failed) / total.
+end note
+note bottom of CD
+  No key and no key
+  variable name, ever.
+end note
+@enduml

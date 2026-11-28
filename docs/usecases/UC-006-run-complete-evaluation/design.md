@@ -30,23 +30,19 @@ The **Evaluation Run** has no class in v0.1. It is implicit: `runner.evaluate()`
 
 The **CaseEvaluated** domain event is the `on_result: Callable[[CaseResult], None]` callback of `runner.evaluate`. `run_command` passes its local closure `show_progress`, which counts the cases done and prints `[done/total] id: OUTCOME`, plus `  (stage: message)` for an ERROR. The CaseExecuted event (`on_target`) exists in `evaluate`, but the CLI doesn't subscribe to it.
 
-## 2. Design classes
+## 2. Design class diagram
 
-Diagram: [UC-006 design classes](diagrams/design-classes.puml)
+Diagram: [UC-006-design-class](diagrams/UC-006-design-class.puml)
 
-## 3. Design sequences
+## 3. Design sequence diagram
 
-**Main success scenario.** One command, five cases, one report, exit code 0. Each CaseEvaluated event drives a progress line:
+The main success scenario, with extensions 1a and 1c as branches: one command, five cases, one report, exit code 0.
 
-Diagram: [UC-006 design sequence](diagrams/design-sequence.puml)
+- **Composition root** (the opening steps). How `main` is called, by the `judgelab` console script or by a test that swaps in fakes through the same `connector_factory` parameter, and how `run_command` wires the connector factory, the profiles and the `Judge`.
+- **Extensions 1a and 1c** (the run cannot start). A missing `--config` is caught by argparse, which exits with code 2. Every other setup error is caught in one place, printed as `error: ...` on stderr and turned into exit code 1, before any model is called or any report is written.
+- **CaseEvaluated.** Each case's result is passed to `on_result=show_progress`, which prints a progress line.
 
-**Extensions 1a and 1c.** The run cannot start. Every setup error is caught in one place, printed as `error: ...` and turned into exit code 1, before any model is called or any report is written:
-
-Diagram: [UC-006 design sequence, startup error](diagrams/design-sequence-startup-error.puml)
-
-**Composition root.** How `main` wires the connector factory, the profiles and the `Judge`, and how a test swaps in fakes through the same parameter:
-
-Diagram: [UC-006 design sequence, composition root](diagrams/design-sequence-composition.puml)
+Diagram: [UC-006-design-sequence](diagrams/UC-006-design-sequence.puml)
 
 Extensions 3a, 3b and 4a happen inside `runner.evaluate` and are drawn in [UC-003](../UC-003-execute-target-model/design.md) and [UC-004](../UC-004-evaluate-responses/design.md). Extension 7a is drawn in [UC-005](../UC-005-generate-report/design.md). Extension 1b is the expression `output_dir or config.output_dir`.
 
@@ -89,11 +85,11 @@ Extensions 3a, 3b and 4a happen inside `runner.evaluate` and are drawn in [UC-00
 
 ## 7. Checking the design against the code (as-built)
 
-Generate the as-built sequence from a test that exercises this design, and compare it with section 3:
+Generate the as-built sequence from a test that exercises this design, and compare it with the design sequence diagram:
 
 ```bash
 uv run python .claude/skills/vbench-docs/scripts/asbuilt.py sequence \
-  "tests/test_cli.py::test_run_end_to_end" -o docs/usecases/UC-006-run-complete-evaluation/diagrams/as-built/sequence.puml
+  "tests/test_cli.py::test_run_end_to_end" -o docs/usecases/UC-006-run-complete-evaluation/diagrams/as-built/UC-006-asbuilt-sequence.puml
 ```
 
 For the startup error, trace `tests/test_cli.py::test_missing_api_key_is_reported_before_running`, which uses the real `create_connector` with the key's variable unset.
