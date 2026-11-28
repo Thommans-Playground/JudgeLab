@@ -1,6 +1,6 @@
 # Contributing
 
-This document defines how we branch, commit, open pull requests, and merge. It is the single source of truth for these conventions. The `vbench-branch`, `vbench-commit`, and `vbench-pr` Claude Code skills read this file rather than duplicating it.
+This document defines how we branch, commit, comment code, open pull requests, and merge. It is the single source of truth for these conventions. The `vbench-branch`, `vbench-commit`, and `vbench-pr` Claude Code skills read this file rather than duplicating it.
 
 To adopt these conventions in another repository, copy this file plus `.claude/skills/vbench-branch/`, `.claude/skills/vbench-commit/`, and `.claude/skills/vbench-pr/`, then edit only [Project-specific settings](#project-specific-settings). For the engineering-docs layout, also copy `.claude/skills/vbench-docs/`, `.github/workflows/docs-check.yml`, and `docs/README.md`.
 
@@ -8,6 +8,7 @@ To adopt these conventions in another repository, copy this file plus `.claude/s
 
 - [Branching](#branching)
 - [Commits](#commits)
+- [Code comments](#code-comments)
 - [Pull requests and merging](#pull-requests-and-merging)
 - [Releases and tags](#releases-and-tags)
 - [Project-specific settings](#project-specific-settings)
@@ -169,6 +170,25 @@ Each commit should be **one logical change that builds and passes tests on its o
 
 ---
 
+## Code comments
+
+Names say *what* the code does; comments say *why*. A comment earns its place when the reason for a line can't be seen in the code itself.
+
+- **Comment the why.** Add a one-line `#` comment for a hidden reason: a third-party quirk, a value chosen to trigger a specific behaviour, a decoy, a deliberate ordering, a trade-off. If it took you real thought to work out why a line is there, it will take the next reader the same.
+- **Don't comment the what.** If a comment repeats what the next line says, delete it and improve the name instead.
+- **Tests get no docstrings.** The test name says what is checked, and its `@pytest.mark.acceptance("AC-...")` marker points at the scenario that states the requirement. A test still gets a *why* comment when its setup is not obvious.
+- **Modules, public classes and shared helpers get a short docstring** saying what they are for and any rule a caller must know (for example, that errors never carry a secret). Fixtures and helpers used by many tests count as shared.
+
+```python
+@pytest.mark.acceptance("AC-001-02")
+def test_environment_defaults_have_no_effect(connect, monkeypatch):
+    # Bait: the SDK reads these if the connector doesn't pass its own values.
+    monkeypatch.setenv("OPENAI_BASE_URL", "http://somewhere-else.example/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-wrong-key-from-env")
+```
+
+---
+
 ## Pull requests and merging
 
 Open a PR for every topic branch, even on a solo project. It's a review checkpoint and an evidence trail.
@@ -198,7 +218,7 @@ Open a PR for every topic branch, even on a solo project. It's a review checkpoi
 Highest level: L?
 ```
 
-**Self-review before requesting review:** read your own diff top to bottom as a reviewer would. Remove debug code, commented-out code, and stray files. Make sure every commit follows [Commits](#commits).
+**Self-review before requesting review:** read your own diff top to bottom as a reviewer would. Remove debug code, commented-out code, and stray files. Check that comments follow [Code comments](#code-comments). Make sure every commit follows [Commits](#commits).
 
 **Responding to review:**
 

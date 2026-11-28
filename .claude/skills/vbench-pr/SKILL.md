@@ -28,7 +28,7 @@ Use the `gh` CLI for GitHub operations. If `gh` is missing or unauthenticated, o
    - Whether the branch is pushed and up to date with its upstream.
 2. **Check the branch is suitable.** Don't open a PR from `main`. If the branch name or scope doesn't fit the conventions, mention it (see the `vbench-branch` skill).
 3. **Check size and focus.** If the diff is over the documented size, or mixes unrelated concerns, suggest a split before continuing. Big mixed PRs are hard to review and to revert.
-4. **Self-review the diff** as a reviewer would. Flag debug prints, commented-out code, TODOs without an issue, stray or generated files, secrets, and commits that break the commit conventions. Report these to the user rather than silently fixing them, since the fix may need their judgment.
+4. **Self-review the diff** as a reviewer would. Flag debug prints, commented-out code, TODOs without an issue, comments that restate the code or non-obvious lines missing a *why* comment (see Code comments in CONTRIBUTING.md), stray or generated files, secrets, and commits that break the commit conventions. Report these to the user rather than silently fixing them, since the fix may need their judgment.
 5. **Run the readiness checklist** and the Definition of Done. For each item, report met, not met, or unknown, with the evidence. Run the test suite if one exists and quote the result. Don't tick an item you haven't verified. "Unknown" is an honest answer and better than a false tick.
 6. **Draft the title and body:**
    - Title: `<type>(<scope>): <subject>`, summarising the whole PR. With a squash merge it becomes the commit message on `main`, so make it specific.
