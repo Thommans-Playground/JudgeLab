@@ -80,3 +80,6 @@ Thumbs.db
 
 # Claude Code: share project skills/settings, keep personal overrides local
 .claude/settings.local.json
+
+# mutmut working copy
+mutants/
