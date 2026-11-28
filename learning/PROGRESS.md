@@ -25,6 +25,24 @@ Where I am in the [codealongs](codealongs/README.md), what I've learned, and wha
 | 10 | [Evaluating a Benchmark from the Command Line](codealongs/10-command-line.md) | Not started | |
 | 11 | [The First Live Evaluation and the v0.1 Release](codealongs/11-live-evaluation-and-release.md) | Not started | |
 
+## Agent workflow (being designed)
+
+A V-model workflow for each slice: a planner writes a frozen plan from the left side of the V, fresh-context reviewers check it at each handoff, then TDD, `/vbench-qa`, `/vbench-tutor`, and back to the plan when reality disagrees. To be recorded as an ADR once settled.
+
+Decided so far:
+- **Deliberate, one slice at a time.** Every agent in the workflow runs only when explicitly invoked, on exactly one task (T-UUU-NN). No automatic triggering, no multi-slice or whole-project runs. Applied to `/vbench-qa` (2026-11-28).
+- **Reviewers by lens:** Requirements & trace; Domain (ontology, tactical DDD); Architecture (hexagonal, strategic DDD, ADRs, the destined shape); Design & test (OOAD, as-built drift, testability before code). `/vbench-qa` checks the tests after code.
+- **Plan v0 is mine**; the planner completes and checks it, and every trade-off comes back to me. Plans live at `docs/usecases/UC-…/plans/T-….md`, frozen and append-only (changes are superseding steps).
+
+Built 2026-11-28, untuned (use first, tune later):
+- `/vbench-cycle UC-…` (trace the V, read-only) and `/vbench-cycle T-…` (run the next gate for one slice, then stop).
+- `/vbench-plan T-…` (plan v0 → complete → review panel → rectify → freeze; `amend` for superseding steps).
+- Reviewer agents in `.claude/agents/`: requirements, domain, architecture, design-test; shared rules in `vbench-plan/assets/review-rules.md`.
+- `archcheck.py` (vbench-docs): imports checked against the Components table in `docs/design.md`.
+- `/vbench-qa` (test quality, mutation, edge cases) and `/vbench-tutor` as the right-side and understanding gates.
+
+Open: record the workflow as an ADR once it has been used on a slice or two.
+
 ## Parked
 
 Things noticed but deliberately left for later.
