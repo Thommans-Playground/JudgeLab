@@ -7,6 +7,7 @@ prints, per criterion: the full Scenario text, then each marked test with its
 file:line and number of parametrized cases. Standard library only.
 
     python3 acmap.py                 # every criterion that has a marked test
+    python3 acmap.py --task T-001-03 # the criteria a slice delivers
     python3 acmap.py --uc UC-001     # every criterion of one use case
     python3 acmap.py --ac AC-001-08  # one criterion
     python3 acmap.py --all           # every criterion, tested or not
@@ -59,6 +60,20 @@ def scenarios(root: Path) -> dict[str, dict]:
     return found
 
 
+def delivered(root: Path, task: str) -> list[str]:
+    """The criterion IDs listed under '## Delivers' in a task file."""
+    files = list((root / "docs" / "usecases").glob(f"UC-*/{task}-*.md"))
+    if not files:
+        sys.exit(f"acmap: no task file for {task}")
+    ids, inside = [], False
+    for line in files[0].read_text(encoding="utf-8").splitlines():
+        if line.startswith("## "):
+            inside = line.strip() == "## Delivers"
+        elif inside:
+            ids += TAG.findall("@" + line.strip().removeprefix("- "))
+    return ids
+
+
 def marker_ids(decorator: ast.expr) -> list[str] | None:
     """The criterion IDs of an @pytest.mark.acceptance(...) decorator, else None."""
     if not isinstance(decorator, ast.Call):
@@ -107,6 +122,7 @@ def marked_tests(root: Path) -> dict[str, list[dict]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     scope = parser.add_mutually_exclusive_group()
+    scope.add_argument("--task", help="the criteria one task delivers, e.g. T-001-03")
     scope.add_argument("--uc", help="only this use case, e.g. UC-001")
     scope.add_argument("--ac", help="only this criterion, e.g. AC-001-08")
     scope.add_argument("--all", action="store_true", help="include untested criteria")
@@ -118,6 +134,8 @@ def main() -> None:
 
     if args.ac:
         wanted = [args.ac]
+    elif args.task:
+        wanted = delivered(root, args.task)
     elif args.uc:
         prefix = "AC-" + args.uc.removeprefix("UC-") + "-"
         wanted = [c for c in defined if c.startswith(prefix)]
