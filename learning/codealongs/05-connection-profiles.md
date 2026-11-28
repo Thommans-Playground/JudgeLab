@@ -241,6 +241,7 @@ class ConnectionProfile:
             )
         if self.base_url is not None:
             problems.extend(_url_problems(self.base_url))
+        # bool is a subclass of int, so True would otherwise pass as the number 1.
         if isinstance(self.timeout_s, bool) or not isinstance(self.timeout_s, int | float):
             problems.append("timeout_s must be a number")
         elif self.timeout_s <= 0:
@@ -497,6 +498,7 @@ from judgelab.connectors.credentials import read_secret
 
 @pytest.mark.acceptance("AC-001-18")
 def test_reads_the_named_variable(monkeypatch):
+    # Spaces a copy-paste might add around a key must be stripped.
     monkeypatch.setenv("JUDGELAB_TEST_SECRET", "  s3cret  ")
     assert read_secret("JUDGELAB_TEST_SECRET") == "s3cret"
 
@@ -614,6 +616,7 @@ def test_rejected_base_urls(url, message):
 
 
 @pytest.mark.acceptance("AC-001-16")
+# "modle" is a deliberate typo of "model".
 @pytest.mark.parametrize("key", ["api_key", "modle"])
 def test_unknown_settings_are_rejected(key):
     with pytest.raises(ProfileError, match=f"unknown setting\\(s\\) {key}; allowed:"):
@@ -726,6 +729,7 @@ def test_target_and_judge_switch_independently():
     swapped_target = create_connector(profile("target", CLAUDE))
     swapped_judge = create_connector(profile("judge", OPENAI))
     assert (type(swapped_target), type(swapped_judge)) == (AnthropicConnector, OpenAIConnector)
+    # Same provider, separate instances: the registry never shares a connector.
     assert target is not swapped_judge
 ```
 

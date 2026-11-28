@@ -984,6 +984,7 @@ def test_configuration_problems_exit_1_without_a_traceback(tmp_path, capsys, tex
     assert err.startswith("error: ")
     assert message in err
     assert "Traceback" not in err
+    # For the pasted-key row: the error must not echo the key back.
     assert "sk-pasted-key" not in err
     assert not (tmp_path / "reports").exists()
 

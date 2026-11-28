@@ -585,6 +585,7 @@ SECRET = "sk-contract-SECRET-0000"
 
 
 def fake_connectors(monkeypatch):
+    # monkeypatch is unused, but every factory must be callable the same way.
     answering = FakeConnector(replies={PROMPT: "Paris"})
     failing = FakeConnector(default=ConnectorUnavailableError("fake outage"))
     return answering, failing

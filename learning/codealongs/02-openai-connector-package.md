@@ -516,21 +516,21 @@ $ uv run python -c "from judgelab.connectors import OpenAIConnector; print(OpenA
 
 ## 2.10 Seeing Your Progress
 
-You now have eight acceptance criteria and some code, but nothing that connects them. Pytest will tell you how many tests passed, but "29 passed" doesn't tell you whether AC-001-07 is covered at all. I'd like pytest to finish every run with a table like this, grouped by use case:
+You now have acceptance criteria and some code, but nothing that connects them. Pytest will tell you how many tests passed, but "29 passed" doesn't tell you whether AC-001-07 is covered at all. I'd like pytest to finish every run with a table like this, grouped by use case:
 
 ```text
-UC-001: Configure model connections  (3/8 passing)
-  PASS        AC-001-01  A missing, empty or whitespace-only API-key variable raises 
-  not tested  AC-001-02  A connector is configured only from its arguments: provider 
+UC-001 Configure model connections  (3/22 passing)
+  PASS        AC-001-01  A missing or blank key variable is an auth error that names 
+  not tested  AC-001-02  Provider environment variables have no effect on a connector
 ```
 
 Here is how a criterion written in a use case ends up as a line in pytest's output:
 
 ```mermaid
 flowchart LR
-    UC["UC-001 README<br/>criteria AC-001-01 to 08"] -->|"read by"| CF["tests/conftest.py"]
+    UC["UC-001.feature<br/>@AC-001-01 ... @AC-001-22"] -->|"read by"| CF["tests/conftest.py"]
     T["a test marked with<br/>acceptance AC-001-03"] -->|"outcome recorded by"| CF
-    CF -->|"prints, grouped by use case"| TABLE["UC-001: Configure model connections<br/>8/8 passing"]
+    CF -->|"prints, grouped by use case"| TABLE["UC-001 Configure model connections<br/>8/22 passing"]
 ```
 
 Pytest can be extended with plugins, and the simplest way to write one is a file named `conftest.py`. Pytest loads it automatically before collecting tests, and any functions in it that have special names, called *hooks*, are called by pytest at specific moments of a run. Create `tests/conftest.py`:
@@ -546,8 +546,8 @@ Mark a test with the use-case acceptance criteria it verifies:
     def test_something(): ...
 
 After every run, pytest prints every criterion defined in the use cases
-(docs/usecases/*/README.md, written as **AC-001-01**: ...), grouped by use
-case, with its status in that run.
+(docs/usecases/UC-*/*.feature, one Gherkin Scenario per criterion, tagged
+@AC-001-01), grouped by use case, with its status in that run.
 """
 
 import re
@@ -557,8 +557,16 @@ from pathlib import Path
 import pytest
 
 USECASES_DIR = Path(__file__).resolve().parents[1] / "docs" / "usecases"
-CRITERION = re.compile(r"\*\*(AC-\d{3}-\d{2,})\*\*:?\s*(.*)")
+TAG = re.compile(r"@(AC-\d{3}-\d{2,})")
+SCENARIO = re.compile(r"^\s*Scenario(?: Outline)?:\s*(.*)")
 RESULTS = pytest.StashKey[dict]()
+STATUS_ORDER = ("PASS", "FAIL", "skipped", "not tested")
+STATUS_COLORS = {
+    "PASS": {"green": True},
+    "FAIL": {"red": True, "bold": True},
+    "skipped": {"yellow": True},
+    "not tested": {"light": True},
+}
 
 
 def pytest_configure(config):
@@ -579,16 +587,27 @@ def pytest_runtest_makereport(item, call):
 
 
 def defined_criteria() -> dict[str, dict[str, str]]:
-    """{use case heading: {criterion id: description}}, in use-case order."""
+    """{use case heading: {criterion id: description}}, in use-case order.
+
+    A criterion is an @AC-... tag; its description is the title of the
+    Scenario that follows the tag. Scenarios tagged @retired are left out.
+    """
     usecases = {}
-    for readme in sorted(USECASES_DIR.glob("UC-*/README.md")):
-        lines = readme.read_text(encoding="utf-8").splitlines()
-        heading = lines[0].removeprefix("# ").strip() if lines else readme.parent.name
+    for feature in sorted(USECASES_DIR.glob("UC-*/*.feature")):
+        heading = feature.parent.name
         criteria = {}
-        for line in lines:
-            match = CRITERION.search(line)
-            if match:
-                criteria[match.group(1)] = match.group(2).strip()
+        tagged, retired = [], False
+        for line in feature.read_text(encoding="utf-8").splitlines():
+            if line.startswith("Feature:"):
+                heading = line.removeprefix("Feature:").strip()
+            elif line.lstrip().startswith("@"):
+                tagged += TAG.findall(line)
+                retired = retired or "@retired" in line.split()
+            elif match := SCENARIO.match(line):
+                if not retired:
+                    for criterion in tagged:
+                        criteria[criterion] = match.group(1).strip()
+                tagged, retired = [], False
         usecases[heading] = criteria
     return usecases
 
@@ -611,26 +630,31 @@ def pytest_terminal_summary(terminalreporter, config):
     if not known and not undefined:
         return
     counts = defaultdict(int)
-    write = terminalreporter.write_line
+    write = terminalreporter.write
+
+    def criterion_line(status, criterion, description):
+        counts[status] += 1
+        write("  ")
+        write(f"{status:<11}", **STATUS_COLORS[status])
+        write(f" {criterion}  {description}\n")
+
     terminalreporter.write_sep("=", "acceptance criteria")
     for heading, criteria in usecases.items():
         if not criteria:
             continue
         statuses = {criterion: status_of(results.get(criterion, [])) for criterion in criteria}
         passing = sum(status == "PASS" for status in statuses.values())
-        write(f"{heading}  ({passing}/{len(criteria)} passing)")
+        write(heading, bold=True)
+        write(f"  ({passing}/{len(criteria)} passing)\n")
         for criterion, description in criteria.items():
-            counts[statuses[criterion]] += 1
-            write(f"  {statuses[criterion]:<11} {criterion}  {description[:60]}")
+            criterion_line(statuses[criterion], criterion, description[:60])
     for criterion in undefined:
-        status = status_of(results[criterion])
-        counts[status] += 1
-        write(f"  {status:<11} {criterion}  (marked on a test but not defined in any use case)")
-    write(
-        " · ".join(
-            f"{counts[s]} {s}" for s in ("PASS", "FAIL", "skipped", "not tested") if counts[s]
-        )
-    )
+        description = "(marked on a test but not defined in any use case)"
+        criterion_line(status_of(results[criterion]), criterion, description)
+    totals = [status for status in STATUS_ORDER if counts[status]]
+    for i, status in enumerate(totals):
+        write(f"{counts[status]} {status}", **STATUS_COLORS[status])
+        write(" · " if i < len(totals) - 1 else "\n")
 ```
 
 This is the most "framework-y" code in the chapter, so don't worry if it doesn't all make sense on the first read. You don't need to master pytest's plugin system to use this file. Here are the five ideas it is built on.
@@ -643,7 +667,16 @@ This is the most "framework-y" code in the chapter, so don't worry if it doesn't
 
 The condition `report.when == "call" or report.outcome != "passed"` decides which phases count. The `call` phase is the test itself, so it always counts. A setup or teardown phase that passed is not interesting, but one that failed or skipped is, because a test whose fixture crashed never got to verify anything.
 
-**Reading the criteria from the use cases.** The `defined_criteria()` function opens the `README.md` of every `UC-*` folder under `docs/usecases/`. It takes the use case's name from the first line of the file (the `# UC-001: Configure model connections` heading, with the `# ` removed), and runs the `CRITERION` regular expression on every line. The expression looks for an ID like `**AC-001-01**`, captures it as group 1, and captures the rest of the line, the description, as group 2. The result is a dictionary of dictionaries: for each use case heading, its criteria in the order they are written in the file. This is why the bold ID format from section 2.2 matters, and why task files only list IDs: if a task file repeated a criterion's sentence, it would not be read here, but it could drift away from the real one.
+**Reading the criteria from the use cases.** The criteria live in one Gherkin file per use case, such as `docs/usecases/UC-001-configure-model-connections/UC-001.feature`. Each criterion is a Scenario with its ID as a tag on the line above:
+
+```gherkin
+Feature: UC-001 Configure model connections
+  ...
+  @AC-001-01
+  Scenario Outline: A missing or blank key variable is an auth error that names the variable
+```
+
+The `defined_criteria()` function reads every `UC-*/*.feature` file line by line. The `Feature:` line gives the use case's heading. A line starting with `@` is a tag line, and the `TAG` regular expression collects every `@AC-...` ID on it into the `tagged` list. If the tag line also says `@retired`, the scenario is a criterion that was replaced by a newer one, so it is skipped. The next `Scenario:` or `Scenario Outline:` line, matched by `SCENARIO`, gives the description, which is assigned to every ID waiting in `tagged` before the list is emptied for the next scenario. The result is a dictionary of dictionaries: for each use case heading, its criteria in the order they are written in the file. This is why task files only list IDs: if a task file repeated a criterion's sentence, it would not be read here, but it could drift away from the real one.
 
 **Printing the table.** At the very end of a run, pytest calls `pytest_terminal_summary()`. For each use case that has criteria, it works out a status for every criterion with `status_of()`:
 
@@ -652,7 +685,9 @@ The condition `report.when == "call" or report.outcome != "passed"` decides whic
 - **PASS**: all of its tests passed.
 - **skipped**: none failed, but not all of them passed.
 
-It then prints the use case heading with a count, such as `(8/8 passing)`, followed by one indented line per criterion. Because the criteria come straight from the README in file order, the table lists them in the order you wrote them, with no sorting needed.
+It then prints the use case heading with a count, such as `(8/8 passing)`, followed by one indented line per criterion. Because the criteria come straight from the feature file in file order, the table lists them in the order you wrote them, with no sorting needed.
+
+Each status is printed in its own color, using the `STATUS_COLORS` table: green for PASS, bold red for FAIL, yellow for skipped and dim grey for "not tested". The `terminalreporter.write()` method takes the same color keywords as pytest's own output, such as `green=True` or `light=True`, so the plugin doesn't need to know any terminal escape codes. Pytest also decides when color is safe: in a terminal you get colors, while in a CI log, or with `--color=no`, the same table is printed as plain text.
 
 The `known` and `undefined` sets catch mistakes in the other direction. A criterion that a test mentions but no use case defines is collected in `undefined` and printed at the end with `(marked on a test but not defined in any use case)`, which catches typos in marker IDs.
 
@@ -661,28 +696,29 @@ You don't have any tests yet, but you can already run pytest and see the plugin 
 ```bash
 $ uv run pytest -q
 ============================= acceptance criteria ==============================
-UC-001: Configure model connections  (0/8 passing)
-  not tested  AC-001-01  A missing, empty or whitespace-only API-key variable raises 
-  not tested  AC-001-02  A connector is configured only from its arguments: provider 
-  not tested  AC-001-03  A successful reply returns the answer text, the requested an
-  not tested  AC-001-04  A refusal is returned as a response, not raised as an error.
-  not tested  AC-001-05  A reply that cannot be trusted (wrong type, no choices, or n
-  not tested  AC-001-06  Provider failures map to JudgeLab errors: bad credentials to
-  not tested  AC-001-07  No request is retried unless retries are configured.
-  not tested  AC-001-08  The API key never appears in a connector's repr or in any er
-UC-004: Evaluate responses  (0/5 passing)
-  not tested  AC-004-01  Include question, expected answer, actual answer, and rubric
-  not tested  AC-004-02  Accept only supported verdict values and a nonempty justific
-  not tested  AC-004-03  Invalid output becomes `ERROR`, never `FAIL`.
-  not tested  AC-004-04  Record evaluator provider/model identity.
-  not tested  AC-004-05  Switching the judge profile does not change benchmark data o
-13 not tested
+UC-001 Configure model connections  (0/22 passing)
+  not tested  AC-001-01  A missing or blank key variable is an auth error that names 
+  not tested  AC-001-02  Provider environment variables have no effect on a connector
+  not tested  AC-001-03  A successful reply returns the answer with its model identit
+  not tested  AC-001-04  A refusal is a response, not an error
+  not tested  AC-001-05  A reply that cannot be trusted is a response error
+  not tested  AC-001-06  Provider failures become JudgeLab connector errors
+  not tested  AC-001-07  No request is retried unless retries are configured
+  not tested  AC-001-08  The API key never appears in a repr or an error message
+  not tested  AC-001-09  Every connector keeps the same contract
+  ...
+  not tested  AC-001-22  Target and judge are independent, and swapping them is a con
+UC-002 Prepare benchmark dataset  (0/8 passing)
+  ...
+UC-006 Run complete evaluation  (0/11 passing)
+  ...
+60 not tested
 no tests ran in 0.01s
 ```
 
-Eight criteria of UC-001, all of them "not tested". The descriptions are cut at 60 characters to keep the table narrow, but the IDs are what matter. This is your to-do list, and the rest of the chapter is about turning it into eight PASS lines.
+Every criterion of every use case, all of them "not tested" (the output above is trimmed with `...`). The descriptions are cut at 60 characters to keep the table narrow, but the IDs are what matter. This chapter is about AC-001-01 to AC-001-08, and the rest of it turns those eight lines into PASS.
 
-And what is UC-004 doing there? When you planned v0.1, you wrote five criteria for "Evaluate responses" straight into that use case, and the plugin reads every use case, so they show up too. Use cases with no criteria yet, like UC-002 and UC-003, are left out. Think of the UC-004 lines as a preview of what's ahead: they will stay "not tested" until you build the judge in chapter 8, and they are a useful reminder that the table covers the whole project, not just the chapter you are on.
+Why are the other use cases there? The plugin reads every feature file, so the table covers the whole project, not just the chapter you are on. Think of the other lines as a preview of what's ahead: they stay "not tested" until later chapters build the dataset loader, the runner, the judge and the report.
 
 ## 2.11 The Test Helpers
 
@@ -722,6 +758,7 @@ def completion(content="Paris", *, refusal=None, finish="stop", choices=True, us
         "id": "chatcmpl-1",
         "object": "chat.completion",
         "created": 0,
+        # Differs from the requested "asked-model", so tests can tell the two apart.
         "model": "served-model-v2",
         "choices": [{"index": 0, "finish_reason": finish, "message": message}] if choices else [],
     }
@@ -747,6 +784,7 @@ def server(status=200, *, body=None, text=None, raises=None, seen=None):
 
 
 def error_body(code=None):
+    # Echoes part of the key, as real OpenAI 401 messages do.
     return {"error": {"message": f"Incorrect key: {SECRET[:7]}****", "type": "x", "code": code}}
 
 
@@ -799,6 +837,7 @@ def test_missing_key_names_the_variable(monkeypatch, value):
 
 @pytest.mark.acceptance("AC-001-02")
 def test_environment_defaults_have_no_effect(connect, monkeypatch):
+    # Bait: the SDK reads these if the connector doesn't pass its own values.
     monkeypatch.setenv("OPENAI_BASE_URL", "http://somewhere-else.example/v1")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-wrong-key-from-env")
     seen = []
@@ -810,6 +849,7 @@ def test_environment_defaults_have_no_effect(connect, monkeypatch):
 @pytest.mark.acceptance("AC-001-02")
 def test_default_base_url_is_openai(monkeypatch):
     monkeypatch.setenv(KEY_ENV, SECRET)
+    # Bait: with no base_url given, the SDK would fall back to this variable.
     monkeypatch.setenv("OPENAI_BASE_URL", "http://somewhere-else.example/v1")
     connector = OpenAIConnector(model="m", api_key_env=KEY_ENV)
     assert connector.base_url == "https://api.openai.com/v1"
@@ -827,7 +867,7 @@ Here you meet the `acceptance` marker for the first time. The first test is mark
 
 That first test also uses `@pytest.mark.parametrize`, which runs the same test once for each value in a list. Here the three values are the three ways a key can be missing: the variable doesn't exist at all (`None`), it is empty, or it contains only spaces. One test function, three test runs. The `pytest.raises()` context manager checks that the code inside the `with` block raises the given exception, and its `match` argument is a regular expression that must appear in the error message.
 
-The second test is the proof of AC-001-02. It sets `OPENAI_BASE_URL` and `OPENAI_API_KEY` to wrong values, which the SDK would happily pick up if the connector let it, then sends a request and inspects it through `seen`. The request must go to the URL the connector was given and carry the key from `KEY_ENV`, not the one from the environment. The third test covers the default case, with no `base_url` argument at all. It never sends a request, so it doesn't need a fake server.
+The second test is the proof of AC-001-02. It sets `OPENAI_BASE_URL` and `OPENAI_API_KEY` to wrong values, which the SDK would happily pick up if the connector let it, then sends a request and inspects it through `seen`. The request must go to the URL the connector was given and carry the key from `KEY_ENV`, not the one from the environment. The third test covers the default case, with no `base_url` argument at all. It never sends a request, so it doesn't need a fake server. Notice the one-line comments above the bait in both tests. The test names already say *what* is being checked, but nothing in the code says *why* wrong values are being planted, and that is exactly what a comment is for. The project's rule, in the [Code comments](../../CONTRIBUTING.md#code-comments) section of `CONTRIBUTING.md`, is that names explain what and comments explain why; tests get no docstrings, because the name and the `acceptance` marker already say what they verify.
 
 ## 2.13 Testing Successful Replies
 
@@ -937,6 +977,7 @@ _tests/connectors/test_openai_connector.py_: Failures
         (401, "invalid_api_key", ConnectorAuthError),
         (403, None, ConnectorAuthError),
         (402, None, ConnectorQuotaError),
+        # OpenAI also sends billing errors as 429; only the code tells them apart.
         (429, "credit_balance_exhausted", ConnectorQuotaError),
         (429, "project_spend_limit_exceeded", ConnectorQuotaError),
         (429, None, ConnectorRateLimitError),
@@ -968,6 +1009,7 @@ def test_network_failures_are_unavailable(connect, exception, message):
 @pytest.mark.acceptance("AC-001-07")
 def test_no_hidden_retries(connect):
     seen = []
+    # The SDK retries a 500 by default, so any hidden retry shows up in `seen`.
     with pytest.raises(ConnectorUnavailableError):
         connect(server(500, body=error_body(), seen=seen)).generate("hi")
     assert len(seen) == 1
@@ -1069,7 +1111,7 @@ Exactly the two billing rows fail, because they now get a `ConnectorRateLimitErr
 
 - **`ModuleNotFoundError: No module named 'judgelab.connectors'`.** Check that the directory is `src/judgelab/connectors` (inside `src/judgelab`, next to the existing `__init__.py`), and that you are running pytest through `uv run`, which uses the project's environment where `judgelab` is installed.
 - **No acceptance table at the end of the run.** Pytest only loads `conftest.py` from the test directories, so the file must be at `tests/conftest.py` exactly. If the table appears but every criterion is "not tested" even though the tests pass, check the spelling of the IDs in your markers: an ID that no use case defines shows up at the end of the table with `(marked on a test but not defined in any use case)`.
-- **A criterion is missing from the table.** The line in the use case README doesn't match the pattern. The ID must be in bold, with two asterisks on each side, and the criterion number has two digits: `**AC-001-01**:`. Remember also that the plugin only reads `docs/usecases/UC-*/README.md`, so a criterion written in a task file is not picked up; task files only list IDs under `## Delivers`.
+- **A criterion is missing from the table.** Its tag in the feature file doesn't match the pattern, or there is no `Scenario` line after it. The tag must be on its own line above the scenario, start with `@`, and use a two-digit criterion number: `@AC-001-01`. Remember also that the plugin only reads `docs/usecases/UC-*/*.feature`, so a criterion written in a README or a task file is not picked up; task files only list IDs under `## Delivers`.
 - **A whole use case is missing from the table.** That's expected for a use case with no criteria yet: the plugin skips it.
 - **`PytestUnknownMarkWarning: Unknown pytest.mark.acceptance`.** The `pytest_configure()` hook did not run, which usually means a typo in its name. Hook names must be spelled exactly.
 - **`TypeError: OpenAIConnector.__init__() missing 1 required keyword-only argument: 'api_key_env'`.** The argument no longer has a default (section 2.7). Pass it explicitly: `OpenAIConnector(model=..., api_key_env="OPENAI_API_KEY")`.

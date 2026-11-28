@@ -637,6 +637,7 @@ def server(status=200, *, body=None, raises=None, seen=None):
 
 
 def error_body(error_type, error_code=None):
+    # Like a real provider, echo part of the key: JudgeLab's errors must not repeat it.
     error = {"type": error_type, "message": f"bad key {SECRET[:9]}..."}
     if error_code:
         error["details"] = {"error_code": error_code}
@@ -668,12 +669,14 @@ def test_missing_key_names_the_variable(monkeypatch):
 
 @pytest.mark.acceptance("AC-001-01", "AC-001-02")
 def test_environment_defaults_have_no_effect(connect, monkeypatch):
+    # Bait: the SDK reads these if the connector doesn't pass its own values.
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://somewhere-else.example")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-wrong-from-env")
     monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "token-wrong-from-env")
     seen = []
     connect(server(body=message(text("Paris")), seen=seen)).generate("hi")
     assert str(seen[0].url) == "http://stub.local/v1/messages"
+    # Either header will do: SDK versions differ in which one carries the key.
     assert SECRET in (
         seen[0].headers.get("authorization", "") + seen[0].headers.get("x-api-key", "")
     )
@@ -683,6 +686,7 @@ def test_environment_defaults_have_no_effect(connect, monkeypatch):
 @pytest.mark.acceptance("AC-001-01", "AC-001-02")
 def test_default_base_url_is_anthropic(monkeypatch):
     monkeypatch.setenv(KEY_ENV, SECRET)
+    # Bait: the SDK falls back to this when the connector passes no base_url.
     monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://somewhere-else.example")
     assert (
         AnthropicConnector(model="m", api_key_env=KEY_ENV).base_url == "https://api.anthropic.com"

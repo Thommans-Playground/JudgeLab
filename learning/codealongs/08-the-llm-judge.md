@@ -358,6 +358,7 @@ def build_judge_prompt(case: TestCase, actual_answer: str) -> str:
     )
 
 
+# Models often wrap their JSON in a Markdown code fence, despite the instructions.
 FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
 
 
@@ -669,6 +670,7 @@ def test_judge_call_problems_are_judge_errors(reply, message):
 
 @pytest.mark.acceptance("AC-004-03")
 def test_truncated_judge_reply_is_an_error():
+    # FakeConnector never truncates, so force the flag on its response.
     class Truncating(FakeConnector):
         def generate(self, prompt, *, instructions=None):
             return replace(super().generate(prompt, instructions=instructions), truncated=True)
