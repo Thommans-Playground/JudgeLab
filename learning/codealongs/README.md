@@ -2,9 +2,11 @@
 
 A step-by-step course that builds the whole v0.1 release: a command-line tool that runs a benchmark against a target model, has a second model judge every answer, and writes a reviewable JSON report.
 
-The course follows the **use cases** of the [v0.1 plan](../../docs/releases/v0.1/README.md). Each part delivers one use case, and each chapter is a **slice**: a thin, end-to-end piece of the use case, delivered by one or more tasks, that makes some of its acceptance criteria pass. The criteria live in the use case's README ([docs/usecases/](../../docs/usecases/)), tests are marked with them, and `uv run pytest` prints which ones pass, grouped by use case, so you always know which user goals already work.
+The course follows the **use cases** of the [v0.1 plan](../../docs/releases/v0.1/README.md). Each part delivers one use case, and each chapter is a **slice**: a thin, end-to-end piece of the use case, delivered by one or more tasks, that makes some of its acceptance criteria pass. The criteria live in each use case's Gherkin feature file ([docs/usecases/](../../docs/usecases/)), tests are marked with them, and `uv run pytest` prints which ones pass, grouped by use case, so you always know which user goals already work.
 
 Type the code yourself: these are guided codealongs, so record the work as **AI-Assist L4**.
+
+Track where you are in [PROGRESS.md](../PROGRESS.md): the current chapter and section, a short journal, and anything parked for later. Check your understanding of each test with `/vbench-tutor`; its results go in [tutor-log.md](../tutor-log.md).
 
 Here is how the use cases fit together. UC-006 is the whole evaluation; it relies on the other five:
 
