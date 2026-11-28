@@ -6,8 +6,8 @@ Mark a test with the use-case acceptance criteria it verifies:
     def test_something(): ...
 
 After every run, pytest prints every criterion defined in the use cases
-(docs/usecases/*/README.md, written as **AC-001-01**: ...), grouped by use
-case, with its status in that run.
+(docs/usecases/UC-*/*.feature, one Gherkin Scenario per criterion, tagged
+@AC-001-01), grouped by use case, with its status in that run.
 """
 
 import re
@@ -17,8 +17,16 @@ from pathlib import Path
 import pytest
 
 USECASES_DIR = Path(__file__).resolve().parents[1] / "docs" / "usecases"
-CRITERION = re.compile(r"\*\*(AC-\d{3}-\d{2,})\*\*:?\s*(.*)")
+TAG = re.compile(r"@(AC-\d{3}-\d{2,})")
+SCENARIO = re.compile(r"^\s*Scenario(?: Outline)?:\s*(.*)")
 RESULTS = pytest.StashKey[dict]()
+STATUS_ORDER = ("PASS", "FAIL", "skipped", "not tested")
+STATUS_COLORS = {
+    "PASS": {"green": True},
+    "FAIL": {"red": True, "bold": True},
+    "skipped": {"yellow": True},
+    "not tested": {"light": True},
+}
 
 
 def pytest_configure(config):
@@ -39,16 +47,27 @@ def pytest_runtest_makereport(item, call):
 
 
 def defined_criteria() -> dict[str, dict[str, str]]:
-    """{use case heading: {criterion id: description}}, in use-case order."""
+    """{use case heading: {criterion id: description}}, in use-case order.
+
+    A criterion is an @AC-... tag; its description is the title of the
+    Scenario that follows the tag. Scenarios tagged @retired are left out.
+    """
     usecases = {}
-    for readme in sorted(USECASES_DIR.glob("UC-*/README.md")):
-        lines = readme.read_text(encoding="utf-8").splitlines()
-        heading = lines[0].removeprefix("# ").strip() if lines else readme.parent.name
+    for feature in sorted(USECASES_DIR.glob("UC-*/*.feature")):
+        heading = feature.parent.name
         criteria = {}
-        for line in lines:
-            match = CRITERION.search(line)
-            if match:
-                criteria[match.group(1)] = match.group(2).strip()
+        tagged, retired = [], False
+        for line in feature.read_text(encoding="utf-8").splitlines():
+            if line.startswith("Feature:"):
+                heading = line.removeprefix("Feature:").strip()
+            elif line.lstrip().startswith("@"):
+                tagged += TAG.findall(line)
+                retired = retired or "@retired" in line.split()
+            elif match := SCENARIO.match(line):
+                if not retired:
+                    for criterion in tagged:
+                        criteria[criterion] = match.group(1).strip()
+                tagged, retired = [], False
         usecases[heading] = criteria
     return usecases
 
@@ -71,23 +90,28 @@ def pytest_terminal_summary(terminalreporter, config):
     if not known and not undefined:
         return
     counts = defaultdict(int)
-    write = terminalreporter.write_line
+    write = terminalreporter.write
+
+    def criterion_line(status, criterion, description):
+        counts[status] += 1
+        write("  ")
+        write(f"{status:<11}", **STATUS_COLORS[status])
+        write(f" {criterion}  {description}\n")
+
     terminalreporter.write_sep("=", "acceptance criteria")
     for heading, criteria in usecases.items():
         if not criteria:
             continue
         statuses = {criterion: status_of(results.get(criterion, [])) for criterion in criteria}
         passing = sum(status == "PASS" for status in statuses.values())
-        write(f"{heading}  ({passing}/{len(criteria)} passing)")
+        write(heading, bold=True)
+        write(f"  ({passing}/{len(criteria)} passing)\n")
         for criterion, description in criteria.items():
-            counts[statuses[criterion]] += 1
-            write(f"  {statuses[criterion]:<11} {criterion}  {description[:60]}")
+            criterion_line(statuses[criterion], criterion, description[:60])
     for criterion in undefined:
-        status = status_of(results[criterion])
-        counts[status] += 1
-        write(f"  {status:<11} {criterion}  (marked on a test but not defined in any use case)")
-    write(
-        " · ".join(
-            f"{counts[s]} {s}" for s in ("PASS", "FAIL", "skipped", "not tested") if counts[s]
-        )
-    )
+        description = "(marked on a test but not defined in any use case)"
+        criterion_line(status_of(results[criterion]), criterion, description)
+    totals = [status for status in STATUS_ORDER if counts[status]]
+    for i, status in enumerate(totals):
+        write(f"{counts[status]} {status}", **STATUS_COLORS[status])
+        write(" · " if i < len(totals) - 1 else "\n")
